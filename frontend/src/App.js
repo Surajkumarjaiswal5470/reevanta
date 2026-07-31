@@ -499,23 +499,24 @@ export default function App() {
       </div>
 
       {/* Main Navbar */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#EAEAEC] px-4 lg:px-8 py-3.5 transition-all">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#EAEAEC] px-3 sm:px-4 lg:px-8 py-3 transition-all">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4">
           {/* Logo */}
-          <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setActiveTab("home")}>
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#FF3F6C] to-[#FF905A] flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-[#FF3F6C]/20">
+          <div className="flex items-center space-x-2 sm:space-x-3 cursor-pointer min-w-0 flex-shrink-0" onClick={() => setActiveTab("home")}>
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-[#FF3F6C] to-[#FF905A] flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-[#FF3F6C]/20 flex-shrink-0">
               L
             </div>
-            <div>
-              <h1 className="text-xl font-black tracking-tight bg-gradient-to-r from-[#FF3F6C] to-[#282C3F] bg-clip-text text-transparent">
+            <div className="hidden sm:block">
+              <h1 className="text-lg lg:text-xl font-black tracking-tight bg-gradient-to-r from-[#FF3F6C] to-[#282C3F] bg-clip-text text-transparent whitespace-nowrap">
                 LUMIÈRE & BAZAR
               </h1>
               <p className="text-[10px] text-[#535766] tracking-widest font-semibold uppercase">Myntra x Meesho Hub</p>
             </div>
+            <span className="sm:hidden text-sm font-black bg-gradient-to-r from-[#FF3F6C] to-[#282C3F] bg-clip-text text-transparent whitespace-nowrap">LUMIÈRE</span>
           </div>
 
-          {/* Search Bar */}
-          <div className="hidden md:flex flex-1 max-w-xl mx-6">
+          {/* Search Bar (desktop) */}
+          <div className="hidden md:flex flex-1 max-w-xl mx-4 lg:mx-6">
             <SearchBar
               value={searchQuery}
               onChange={setSearchQuery}
@@ -530,11 +531,11 @@ export default function App() {
           </div>
 
           {/* Navigation Items */}
-          <div className="flex items-center space-x-4 sm:space-x-6">
+          <div className="flex items-center space-x-2 sm:space-x-4 md:space-x-5 flex-shrink-0">
             <button
               data-testid="nav-catalog-btn"
               onClick={() => setActiveTab("catalog")}
-              className={`text-sm font-semibold transition hover:text-[#FF3F6C] ${activeTab === "catalog" ? "text-[#FF3F6C]" : "text-[#282C3F]"}`}
+              className={`hidden sm:block text-sm font-semibold transition hover:text-[#FF3F6C] ${activeTab === "catalog" ? "text-[#FF3F6C]" : "text-[#282C3F]"}`}
             >
               Shop
             </button>
@@ -544,7 +545,7 @@ export default function App() {
                 if (!currentUser) { setAuthMode("login"); setShowAuthModal(true); return; }
                 setActiveTab("orders");
               }}
-              className={`hidden sm:block text-sm font-semibold transition hover:text-[#FF3F6C] ${activeTab === "orders" ? "text-[#FF3F6C]" : "text-[#282C3F]"}`}
+              className={`text-xs sm:text-sm font-semibold transition hover:text-[#FF3F6C] ${activeTab === "orders" ? "text-[#FF3F6C]" : "text-[#282C3F]"}`}
             >
               Orders
             </button>
@@ -552,9 +553,30 @@ export default function App() {
               <button
                 data-testid="nav-admin-btn"
                 onClick={() => setActiveTab("admin")}
-                className={`hidden sm:flex items-center gap-1 text-sm font-bold transition hover:text-[#FF3F6C] ${activeTab === "admin" ? "text-[#FF3F6C]" : "text-purple-700"}`}
+                className={`flex items-center gap-1 text-xs sm:text-sm font-bold transition hover:text-[#FF3F6C] ${activeTab === "admin" ? "text-[#FF3F6C]" : "text-purple-700"}`}
               >
-                <LayoutDashboard className="w-4 h-4" /> Admin
+                <LayoutDashboard className="w-4 h-4" /><span className="hidden sm:inline">Admin</span>
+              </button>
+            )}
+
+            {/* Mobile Login/Logout */}
+            {!currentUser && (
+              <button
+                data-testid="mobile-login-btn"
+                onClick={() => { setAuthMode("login"); setShowAuthModal(true); }}
+                className="md:hidden text-xs font-bold text-[#FF3F6C] flex items-center gap-1"
+              >
+                <LogIn className="w-4 h-4" />
+              </button>
+            )}
+            {currentUser && (
+              <button
+                data-testid="mobile-logout-btn"
+                onClick={handleLogout}
+                className="md:hidden text-xs font-bold text-[#282C3F]"
+                title="Logout"
+              >
+                <LogOut className="w-4 h-4" />
               </button>
             )}
 
@@ -565,7 +587,7 @@ export default function App() {
                 setResellerMode(!resellerMode);
                 toast.success(resellerMode ? "Reseller mode disabled" : "Reseller wholesale mode activated!");
               }}
-              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition border ${
+              className={`hidden sm:flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition border ${
                 resellerMode
                   ? "bg-purple-100 text-purple-700 border-purple-300 shadow-sm"
                   : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
@@ -580,7 +602,7 @@ export default function App() {
             <button
               data-testid="nav-wishlist-btn"
               onClick={() => setActiveTab("wishlist")}
-              className="relative p-2 text-[#282C3F] hover:text-[#FF3F6C] transition"
+              className="relative p-1.5 sm:p-2 text-[#282C3F] hover:text-[#FF3F6C] transition"
               title="Wishlist"
             >
               <Heart className="w-5 h-5" />
@@ -595,7 +617,7 @@ export default function App() {
             <button
               data-testid="cart-drawer-trigger"
               onClick={() => setIsCartOpen(true)}
-              className="relative flex items-center space-x-2 bg-[#FF3F6C] hover:bg-[#E02E57] text-white px-4 py-2 rounded-full font-bold text-sm shadow-md shadow-[#FF3F6C]/30 transition transform active:scale-95"
+              className="relative flex items-center space-x-1.5 bg-[#FF3F6C] hover:bg-[#E02E57] text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-full font-bold text-xs sm:text-sm shadow-md shadow-[#FF3F6C]/30 transition transform active:scale-95"
             >
               <ShoppingBag className="w-4 h-4" />
               <span>Bag</span>
@@ -1281,7 +1303,7 @@ export default function App() {
 
       {/* AUTH MODAL */}
       {showAuthModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div data-testid="auth-modal" className="bg-white rounded-3xl max-w-md w-full p-8 shadow-2xl relative animate-in fade-in zoom-in duration-200 space-y-6">
             <button
               data-testid="close-auth-modal-btn"
@@ -1592,7 +1614,7 @@ export default function App() {
                           <p className="text-xs text-[#535766]">Login to save delivery addresses & place orders.</p>
                           <button
                             data-testid="signin-to-checkout-btn"
-                            onClick={() => { setAuthMode("login"); setShowAuthModal(true); }}
+                            onClick={() => { setIsCartOpen(false); setAuthMode("login"); setShowAuthModal(true); }}
                             className="bg-[#FF3F6C] text-white px-6 py-2.5 rounded-full text-xs font-bold"
                           >
                             Sign in / Register
@@ -1784,6 +1806,7 @@ export default function App() {
                         setCheckoutStep(2);
                       } else if (checkoutStep === 2) {
                         if (!currentUser) {
+                          setIsCartOpen(false);
                           setAuthMode("login");
                           setShowAuthModal(true);
                           return;

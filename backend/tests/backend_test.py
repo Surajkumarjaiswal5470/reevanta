@@ -214,7 +214,12 @@ class TestProducts:
     def test_invalid_product_id_returns_404_not_server_error(self):
         response = requests.get(f"{BASE_URL}/api/products/not-an-object-id", timeout=20)
         assert response.status_code == 404, response.text
-        assert response.json()["detail"] == "Product not found"
+        assert response.json()["detail"] == "Not found"
+
+    def test_malformed_product_delete_returns_404(self, context):
+        response = context["admin"].delete(f"{BASE_URL}/api/products/not-an-object-id", timeout=20)
+        assert response.status_code == 404, response.text
+        assert response.json()["detail"] == "Not found"
 
 
 class TestAddresses:
@@ -273,6 +278,28 @@ class TestAddresses:
         if not own_default_preserved:
             context["user_b"].patch(f"{BASE_URL}/api/addresses/{context['address_b']['id']}/default", timeout=20)
         assert own_default_preserved, "A failed foreign-ID request cleared the current user's default address"
+
+    def test_nonexistent_default_request_does_not_clear_own_default(self, context):
+        missing_id = "000000000000000000000000"
+        before = context["user_b"].get(f"{BASE_URL}/api/addresses", timeout=20).json()
+        default_before = next(a for a in before if a["isDefault"])
+
+        response = context["user_b"].patch(f"{BASE_URL}/api/addresses/{missing_id}/default", timeout=20)
+        assert response.status_code == 404, response.text
+        assert response.json()["detail"] == "Address not found"
+
+        after = context["user_b"].get(f"{BASE_URL}/api/addresses", timeout=20).json()
+        defaults_after = [a for a in after if a["isDefault"]]
+        assert len(defaults_after) == 1
+        assert defaults_after[0]["id"] == default_before["id"]
+
+    @pytest.mark.parametrize("operation", ["delete", "default"])
+    def test_malformed_address_id_returns_404(self, context, operation):
+        path = f"/api/addresses/not-an-object-id" + ("/default" if operation == "default" else "")
+        method = context["user_a"].patch if operation == "default" else context["user_a"].delete
+        response = method(f"{BASE_URL}{path}", timeout=20)
+        assert response.status_code == 404, response.text
+        assert response.json()["detail"] == "Not found"
 
     def test_delete_address_and_verify_removal(self, context):
         second_id = context["address_a_second"]["id"]
@@ -377,3 +404,15 @@ class TestOrdersAndAuthorization:
         )
         assert response.status_code == 404, response.text
         assert response.json()["detail"] == "Order not found"
+
+    @pytest.mark.parametrize("operation", ["get", "status", "cancel"])
+    def test_malformed_order_id_returns_404(self, context, operation):
+        url = f"{BASE_URL}/api/orders/not-an-object-id"
+        if operation == "get":
+            response = context["user_a"].get(url, timeout=20)
+        elif operation == "status":
+            response = context["admin"].patch(f"{url}/status", json={"status": "Packed"}, timeout=20)
+        else:
+            response = context["user_a"].post(f"{url}/cancel", timeout=20)
+        assert response.status_code == 404, response.text
+        assert response.json()["detail"] == "Not found"

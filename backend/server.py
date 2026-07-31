@@ -82,6 +82,14 @@ def serialize_doc(doc):
     return doc
 
 
+def to_object_id(id_str: str) -> ObjectId:
+    """Safely convert a string to ObjectId, raising 404 if invalid."""
+    try:
+        return ObjectId(id_str)
+    except Exception:
+        raise HTTPException(status_code=404, detail="Not found")
+
+
 # ================== SEED DATA ==================
 
 SEED_PRODUCTS = [
@@ -386,7 +394,7 @@ async def search_suggest(q: str, limit: int = 6):
 
 @api_router.get("/products/{product_id}")
 async def get_product(product_id: str):
-    product = await db.products.find_one({"_id": ObjectId(product_id)})
+    product = await db.products.find_one({"_id": to_object_id(product_id)})
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
     return serialize_doc(product)
@@ -407,7 +415,7 @@ async def create_product(inp: ProductCreate, user: dict = Depends(get_current_us
 async def delete_product(product_id: str, user: dict = Depends(get_current_user)):
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
-    res = await db.products.delete_one({"_id": ObjectId(product_id)})
+    res = await db.products.delete_one({"_id": to_object_id(product_id)})
     if res.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Product not found")
     return {"message": "Product deleted successfully"}
@@ -457,7 +465,7 @@ async def create_address(inp: AddressCreate, user: dict = Depends(get_current_us
 
 @api_router.delete("/addresses/{address_id}")
 async def delete_address(address_id: str, user: dict = Depends(get_current_user)):
-    res = await db.addresses.delete_one({"_id": ObjectId(address_id), "user_id": user["id"]})
+    res = await db.addresses.delete_one({"_id": to_object_id(address_id), "user_id": user["id"]})
     if res.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Address not found")
     return {"message": "Address deleted"}
@@ -465,10 +473,13 @@ async def delete_address(address_id: str, user: dict = Depends(get_current_user)
 
 @api_router.patch("/addresses/{address_id}/default")
 async def set_default_address(address_id: str, user: dict = Depends(get_current_user)):
-    await db.addresses.update_many({"user_id": user["id"]}, {"$set": {"isDefault": False}})
-    res = await db.addresses.update_one({"_id": ObjectId(address_id), "user_id": user["id"]}, {"$set": {"isDefault": True}})
-    if res.matched_count == 0:
+    # Verify address belongs to user BEFORE mutating any defaults
+    obj_id = to_object_id(address_id)
+    owned = await db.addresses.find_one({"_id": obj_id, "user_id": user["id"]})
+    if not owned:
         raise HTTPException(status_code=404, detail="Address not found")
+    await db.addresses.update_many({"user_id": user["id"]}, {"$set": {"isDefault": False}})
+    await db.addresses.update_one({"_id": obj_id, "user_id": user["id"]}, {"$set": {"isDefault": True}})
     return {"message": "Default address updated"}
 
 
@@ -543,7 +554,7 @@ async def get_my_orders(user: dict = Depends(get_current_user)):
 
 @api_router.get("/orders/{order_id}")
 async def get_order(order_id: str, user: dict = Depends(get_current_user)):
-    order = await db.orders.find_one({"_id": ObjectId(order_id)})
+    order = await db.orders.find_one({"_id": to_object_id(order_id)})
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
     # Only owner or admin can view
@@ -577,20 +588,23 @@ async def update_order_status(order_id: str, inp: StatusUpdate, user: dict = Dep
         raise HTTPException(status_code=403, detail="Admin access required")
     if inp.status not in ORDER_STATUSES:
         raise HTTPException(status_code=400, detail=f"Status must be one of {ORDER_STATUSES}")
-    await db.orders.update_one({"_id": ObjectId(order_id)}, {"$set": {"status": inp.status}})
+    res = await db.orders.update_one({"_id": to_object_id(order_id)}, {"$set": {"status": inp.status}})
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Order not found")
     return {"message": "Order status updated", "status": inp.status}
 
 
 @api_router.post("/orders/{order_id}/cancel")
 async def cancel_order(order_id: str, user: dict = Depends(get_current_user)):
-    order = await db.orders.find_one({"_id": ObjectId(order_id)})
+    obj_id = to_object_id(order_id)
+    order = await db.orders.find_one({"_id": obj_id})
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
     if str(order.get("user_id")) != user["id"] and user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Not authorized")
     if order.get("status") in ["Shipped", "Out for Delivery", "Delivered"]:
         raise HTTPException(status_code=400, detail="Cannot cancel order that has already shipped")
-    await db.orders.update_one({"_id": ObjectId(order_id)}, {"$set": {"status": "Cancelled"}})
+    await db.orders.update_one({"_id": obj_id}, {"$set": {"status": "Cancelled"}})
     return {"message": "Order cancelled"}
 
 

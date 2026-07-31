@@ -19,16 +19,40 @@ import {
   RotateCcw,
   SlidersHorizontal,
   ChevronRight,
-  User,
+  User as UserIcon,
   ExternalLink,
   MessageCircle,
   Copy,
-  Check
+  Check,
+  LogOut,
+  LogIn
 } from "lucide-react";
 import { toast } from "sonner";
+import axios from "axios";
 import { MOCK_CATEGORIES, MOCK_PRODUCTS, MOCK_LOOKBOOKS, MOCK_FLASH_SALE_ITEMS } from "./mock";
 
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API = `${BACKEND_URL}/api`;
+axios.defaults.withCredentials = true;
+
+function formatApiErrorDetail(detail) {
+  if (detail == null) return "Something went wrong. Please try again.";
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail))
+    return detail.map((e) => (e && typeof e.msg === "string" ? e.msg : JSON.stringify(e))).filter(Boolean).join(" ");
+  if (detail && typeof detail.msg === "string") return detail.msg;
+  return String(detail);
+}
+
 export default function App() {
+  const [currentUser, setCurrentUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authMode, setAuthMode] = useState("login"); // login or register
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [authName, setAuthName] = useState("");
+
   const [activeTab, setActiveTab] = useState("home"); // home, catalog, lookbooks, wishlist, orders
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -49,7 +73,7 @@ export default function App() {
       payment: "COD"
     }
   ]);
-  const [checkoutStep, setCheckoutStep] = useState(1); // 1: Cart, 2: Address, 3: Reseller Margin (if enabled), 4: Success
+  const [checkoutStep, setCheckoutStep] = useState(1);
   const [shippingDetails, setShippingDetails] = useState({
     name: "Priya Sharma",
     phone: "+91 98765 43210",
@@ -61,6 +85,58 @@ export default function App() {
     resellerExtraMargin: 150
   });
   const [timeLeft, setTimeLeft] = useState({ hours: 4, minutes: 22, seconds: 45 });
+
+  // Check auth on mount
+  useEffect(() => {
+    axios.get(`${API}/auth/me`)
+      .then((res) => {
+        setCurrentUser(res.data);
+        setAuthLoading(false);
+      })
+      .catch(() => {
+        setCurrentUser(null);
+        setAuthLoading(false);
+      });
+  }, []);
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await axios.post(`${API}/auth/login`, { email: authEmail, password: authPassword });
+      setCurrentUser(res.data);
+      setShowAuthModal(false);
+      toast.success(`Welcome back, ${res.data.name}!`);
+      setAuthEmail("");
+      setAuthPassword("");
+    } catch (err) {
+      toast.error(formatApiErrorDetail(err.response?.data?.detail));
+    }
+  };
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await axios.post(`${API}/auth/register`, { email: authEmail, password: authPassword, name: authName });
+      setCurrentUser(res.data);
+      setShowAuthModal(false);
+      toast.success(`Account created successfully! Welcome, ${res.data.name}`);
+      setAuthEmail("");
+      setAuthPassword("");
+      setAuthName("");
+    } catch (err) {
+      toast.error(formatApiErrorDetail(err.response?.data?.detail));
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await axios.post(`${API}/auth/logout`);
+      setCurrentUser(null);
+      toast.success("Logged out successfully");
+    } catch (e) {
+      setCurrentUser(null);
+    }
+  };
 
   // Countdown timer for Flash Sale
   useEffect(() => {
@@ -187,8 +263,31 @@ export default function App() {
             <span>{resellerMode ? "⚡ Reseller Mode ACTIVE" : "🚀 Enable Reseller & Earn"}</span>
           </button>
           <span className="text-gray-300">|</span>
-          <span className="cursor-pointer hover:text-[#FF3F6C]">Track Order</span>
-          <span className="cursor-pointer hover:text-[#FF3F6C]">Download App</span>
+          <span className="cursor-pointer hover:text-[#FF3F6C]" onClick={() => setActiveTab("orders")}>Track Order</span>
+          
+          {/* Auth section in top bar */}
+          {currentUser ? (
+            <div className="flex items-center space-x-2">
+              <span className="text-[#FF905A] font-bold">Hi, {currentUser.name}</span>
+              <button
+                data-testid="logout-btn"
+                onClick={handleLogout}
+                className="hover:text-[#FF3F6C] flex items-center space-x-1"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Logout</span>
+              </button>
+            </div>
+          ) : (
+            <button
+              data-testid="open-auth-modal-btn"
+              onClick={() => { setAuthMode("login"); setShowAuthModal(true); }}
+              className="hover:text-[#FF3F6C] font-bold text-[#FF905A] flex items-center space-x-1"
+            >
+              <LogIn className="w-3.5 h-3.5" />
+              <span>Login / Register</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -872,6 +971,108 @@ export default function App() {
           </div>
         )}
       </main>
+
+      {/* AUTH MODAL */}
+      {showAuthModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div data-testid="auth-modal" className="bg-white rounded-3xl max-w-md w-full p-8 shadow-2xl relative animate-in fade-in zoom-in duration-200 space-y-6">
+            <button
+              data-testid="close-auth-modal-btn"
+              onClick={() => setShowAuthModal(false)}
+              className="absolute top-4 right-4 w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-[#282C3F] hover:bg-[#FF3F6C] hover:text-white transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="text-center space-y-2">
+              <div className="w-12 h-12 rounded-2xl bg-[#FF3F6C] text-white flex items-center justify-center mx-auto shadow-lg shadow-[#FF3F6C]/30 font-bold text-xl">
+                L
+              </div>
+              <h3 className="text-2xl font-black text-[#282C3F]">
+                {authMode === "login" ? "Welcome Back" : "Create Account"}
+              </h3>
+              <p className="text-xs text-[#535766]">
+                {authMode === "login" ? "Sign in to manage orders & wishlist" : "Join Lumière & Bazar for exclusive wholesale pricing"}
+              </p>
+            </div>
+
+            <form onSubmit={authMode === "login" ? handleLogin : handleRegister} className="space-y-4">
+              {authMode === "register" && (
+                <div>
+                  <label className="text-xs font-bold text-[#535766]">Full Name</label>
+                  <input
+                    data-testid="auth-name-input"
+                    type="text"
+                    required
+                    placeholder="e.g. Priya Sharma"
+                    value={authName}
+                    onChange={(e) => setAuthName(e.target.value)}
+                    className="w-full mt-1 bg-[#FAFAFC] border border-[#EAEAEC] rounded-xl p-3 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#FF3F6C]"
+                  />
+                </div>
+              )}
+              <div>
+                <label className="text-xs font-bold text-[#535766]">Email Address</label>
+                <input
+                  data-testid="auth-email-input"
+                  type="email"
+                  required
+                  placeholder="e.g. admin@example.com"
+                  value={authEmail}
+                  onChange={(e) => setAuthEmail(e.target.value)}
+                  className="w-full mt-1 bg-[#FAFAFC] border border-[#EAEAEC] rounded-xl p-3 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#FF3F6C]"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-[#535766]">Password</label>
+                <input
+                  data-testid="auth-password-input"
+                  type="password"
+                  required
+                  placeholder="••••••••"
+                  value={authPassword}
+                  onChange={(e) => setAuthPassword(e.target.value)}
+                  className="w-full mt-1 bg-[#FAFAFC] border border-[#EAEAEC] rounded-xl p-3 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#FF3F6C]"
+                />
+              </div>
+
+              <button
+                data-testid="auth-submit-btn"
+                type="submit"
+                className="w-full bg-[#FF3F6C] hover:bg-[#E02E57] text-white font-bold py-3.5 rounded-xl text-sm shadow-lg shadow-[#FF3F6C]/30 transition"
+              >
+                {authMode === "login" ? "Sign In" : "Register Now"}
+              </button>
+            </form>
+
+            <div className="text-center pt-2 border-t border-[#EAEAEC]">
+              {authMode === "login" ? (
+                <p className="text-xs text-[#535766]">
+                  Don't have an account?{" "}
+                  <button
+                    data-testid="switch-to-register-btn"
+                    onClick={() => setAuthMode("register")}
+                    className="text-[#FF3F6C] font-bold hover:underline"
+                  >
+                    Register here
+                  </button>
+                </p>
+              ) : (
+                <p className="text-xs text-[#535766]">
+                  Already have an account?{" "}
+                  <button
+                    data-testid="switch-to-login-btn"
+                    onClick={() => setAuthMode("login")}
+                    className="text-[#FF3F6C] font-bold hover:underline"
+                  >
+                    Sign In
+                  </button>
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* QUICK VIEW MODAL */}
       {quickViewProduct && (

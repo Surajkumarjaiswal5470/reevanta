@@ -8,7 +8,6 @@ from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional
 import uuid
-import datetime
 from datetime import datetime, timezone, timedelta
 import bcrypt
 import jwt
@@ -150,9 +149,86 @@ async def logout(response: Response):
     response.delete_cookie(key="refresh_token", path="/")
     return {"message": "Logged out successfully"}
 
-@api_router.get("/auth/me")
-async def get_me(user: dict = Depends(get_current_user)):
-    return user
+class ProductCreate(BaseModel):
+    name: str
+    category: str
+    brand: str
+    price: float
+    originalPrice: float
+    rating: float = 4.5
+    reviewsCount: int = 10
+    image: str
+    sizes: List[str]
+    colors: List[str]
+    inStock: bool = True
+    isFlashSale: bool = False
+    discountPercent: int = 20
+    resellerMargin: float = 200
+    description: str
+
+@api_router.get("/products")
+async def get_products():
+    products = await db.products.find({}).to_list(100)
+    for p in products:
+        p["id"] = str(p["_id"])
+        p.pop("_id", None)
+    return products
+
+@api_router.post("/products")
+async def create_product(input: ProductCreate, user: dict = Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    doc = input.model_dump()
+    res = await db.products.insert_one(doc)
+    doc["id"] = str(res.inserted_id)
+    doc.pop("_id", None)
+    return doc
+
+@api_router.delete("/products/{product_id}")
+async def delete_product(product_id: str, user: dict = Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    from bson import ObjectId
+    res = await db.products.delete_one({"_id": ObjectId(product_id)})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Product not found")
+    return {"message": "Product deleted successfully"}
+
+@api_router.get("/orders")
+async def get_orders(user: dict = Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    orders = await db.orders.find({}).to_list(100)
+    for o in orders:
+        o["id"] = str(o["_id"])
+        o.pop("_id", None)
+    return orders
+
+class OrderCreate(BaseModel):
+    items: List[dict]
+    total: float
+    shippingDetails: dict
+    payment: str
+
+@api_router.post("/orders")
+async def create_order(input: OrderCreate, user: dict = Depends(get_current_user)):
+    doc = input.model_dump()
+    doc["user_id"] = user["id"]
+    doc["date"] = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    doc["status"] = "Order Confirmed"
+    res = await db.orders.insert_one(doc)
+    doc["id"] = str(res.inserted_id)
+    doc.pop("_id", None)
+    return doc
+
+@api_router.patch("/orders/{order_id}/status")
+async def update_order_status(order_id: str, status_update: dict, user: dict = Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    from bson import ObjectId
+    new_status = status_update.get("status", "Processing")
+    await db.orders.update_one({"_id": ObjectId(order_id)}, {"$set": {"status": new_status}})
+    return {"message": "Order status updated"}
 
 # Include the router in the main app
 app.include_router(api_router)

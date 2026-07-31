@@ -25,7 +25,12 @@ import {
   Copy,
   Check,
   LogOut,
-  LogIn
+  LogIn,
+  LayoutDashboard,
+  Package,
+  PlusCircle,
+  Trash2,
+  RefreshCw
 } from "lucide-react";
 import { toast } from "sonner";
 import axios from "axios";
@@ -53,7 +58,7 @@ export default function App() {
   const [authPassword, setAuthPassword] = useState("");
   const [authName, setAuthName] = useState("");
 
-  const [activeTab, setActiveTab] = useState("home"); // home, catalog, lookbooks, wishlist, orders
+  const [activeTab, setActiveTab] = useState("home"); // home, catalog, lookbooks, wishlist, orders, admin
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [resellerMode, setResellerMode] = useState(false);
@@ -63,6 +68,7 @@ export default function App() {
   const [quickViewProduct, setQuickViewProduct] = useState(null);
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedColor, setSelectedColor] = useState("");
+  const [productsList, setProductsList] = useState(MOCK_PRODUCTS);
   const [orders, setOrders] = useState([
     {
       id: "ORD-98214",
@@ -73,6 +79,20 @@ export default function App() {
       payment: "COD"
     }
   ]);
+
+  // Admin New Product Form State
+  const [newProduct, setNewProduct] = useState({
+    name: "",
+    category: "clothes",
+    brand: "",
+    price: 999,
+    originalPrice: 1999,
+    image: "https://images.pexels.com/photos/1066171/pexels-photo-1066171.jpeg?auto=compress&tinysrgb&w=800",
+    description: "",
+    resellerMargin: 200,
+    discountPercent: 50,
+    sizes: "S, M, L, XL"
+  });
   const [checkoutStep, setCheckoutStep] = useState(1);
   const [shippingDetails, setShippingDetails] = useState({
     name: "Priya Sharma",
@@ -99,6 +119,30 @@ export default function App() {
       });
   }, []);
 
+  // Fetch backend products & orders if admin
+  useEffect(() => {
+    axios.get(`${API}/products`)
+      .then((res) => {
+        if (res.data && res.data.length > 0) {
+          setProductsList(res.data);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const fetchAdminData = () => {
+    axios.get(`${API}/orders`)
+      .then((res) => {
+        if (res.data) setOrders(res.data);
+      })
+      .catch(() => {});
+    axios.get(`${API}/products`)
+      .then((res) => {
+        if (res.data) setProductsList(res.data);
+      })
+      .catch(() => {});
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
@@ -108,6 +152,9 @@ export default function App() {
       toast.success(`Welcome back, ${res.data.name}!`);
       setAuthEmail("");
       setAuthPassword("");
+      if (res.data.role === "admin") {
+        fetchAdminData();
+      }
     } catch (err) {
       toast.error(formatApiErrorDetail(err.response?.data?.detail));
     }
@@ -132,9 +179,66 @@ export default function App() {
     try {
       await axios.post(`${API}/auth/logout`);
       setCurrentUser(null);
+      setActiveTab("home");
       toast.success("Logged out successfully");
     } catch (e) {
       setCurrentUser(null);
+    }
+  };
+
+  // Add Product (Admin)
+  const handleAddProduct = async (e) => {
+    e.preventDefault();
+    try {
+      const payload = {
+        ...newProduct,
+        price: Number(newProduct.price),
+        originalPrice: Number(newProduct.originalPrice),
+        resellerMargin: Number(newProduct.resellerMargin),
+        discountPercent: Number(newProduct.discountPercent),
+        sizes: newProduct.sizes.split(",").map(s => s.trim()),
+        colors: ["#282C3F", "#FF3F6C"],
+        rating: 4.8,
+        reviewsCount: 15,
+        inStock: true
+      };
+      await axios.post(`${API}/products`, payload);
+      toast.success("Product added successfully!");
+      fetchAdminData();
+      setNewProduct({
+        name: "",
+        category: "clothes",
+        brand: "",
+        price: 999,
+        originalPrice: 1999,
+        image: "https://images.pexels.com/photos/1066171/pexels-photo-1066171.jpeg?auto=compress&tinysrgb&w=800",
+        description: "",
+        resellerMargin: 200,
+        discountPercent: 50,
+        sizes: "S, M, L, XL"
+      });
+    } catch (err) {
+      toast.error(formatApiErrorDetail(err.response?.data?.detail));
+    }
+  };
+
+  const handleDeleteProduct = async (prodId) => {
+    try {
+      await axios.delete(`${API}/products/${prodId}`);
+      toast.success("Product deleted successfully");
+      fetchAdminData();
+    } catch (e) {
+      toast.error("Failed to delete product");
+    }
+  };
+
+  const handleUpdateOrderStatus = async (orderId, newStatus) => {
+    try {
+      await axios.patch(`${API}/orders/${orderId}/status`, { status: newStatus });
+      toast.success(`Order status updated to ${newStatus}`);
+      fetchAdminData();
+    } catch (e) {
+      toast.error("Failed to update status");
     }
   };
 

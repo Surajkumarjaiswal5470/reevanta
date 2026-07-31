@@ -72,7 +72,7 @@ export const SearchBar = ({ value, onChange, onSubmit, onSelectProduct }) => {
 
   return (
     <div ref={boxRef} className="relative w-full">
-      <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-[#535766]">
+      <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-[#8B7355]">
         <Search className="w-4 h-4" />
       </span>
       <input
@@ -86,13 +86,13 @@ export const SearchBar = ({ value, onChange, onSubmit, onSelectProduct }) => {
           setOpen(true);
         }}
         onKeyDown={handleKey}
-        className="w-full bg-[#FAFAFC] border border-[#EAEAEC] rounded-full pl-10 pr-10 py-2.5 text-sm text-[#282C3F] placeholder-[#535766]/70 focus:outline-none focus:ring-2 focus:ring-[#FF3F6C] transition shadow-inner"
+        className="w-full bg-[#FAF5EC] border border-[#E8DFC9] rounded-full pl-10 pr-10 py-2.5 text-sm text-[#2D2118] placeholder-[#8B7355]/70 focus:outline-none focus:ring-2 focus:ring-[#5C1E1E] transition shadow-inner"
       />
       {value && (
         <button
           data-testid="search-clear-btn"
           onClick={() => onChange("")}
-          className="absolute inset-y-0 right-0 flex items-center pr-3 text-[#535766] hover:text-[#FF3F6C]"
+          className="absolute inset-y-0 right-0 flex items-center pr-3 text-[#8B7355] hover:text-[#5C1E1E]"
           type="button"
         >
           <X className="w-4 h-4" />
@@ -100,10 +100,10 @@ export const SearchBar = ({ value, onChange, onSubmit, onSelectProduct }) => {
       )}
 
       {open && (
-        <div data-testid="search-dropdown" className="absolute z-50 top-full left-0 right-0 mt-2 bg-white border border-[#EAEAEC] rounded-2xl shadow-2xl overflow-hidden">
+        <div data-testid="search-dropdown" className="absolute z-50 top-full left-0 right-0 mt-2 bg-white border border-[#E8DFC9] rounded-2xl shadow-2xl overflow-hidden">
           {value.trim().length > 0 && suggestions.length > 0 && (
             <div className="p-2">
-              <div className="text-[10px] font-black uppercase tracking-wider text-[#535766] px-3 py-1.5">Matching products</div>
+              <div className="text-[10px] font-black uppercase tracking-wider text-[#8B7355] px-3 py-1.5">Matching products</div>
               <div className="space-y-1">
                 {suggestions.map((s) => (
                   <button
@@ -113,22 +113,22 @@ export const SearchBar = ({ value, onChange, onSubmit, onSelectProduct }) => {
                       onSelectProduct && onSelectProduct(s);
                       setOpen(false);
                     }}
-                    className="w-full text-left flex items-center gap-3 p-2 rounded-xl hover:bg-[#FAFAFC] transition"
+                    className="w-full text-left flex items-center gap-3 p-2 rounded-xl hover:bg-[#FAF5EC] transition"
                     type="button"
                   >
                     <img src={s.image} alt={s.name} className="w-10 h-10 rounded-lg object-cover bg-gray-100" />
                     <div className="flex-1 min-w-0">
-                      <div className="text-xs font-bold text-[#282C3F] line-clamp-1">{s.name}</div>
-                      <div className="text-[10px] text-[#535766] uppercase tracking-wider">{s.brand} · {s.category}</div>
+                      <div className="text-xs font-bold text-[#2D2118] line-clamp-1">{s.name}</div>
+                      <div className="text-[10px] text-[#8B7355] uppercase tracking-wider">{s.brand} · {s.category}</div>
                     </div>
-                    <div className="text-xs font-black text-[#FF3F6C]">₹{s.price}</div>
+                    <div className="text-xs font-black text-[#5C1E1E]">₹{s.price}</div>
                   </button>
                 ))}
               </div>
               <button
                 data-testid="search-see-all-btn"
                 onClick={() => submit(value)}
-                className="w-full text-xs font-bold text-[#FF3F6C] hover:underline py-2 mt-1"
+                className="w-full text-xs font-bold text-[#5C1E1E] hover:underline py-2 mt-1"
                 type="button"
               >
                 See all results for "{value}" →
@@ -138,8 +138,8 @@ export const SearchBar = ({ value, onChange, onSubmit, onSelectProduct }) => {
 
           {value.trim().length > 0 && suggestions.length === 0 && !loading && (
             <div className="p-4 text-center">
-              <p className="text-xs text-[#535766]">No products matching "{value}".</p>
-              <button onClick={() => submit(value)} className="text-xs font-bold text-[#FF3F6C] hover:underline mt-1">
+              <p className="text-xs text-[#8B7355]">No products matching "{value}".</p>
+              <button onClick={() => submit(value)} className="text-xs font-bold text-[#5C1E1E] hover:underline mt-1">
                 Search anyway
               </button>
             </div>
@@ -149,7 +149,7 @@ export const SearchBar = ({ value, onChange, onSubmit, onSelectProduct }) => {
             <div className="p-2">
               {recent.length > 0 && (
                 <div>
-                  <div className="text-[10px] font-black uppercase tracking-wider text-[#535766] px-3 py-1.5">Recent searches</div>
+                  <div className="text-[10px] font-black uppercase tracking-wider text-[#8B7355] px-3 py-1.5">Recent searches</div>
                   <div className="flex flex-wrap gap-1.5 px-3 pb-2">
                     {recent.map((r) => (
                       <button
@@ -159,7 +159,7 @@ export const SearchBar = ({ value, onChange, onSubmit, onSelectProduct }) => {
                           onChange(r);
                           submit(r);
                         }}
-                        className="px-2.5 py-1 bg-[#FAFAFC] border border-[#EAEAEC] rounded-full text-[11px] font-bold text-[#282C3F] hover:border-[#FF3F6C]"
+                        className="px-2.5 py-1 bg-[#FAF5EC] border border-[#E8DFC9] rounded-full text-[11px] font-bold text-[#2D2118] hover:border-[#5C1E1E]"
                         type="button"
                       >
                         {r}
@@ -169,7 +169,7 @@ export const SearchBar = ({ value, onChange, onSubmit, onSelectProduct }) => {
                 </div>
               )}
               <div>
-                <div className="text-[10px] font-black uppercase tracking-wider text-[#535766] px-3 py-1.5 flex items-center gap-1">
+                <div className="text-[10px] font-black uppercase tracking-wider text-[#8B7355] px-3 py-1.5 flex items-center gap-1">
                   <TrendingUp className="w-3 h-3" /> Trending searches
                 </div>
                 <div className="flex flex-wrap gap-1.5 px-3 pb-3">
@@ -181,7 +181,7 @@ export const SearchBar = ({ value, onChange, onSubmit, onSelectProduct }) => {
                         onChange(r);
                         submit(r);
                       }}
-                      className="px-2.5 py-1 bg-gradient-to-r from-[#FFF0F3] to-[#FFF8F0] border border-[#FF3F6C]/20 rounded-full text-[11px] font-bold text-[#FF3F6C] hover:border-[#FF3F6C]"
+                      className="px-2.5 py-1 bg-gradient-to-r from-[#F5EBDC] to-[#FAF5EC] border border-[#5C1E1E]/20 rounded-full text-[11px] font-bold text-[#5C1E1E] hover:border-[#5C1E1E]"
                       type="button"
                     >
                       {r}

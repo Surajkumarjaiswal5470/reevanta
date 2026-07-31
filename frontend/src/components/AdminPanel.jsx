@@ -56,7 +56,7 @@ export const AdminPanel = () => {
         resellerMargin: Number(newProduct.resellerMargin),
         discountPercent: Number(newProduct.discountPercent),
         sizes: newProduct.sizes.split(",").map((s) => s.trim()).filter(Boolean),
-        colors: ["#282C3F", "#FF3F6C"],
+        colors: ["#2D2118", "#5C1E1E"],
         rating: 4.8,
         reviewsCount: 15,
         inStock: true,
@@ -97,17 +97,17 @@ export const AdminPanel = () => {
 
   return (
     <div data-testid="admin-panel" className="space-y-6">
-      <div className="bg-white p-6 rounded-3xl border border-[#EAEAEC]">
+      <div className="bg-white p-6 rounded-3xl border border-[#E8DFC9]">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-2xl font-black text-[#282C3F]">Admin Dashboard</h2>
-            <p className="text-xs text-[#535766]">Manage products, orders and reseller partners</p>
+            <h2 className="text-2xl font-black text-[#2D2118]">Admin Dashboard</h2>
+            <p className="text-xs text-[#8B7355]">Manage products, orders and reseller partners</p>
           </div>
           <button
             data-testid="admin-refresh-btn"
             onClick={load}
             disabled={loading}
-            className="flex items-center gap-2 bg-[#282C3F] text-white px-4 py-2 rounded-full text-xs font-bold"
+            className="flex items-center gap-2 bg-[#2D2118] text-white px-4 py-2 rounded-full text-xs font-bold"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
             Refresh
@@ -116,20 +116,20 @@ export const AdminPanel = () => {
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6">
-          <div className="p-4 bg-gradient-to-br from-[#FFF0F3] to-white border border-[#FF3F6C]/20 rounded-2xl">
-            <div className="text-[10px] font-black uppercase tracking-wider text-[#535766]">Total Orders</div>
-            <div className="text-2xl font-black text-[#282C3F] mt-1">{orders.length}</div>
+          <div className="p-4 bg-gradient-to-br from-[#F5EBDC] to-white border border-[#5C1E1E]/20 rounded-2xl">
+            <div className="text-[10px] font-black uppercase tracking-wider text-[#8B7355]">Total Orders</div>
+            <div className="text-2xl font-black text-[#2D2118] mt-1">{orders.length}</div>
           </div>
           <div className="p-4 bg-gradient-to-br from-amber-50 to-white border border-amber-200 rounded-2xl">
-            <div className="text-[10px] font-black uppercase tracking-wider text-[#535766]">Active Orders</div>
+            <div className="text-[10px] font-black uppercase tracking-wider text-[#8B7355]">Active Orders</div>
             <div className="text-2xl font-black text-amber-700 mt-1">{activeOrders}</div>
           </div>
           <div className="p-4 bg-gradient-to-br from-emerald-50 to-white border border-emerald-200 rounded-2xl">
-            <div className="text-[10px] font-black uppercase tracking-wider text-[#535766]">Revenue</div>
+            <div className="text-[10px] font-black uppercase tracking-wider text-[#8B7355]">Revenue</div>
             <div className="text-2xl font-black text-emerald-700 mt-1">₹{totalRevenue.toLocaleString()}</div>
           </div>
           <div className="p-4 bg-gradient-to-br from-purple-50 to-white border border-purple-200 rounded-2xl">
-            <div className="text-[10px] font-black uppercase tracking-wider text-[#535766]">Products</div>
+            <div className="text-[10px] font-black uppercase tracking-wider text-[#8B7355]">Products</div>
             <div className="text-2xl font-black text-purple-700 mt-1">{products.length}</div>
           </div>
         </div>
@@ -149,7 +149,7 @@ export const AdminPanel = () => {
               data-testid={`admin-tab-${t.id}`}
               onClick={() => setTab(t.id)}
               className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition ${
-                tab === t.id ? "bg-[#FF3F6C] text-white shadow-md" : "bg-white text-[#282C3F] border border-[#EAEAEC] hover:bg-gray-50"
+                tab === t.id ? "bg-[#5C1E1E] text-white shadow-md" : "bg-white text-[#2D2118] border border-[#E8DFC9] hover:bg-gray-50"
               }`}
             >
               <Ico className="w-3.5 h-3.5" />
@@ -160,20 +160,20 @@ export const AdminPanel = () => {
       </div>
 
       {tab === "orders" && (
-        <div className="bg-white rounded-3xl border border-[#EAEAEC] overflow-hidden">
-          <div className="p-4 border-b border-[#EAEAEC] font-bold text-sm text-[#282C3F]">All Orders</div>
+        <div className="bg-white rounded-3xl border border-[#E8DFC9] overflow-hidden">
+          <div className="p-4 border-b border-[#E8DFC9] font-bold text-sm text-[#2D2118]">All Orders</div>
           {orders.length === 0 ? (
-            <div className="p-8 text-center text-xs text-[#535766]">No orders yet.</div>
+            <div className="p-8 text-center text-xs text-[#8B7355]">No orders yet.</div>
           ) : (
-            <div className="divide-y divide-[#EAEAEC]">
+            <div className="divide-y divide-[#E8DFC9]">
               {orders.map((o) => (
                 <div key={o.id} data-testid={`admin-order-${o.id}`} className="p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                   <div className="flex-1 min-w-0">
-                    <div className="text-xs font-black text-[#FF3F6C]">{o.order_number || o.id.slice(0, 8)}</div>
-                    <div className="text-[11px] text-[#535766]">
+                    <div className="text-xs font-black text-[#5C1E1E]">{o.order_number || o.id.slice(0, 8)}</div>
+                    <div className="text-[11px] text-[#8B7355]">
                       {o.userName || "Guest"} · {o.userEmail} · {new Date(o.placed_at).toLocaleString()}
                     </div>
-                    <div className="text-xs font-bold text-[#282C3F] mt-1">
+                    <div className="text-xs font-bold text-[#2D2118] mt-1">
                       ₹{o.total} · {o.items?.length || 0} items · {o.paymentMethod || "COD"}
                     </div>
                   </div>
@@ -181,7 +181,7 @@ export const AdminPanel = () => {
                     data-testid={`admin-status-select-${o.id}`}
                     value={o.status || "Order Placed"}
                     onChange={(e) => handleUpdateStatus(o.id, e.target.value)}
-                    className="bg-[#FAFAFC] border border-[#EAEAEC] rounded-lg px-3 py-2 text-xs font-bold"
+                    className="bg-[#FAF5EC] border border-[#E8DFC9] rounded-lg px-3 py-2 text-xs font-bold"
                   >
                     {STATUS_OPTIONS.map((s) => (
                       <option key={s} value={s}>
@@ -197,15 +197,15 @@ export const AdminPanel = () => {
       )}
 
       {tab === "products" && (
-        <div className="bg-white rounded-3xl border border-[#EAEAEC] overflow-hidden">
-          <div className="p-4 border-b border-[#EAEAEC] font-bold text-sm text-[#282C3F]">Product Catalog ({products.length})</div>
-          <div className="divide-y divide-[#EAEAEC] max-h-[600px] overflow-y-auto">
+        <div className="bg-white rounded-3xl border border-[#E8DFC9] overflow-hidden">
+          <div className="p-4 border-b border-[#E8DFC9] font-bold text-sm text-[#2D2118]">Product Catalog ({products.length})</div>
+          <div className="divide-y divide-[#E8DFC9] max-h-[600px] overflow-y-auto">
             {products.map((p) => (
               <div key={p.id} data-testid={`admin-product-${p.id}`} className="p-3 flex items-center gap-3">
                 <img src={p.image} alt={p.name} className="w-14 h-14 rounded-lg object-cover bg-gray-100" />
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs font-bold text-[#282C3F] line-clamp-1">{p.name}</div>
-                  <div className="text-[10px] text-[#535766] uppercase tracking-wider">
+                  <div className="text-xs font-bold text-[#2D2118] line-clamp-1">{p.name}</div>
+                  <div className="text-[10px] text-[#8B7355] uppercase tracking-wider">
                     {p.brand} · {p.category} · ₹{p.price}
                   </div>
                 </div>
@@ -224,35 +224,35 @@ export const AdminPanel = () => {
       )}
 
       {tab === "add" && (
-        <form onSubmit={handleAddProduct} className="bg-white rounded-3xl border border-[#EAEAEC] p-6 space-y-4">
+        <form onSubmit={handleAddProduct} className="bg-white rounded-3xl border border-[#E8DFC9] p-6 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-bold text-[#535766]">Name</label>
+              <label className="text-xs font-bold text-[#8B7355]">Name</label>
               <input
                 data-testid="new-product-name"
                 required
                 value={newProduct.name}
                 onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
-                className="w-full mt-1 bg-[#FAFAFC] border border-[#EAEAEC] rounded-xl p-2.5 text-xs font-semibold"
+                className="w-full mt-1 bg-[#FAF5EC] border border-[#E8DFC9] rounded-xl p-2.5 text-xs font-semibold"
               />
             </div>
             <div>
-              <label className="text-xs font-bold text-[#535766]">Brand</label>
+              <label className="text-xs font-bold text-[#8B7355]">Brand</label>
               <input
                 data-testid="new-product-brand"
                 required
                 value={newProduct.brand}
                 onChange={(e) => setNewProduct({ ...newProduct, brand: e.target.value })}
-                className="w-full mt-1 bg-[#FAFAFC] border border-[#EAEAEC] rounded-xl p-2.5 text-xs font-semibold"
+                className="w-full mt-1 bg-[#FAF5EC] border border-[#E8DFC9] rounded-xl p-2.5 text-xs font-semibold"
               />
             </div>
             <div>
-              <label className="text-xs font-bold text-[#535766]">Category</label>
+              <label className="text-xs font-bold text-[#8B7355]">Category</label>
               <select
                 data-testid="new-product-category"
                 value={newProduct.category}
                 onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })}
-                className="w-full mt-1 bg-[#FAFAFC] border border-[#EAEAEC] rounded-xl p-2.5 text-xs font-semibold"
+                className="w-full mt-1 bg-[#FAF5EC] border border-[#E8DFC9] rounded-xl p-2.5 text-xs font-semibold"
               >
                 <option value="clothes">Clothes</option>
                 <option value="shoes">Shoes</option>
@@ -261,85 +261,85 @@ export const AdminPanel = () => {
               </select>
             </div>
             <div>
-              <label className="text-xs font-bold text-[#535766]">Image URL</label>
+              <label className="text-xs font-bold text-[#8B7355]">Image URL</label>
               <input
                 required
                 value={newProduct.image}
                 onChange={(e) => setNewProduct({ ...newProduct, image: e.target.value })}
-                className="w-full mt-1 bg-[#FAFAFC] border border-[#EAEAEC] rounded-xl p-2.5 text-xs font-semibold"
+                className="w-full mt-1 bg-[#FAF5EC] border border-[#E8DFC9] rounded-xl p-2.5 text-xs font-semibold"
               />
             </div>
             <div>
-              <label className="text-xs font-bold text-[#535766]">Price (₹)</label>
+              <label className="text-xs font-bold text-[#8B7355]">Price (₹)</label>
               <input
                 data-testid="new-product-price"
                 type="number"
                 required
                 value={newProduct.price}
                 onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
-                className="w-full mt-1 bg-[#FAFAFC] border border-[#EAEAEC] rounded-xl p-2.5 text-xs font-semibold"
+                className="w-full mt-1 bg-[#FAF5EC] border border-[#E8DFC9] rounded-xl p-2.5 text-xs font-semibold"
               />
             </div>
             <div>
-              <label className="text-xs font-bold text-[#535766]">Original Price (₹)</label>
+              <label className="text-xs font-bold text-[#8B7355]">Original Price (₹)</label>
               <input
                 type="number"
                 required
                 value={newProduct.originalPrice}
                 onChange={(e) => setNewProduct({ ...newProduct, originalPrice: e.target.value })}
-                className="w-full mt-1 bg-[#FAFAFC] border border-[#EAEAEC] rounded-xl p-2.5 text-xs font-semibold"
+                className="w-full mt-1 bg-[#FAF5EC] border border-[#E8DFC9] rounded-xl p-2.5 text-xs font-semibold"
               />
             </div>
             <div>
-              <label className="text-xs font-bold text-[#535766]">Discount %</label>
+              <label className="text-xs font-bold text-[#8B7355]">Discount %</label>
               <input
                 type="number"
                 value={newProduct.discountPercent}
                 onChange={(e) => setNewProduct({ ...newProduct, discountPercent: e.target.value })}
-                className="w-full mt-1 bg-[#FAFAFC] border border-[#EAEAEC] rounded-xl p-2.5 text-xs font-semibold"
+                className="w-full mt-1 bg-[#FAF5EC] border border-[#E8DFC9] rounded-xl p-2.5 text-xs font-semibold"
               />
             </div>
             <div>
-              <label className="text-xs font-bold text-[#535766]">Reseller Margin (₹)</label>
+              <label className="text-xs font-bold text-[#8B7355]">Reseller Margin (₹)</label>
               <input
                 type="number"
                 value={newProduct.resellerMargin}
                 onChange={(e) => setNewProduct({ ...newProduct, resellerMargin: e.target.value })}
-                className="w-full mt-1 bg-[#FAFAFC] border border-[#EAEAEC] rounded-xl p-2.5 text-xs font-semibold"
+                className="w-full mt-1 bg-[#FAF5EC] border border-[#E8DFC9] rounded-xl p-2.5 text-xs font-semibold"
               />
             </div>
             <div className="md:col-span-2">
-              <label className="text-xs font-bold text-[#535766]">Sizes (comma separated)</label>
+              <label className="text-xs font-bold text-[#8B7355]">Sizes (comma separated)</label>
               <input
                 value={newProduct.sizes}
                 onChange={(e) => setNewProduct({ ...newProduct, sizes: e.target.value })}
-                className="w-full mt-1 bg-[#FAFAFC] border border-[#EAEAEC] rounded-xl p-2.5 text-xs font-semibold"
+                className="w-full mt-1 bg-[#FAF5EC] border border-[#E8DFC9] rounded-xl p-2.5 text-xs font-semibold"
               />
             </div>
             <div className="md:col-span-2">
-              <label className="text-xs font-bold text-[#535766]">Search Tags (comma separated)</label>
+              <label className="text-xs font-bold text-[#8B7355]">Search Tags (comma separated)</label>
               <input
                 value={newProduct.tags}
                 onChange={(e) => setNewProduct({ ...newProduct, tags: e.target.value })}
                 placeholder="e.g. hoodie, winter, unisex"
-                className="w-full mt-1 bg-[#FAFAFC] border border-[#EAEAEC] rounded-xl p-2.5 text-xs font-semibold"
+                className="w-full mt-1 bg-[#FAF5EC] border border-[#E8DFC9] rounded-xl p-2.5 text-xs font-semibold"
               />
             </div>
             <div className="md:col-span-2">
-              <label className="text-xs font-bold text-[#535766]">Description</label>
+              <label className="text-xs font-bold text-[#8B7355]">Description</label>
               <textarea
                 required
                 rows={3}
                 value={newProduct.description}
                 onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
-                className="w-full mt-1 bg-[#FAFAFC] border border-[#EAEAEC] rounded-xl p-2.5 text-xs font-semibold"
+                className="w-full mt-1 bg-[#FAF5EC] border border-[#E8DFC9] rounded-xl p-2.5 text-xs font-semibold"
               />
             </div>
           </div>
           <button
             data-testid="new-product-submit"
             type="submit"
-            className="w-full bg-[#FF3F6C] hover:bg-[#E02E57] text-white font-bold py-3 rounded-xl text-sm shadow-lg shadow-[#FF3F6C]/30"
+            className="w-full bg-[#5C1E1E] hover:bg-[#4A1717] text-white font-bold py-3 rounded-xl text-sm shadow-lg shadow-[#5C1E1E]/30"
           >
             Add Product to Catalog
           </button>

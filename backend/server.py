@@ -93,173 +93,241 @@ def to_object_id(id_str: str) -> ObjectId:
 # ================== SEED DATA ==================
 
 SEED_PRODUCTS = [
+    # ===== Sarees =====
     {
-        "name": "Oversized Vintage Graphic Hoodie",
-        "category": "clothes",
-        "brand": "UrbanRev",
-        "price": 1299, "originalPrice": 2499,
-        "rating": 4.6, "reviewsCount": 342,
-        "image": "https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&w=800",
+        "name": "Chikankari Organza Saree",
+        "category": "sarees",
+        "brand": "Rivaanta Heritage",
+        "price": 3499, "originalPrice": 5999,
+        "rating": 4.8, "reviewsCount": 126,
+        "image": "https://images.unsplash.com/photo-1610030469668-8e450b47a4a5?auto=format&fit=crop&w=900",
+        "sizes": ["Free Size"],
+        "colors": ["#E8CFC5", "#D4B896", "#8B6F5C", "#B8A48F", "#A7B8C7", "#C4C0BA"],
+        "inStock": True, "isFlashSale": True,
+        "discountPercent": 42, "resellerMargin": 500,
+        "description": "Delicate chikankari embroidery on premium organza with an elegant zari border. Comes with an unstitched blouse piece.",
+        "tags": ["saree", "chikankari", "organza", "traditional", "ethnic", "wedding"],
+        "fabric": "Organza",
+        "work": "Chikankari Embroidery",
+        "badge": "NEW ARRIVAL"
+    },
+    {
+        "name": "Kanjivaram Silk Saree",
+        "category": "sarees",
+        "brand": "Rivaanta Heritage",
+        "price": 6899, "originalPrice": 11999,
+        "rating": 4.9, "reviewsCount": 214,
+        "image": "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=900",
+        "sizes": ["Free Size"],
+        "colors": ["#7A1F2A", "#3E1F3E", "#0E4B4A"],
+        "inStock": True, "isFlashSale": True,
+        "discountPercent": 43, "resellerMargin": 900,
+        "description": "Handloom pure silk Kanjivaram saree with rich gold zari motifs and contrast pallu.",
+        "tags": ["saree", "silk", "kanjivaram", "handloom", "wedding", "traditional"],
+        "fabric": "Pure Silk",
+        "work": "Gold Zari",
+        "badge": "BEST SELLER"
+    },
+    {
+        "name": "Banarasi Georgette Saree",
+        "category": "sarees",
+        "brand": "Rivaanta Heritage",
+        "price": 2799, "originalPrice": 4999,
+        "rating": 4.6, "reviewsCount": 88,
+        "image": "https://images.unsplash.com/photo-1594736797933-d0501ba2fe65?auto=format&fit=crop&w=900",
+        "sizes": ["Free Size"],
+        "colors": ["#D4A574", "#8E2B2B", "#284B63"],
+        "inStock": True, "isFlashSale": False,
+        "discountPercent": 44, "resellerMargin": 400,
+        "description": "Flowy Banarasi georgette saree with intricate zari weaving throughout.",
+        "tags": ["saree", "banarasi", "georgette", "ethnic"],
+        "fabric": "Georgette",
+        "work": "Zari Weaving"
+    },
+    # ===== Kurtas =====
+    {
+        "name": "Embroidered Organza Kurta Set",
+        "category": "kurtas",
+        "brand": "Rivaanta Signature",
+        "price": 3499, "originalPrice": 5999,
+        "rating": 4.7, "reviewsCount": 145,
+        "image": "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=900",
+        "sizes": ["XS", "S", "M", "L", "XL"],
+        "colors": ["#C4A5CB", "#E8D9CC", "#8B6F5C"],
+        "inStock": True, "isFlashSale": True,
+        "discountPercent": 42, "resellerMargin": 500,
+        "description": "Hand-embroidered organza kurta set paired with matching palazzo and dupatta.",
+        "tags": ["kurta", "organza", "embroidered", "set", "ethnic"],
+        "fabric": "Organza",
+        "work": "Hand Embroidery"
+    },
+    {
+        "name": "A-Line Cotton Kurta Set",
+        "category": "kurtas",
+        "brand": "Rivaanta Everyday",
+        "price": 1899, "originalPrice": 3499,
+        "rating": 4.7, "reviewsCount": 302,
+        "image": "https://images.unsplash.com/photo-1596785231165-7d43ca8c9d0e?auto=format&fit=crop&w=900",
+        "sizes": ["XS", "S", "M", "L", "XL", "XXL"],
+        "colors": ["#8FA37C", "#D4A574", "#B8A48F", "#7A6F5C"],
+        "inStock": True, "isFlashSale": True,
+        "discountPercent": 45, "resellerMargin": 350,
+        "description": "Breathable A-line cotton kurta with matching palazzo — perfect for everyday elegance.",
+        "tags": ["kurta", "cotton", "a-line", "casual", "set"],
+        "fabric": "Pure Cotton",
+        "work": "Block Print"
+    },
+    {
+        "name": "Anarkali Silk Suit",
+        "category": "kurtas",
+        "brand": "Rivaanta Signature",
+        "price": 4299, "originalPrice": 6999,
+        "rating": 4.8, "reviewsCount": 176,
+        "image": "https://images.unsplash.com/photo-1610030181087-540017dc9d61?auto=format&fit=crop&w=900",
         "sizes": ["S", "M", "L", "XL"],
-        "colors": ["#282C3F", "#FF3F6C", "#E0E0E0"],
+        "colors": ["#7A1F2A", "#3E1F3E", "#2C4A3E"],
+        "inStock": True, "isFlashSale": False,
+        "discountPercent": 39, "resellerMargin": 600,
+        "description": "Floor-length Anarkali suit in luxurious silk with intricate zari yoke and sequined dupatta.",
+        "tags": ["anarkali", "suit", "silk", "ethnic", "festive"],
+        "fabric": "Art Silk",
+        "work": "Zari & Sequins"
+    },
+    # ===== Lehenga =====
+    {
+        "name": "Bridal Lehenga Choli",
+        "category": "lehenga",
+        "brand": "Rivaanta Bridal",
+        "price": 12999, "originalPrice": 22999,
+        "rating": 4.9, "reviewsCount": 92,
+        "image": "https://images.unsplash.com/photo-1610030469668-8e450b47a4a5?auto=format&fit=crop&w=900",
+        "sizes": ["S", "M", "L", "XL"],
+        "colors": ["#7A1F2A", "#3E1F3E", "#8B3A3A"],
         "inStock": True, "isFlashSale": True,
-        "discountPercent": 48, "resellerMargin": 350,
-        "description": "Premium heavy cotton fleece hoodie with vintage wash and drop shoulder fit.",
-        "tags": ["hoodie", "streetwear", "winter", "unisex", "graphic"]
+        "discountPercent": 43, "resellerMargin": 1500,
+        "description": "Heavily embellished bridal lehenga with hand-crafted zardozi work and matching net dupatta.",
+        "tags": ["lehenga", "bridal", "wedding", "zardozi", "heavy"],
+        "fabric": "Raw Silk",
+        "work": "Zardozi & Stones",
+        "badge": "BEST SELLER"
     },
     {
-        "name": "Chunky Platform Retro Sneakers",
-        "category": "shoes",
-        "brand": "KicksLab",
-        "price": 2199, "originalPrice": 3999,
-        "rating": 4.8, "reviewsCount": 512,
-        "image": "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&w=800",
-        "sizes": ["UK 6", "UK 7", "UK 8", "UK 9", "UK 10"],
-        "colors": ["#FFFFFF", "#000000", "#FF3F6C"],
-        "inStock": True, "isFlashSale": True,
-        "discountPercent": 45, "resellerMargin": 500,
-        "description": "Cloud-cushioning platform sneakers with breathable mesh and modern streetwear aesthetic.",
-        "tags": ["sneakers", "platform", "chunky", "retro", "shoes"]
+        "name": "Sangeet Party Lehenga",
+        "category": "lehenga",
+        "brand": "Rivaanta Signature",
+        "price": 6499, "originalPrice": 10999,
+        "rating": 4.7, "reviewsCount": 65,
+        "image": "https://images.unsplash.com/photo-1594736797933-d0501ba2fe65?auto=format&fit=crop&w=900",
+        "sizes": ["S", "M", "L", "XL"],
+        "colors": ["#D4A574", "#B76E79", "#2C4A3E"],
+        "inStock": True, "isFlashSale": False,
+        "discountPercent": 41, "resellerMargin": 800,
+        "description": "Flared party lehenga in soft net with sequin embroidery — perfect for sangeet and mehendi.",
+        "tags": ["lehenga", "party", "sangeet", "sequin"],
+        "fabric": "Net",
+        "work": "Sequin Embroidery"
     },
+    # ===== Cosmetics =====
     {
-        "name": "Velvet Matte Lipstick & Gloss Kit",
-        "category": "makeup",
-        "brand": "GlowGasm",
-        "price": 699, "originalPrice": 1299,
-        "rating": 4.7, "reviewsCount": 890,
-        "image": "https://images.unsplash.com/photo-1586495777744-4413f21062fa?auto=format&fit=crop&w=800",
+        "name": "Velvet Matte Lipstick",
+        "category": "cosmetics",
+        "brand": "Rivaanta Beauty",
+        "price": 799, "originalPrice": 1299,
+        "rating": 4.7, "reviewsCount": 98,
+        "image": "https://images.unsplash.com/photo-1586495777744-4413f21062fa?auto=format&fit=crop&w=900",
         "sizes": ["Standard"],
-        "colors": ["#8B0000", "#FF69B4", "#D2B48C"],
-        "inStock": True, "isFlashSale": False,
-        "discountPercent": 46, "resellerMargin": 220,
-        "description": "Long-lasting transfer-proof velvet matte liquid lipstick with high-shine lip gloss.",
-        "tags": ["lipstick", "matte", "makeup", "beauty", "gloss"]
-    },
-    {
-        "name": "Quilted Chain Crossbody Bag",
-        "category": "accessories",
-        "brand": "AuraLux",
-        "price": 999, "originalPrice": 1999,
-        "rating": 4.5, "reviewsCount": 184,
-        "image": "https://images.unsplash.com/photo-1591561954557-26941169b49e?auto=format&fit=crop&w=800",
-        "sizes": ["One Size"],
-        "colors": ["#000000", "#F5F5DC", "#FF3F6C"],
+        "colors": ["#B76E79", "#8B3A3A", "#7A1F2A", "#C4838C", "#8B4547", "#5C1E1E"],
         "inStock": True, "isFlashSale": True,
-        "discountPercent": 50, "resellerMargin": 300,
-        "description": "Chic quilted vegan leather handbag with gold-tone heavy chain strap and secure magnetic snap.",
-        "tags": ["bag", "crossbody", "handbag", "chain", "quilted"]
+        "discountPercent": 38, "resellerMargin": 220,
+        "description": "Luxuriously rich matte lipstick with intense color payoff and a comfortable, long-lasting wear.",
+        "tags": ["lipstick", "matte", "velvet", "makeup", "cosmetics"],
+        "shade": "Rose Nude",
+        "badge": "BEST SELLER"
     },
     {
-        "name": "Highlighter & Contour Glow Palette",
-        "category": "makeup",
-        "brand": "GlowGasm",
-        "price": 849, "originalPrice": 1599,
-        "rating": 4.9, "reviewsCount": 420,
-        "image": "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800",
-        "sizes": ["Palette"],
-        "colors": ["#FFD700", "#B76E79", "#CD7F32"],
-        "inStock": True, "isFlashSale": False,
-        "discountPercent": 47, "resellerMargin": 280,
-        "description": "Ultra-pigmented shimmer highlighter and sculpting contour powders for flawless definition.",
-        "tags": ["highlighter", "contour", "palette", "makeup", "glow"]
-    },
-    {
-        "name": "Slim Fit Pleated Tennis Skirt",
-        "category": "clothes",
-        "brand": "UrbanRev",
-        "price": 799, "originalPrice": 1499,
-        "rating": 4.4, "reviewsCount": 215,
-        "image": "https://images.unsplash.com/photo-1583496661160-fb5886a13d44?auto=format&fit=crop&w=800",
-        "sizes": ["XS", "S", "M", "L"],
-        "colors": ["#000000", "#FFFFFF", "#FF3F6C", "#000080"],
-        "inStock": True, "isFlashSale": False,
-        "discountPercent": 46, "resellerMargin": 250,
-        "description": "High-waisted pleated tennis skirt with built-in safety shorts for active everyday style.",
-        "tags": ["skirt", "tennis", "pleated", "clothes", "women"]
-    },
-    {
-        "name": "Minimalist Gold-Plated Hoop Earrings",
-        "category": "accessories",
-        "brand": "AuraLux",
-        "price": 499, "originalPrice": 999,
-        "rating": 4.7, "reviewsCount": 630,
-        "image": "https://images.unsplash.com/photo-1611085583191-a3b181a88401?auto=format&fit=crop&w=800",
+        "name": "Lip Liner — Rose Collection",
+        "category": "cosmetics",
+        "brand": "Rivaanta Beauty",
+        "price": 349, "originalPrice": 599,
+        "rating": 4.6, "reviewsCount": 78,
+        "image": "https://images.unsplash.com/photo-1591360236480-9c6a1cbf1f4a?auto=format&fit=crop&w=900",
         "sizes": ["Standard"],
-        "colors": ["#FFD700", "#C0C0C0"],
-        "inStock": True, "isFlashSale": True,
-        "discountPercent": 50, "resellerMargin": 180,
-        "description": "Tarnish-resistant 18k gold plated lightweight chunky hoops for effortless everyday elegance.",
-        "tags": ["earrings", "hoops", "jewelry", "gold", "accessories"]
-    },
-    {
-        "name": "Air Cushion Running Sport Shoes",
-        "category": "shoes",
-        "brand": "KicksLab",
-        "price": 2499, "originalPrice": 4999,
-        "rating": 4.9, "reviewsCount": 780,
-        "image": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800",
-        "sizes": ["UK 7", "UK 8", "UK 9", "UK 10", "UK 11"],
-        "colors": ["#000000", "#FF3F6C", "#008080"],
+        "colors": ["#B76E79", "#8B3A3A", "#7A1F2A"],
         "inStock": True, "isFlashSale": False,
-        "discountPercent": 50, "resellerMargin": 600,
-        "description": "Professional running shoes with responsive air-sole cushioning and shock-absorbent outsole.",
-        "tags": ["running", "sports", "shoes", "cushion", "athletic"]
+        "discountPercent": 42, "resellerMargin": 100,
+        "description": "Creamy long-wear lip liner that glides on effortlessly. Pair with any Rivaanta lipstick.",
+        "tags": ["lip liner", "lip pencil", "makeup"]
     },
     {
-        "name": "Classic Denim Straight-Leg Jeans",
-        "category": "clothes",
-        "brand": "UrbanRev",
-        "price": 1499, "originalPrice": 2999,
-        "rating": 4.6, "reviewsCount": 512,
-        "image": "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&w=800",
-        "sizes": ["28", "30", "32", "34", "36"],
-        "colors": ["#4169E1", "#000000", "#87CEEB"],
-        "inStock": True, "isFlashSale": True,
-        "discountPercent": 50, "resellerMargin": 400,
-        "description": "Vintage-inspired denim jeans with classic straight-leg fit and premium fade wash.",
-        "tags": ["jeans", "denim", "clothes", "pants", "unisex"]
+        "name": "Makeup Fixer Spray",
+        "category": "cosmetics",
+        "brand": "Rivaanta Beauty",
+        "price": 699, "originalPrice": 1199,
+        "rating": 4.5, "reviewsCount": 54,
+        "image": "https://images.unsplash.com/photo-1631214540242-3cd8c4b0b3b6?auto=format&fit=crop&w=900",
+        "sizes": ["100 ml"],
+        "colors": ["#F5F5F5"],
+        "inStock": True, "isFlashSale": False,
+        "discountPercent": 42, "resellerMargin": 180,
+        "description": "16-hour makeup fixing mist with hyaluronic acid — locks in your look without dryness.",
+        "tags": ["setting spray", "fixer", "makeup"]
     },
     {
-        "name": "Waterproof Mascara & Eyeliner Set",
-        "category": "makeup",
-        "brand": "GlowGasm",
-        "price": 549, "originalPrice": 1099,
-        "rating": 4.5, "reviewsCount": 260,
-        "image": "https://images.unsplash.com/photo-1631214540242-3cd8c4b0b3b6?auto=format&fit=crop&w=800",
+        "name": "Compact Powder — Silk Finish",
+        "category": "cosmetics",
+        "brand": "Rivaanta Beauty",
+        "price": 649, "originalPrice": 1099,
+        "rating": 4.6, "reviewsCount": 112,
+        "image": "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=900",
         "sizes": ["Standard"],
-        "colors": ["#000000", "#8B4513"],
+        "colors": ["#F1D3B2", "#E1B891", "#C69C74"],
         "inStock": True, "isFlashSale": False,
-        "discountPercent": 50, "resellerMargin": 200,
-        "description": "24hr smudge-proof waterproof mascara paired with a precision liquid eyeliner pen.",
-        "tags": ["mascara", "eyeliner", "makeup", "waterproof", "eyes"]
+        "discountPercent": 41, "resellerMargin": 160,
+        "description": "Featherlight compact powder for a smooth, silky, all-day matte finish.",
+        "tags": ["compact", "powder", "matte", "makeup"]
     },
+    # ===== Beauty Care =====
     {
-        "name": "Leather Analog Wristwatch",
-        "category": "accessories",
-        "brand": "AuraLux",
-        "price": 1799, "originalPrice": 3499,
-        "rating": 4.7, "reviewsCount": 340,
-        "image": "https://images.unsplash.com/photo-1524592094714-0f0654e20314?auto=format&fit=crop&w=800",
-        "sizes": ["One Size"],
-        "colors": ["#654321", "#000000", "#8B4513"],
+        "name": "Vitamin C Face Serum",
+        "category": "beauty",
+        "brand": "Rivaanta Skin",
+        "price": 1299, "originalPrice": 2199,
+        "rating": 4.6, "reviewsCount": 224,
+        "image": "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=900",
+        "sizes": ["30 ml"],
+        "colors": ["#F3D5A6"],
         "inStock": True, "isFlashSale": True,
-        "discountPercent": 48, "resellerMargin": 500,
-        "description": "Minimalist genuine leather strap analog wristwatch with Japanese quartz movement.",
-        "tags": ["watch", "wristwatch", "leather", "accessories", "analog"]
+        "discountPercent": 41, "resellerMargin": 320,
+        "description": "Brightening Vitamin C 15% serum with hyaluronic acid — visibly evens tone and boosts radiance.",
+        "tags": ["serum", "vitamin c", "skincare", "brightening"]
     },
     {
-        "name": "Casual Slip-On Loafers",
-        "category": "shoes",
-        "brand": "KicksLab",
-        "price": 1499, "originalPrice": 2799,
-        "rating": 4.5, "reviewsCount": 190,
-        "image": "https://images.unsplash.com/photo-1533867617858-e7b97e060509?auto=format&fit=crop&w=800",
-        "sizes": ["UK 6", "UK 7", "UK 8", "UK 9", "UK 10"],
-        "colors": ["#000000", "#8B4513", "#DEB887"],
+        "name": "Rose Gold Face Toner Mist",
+        "category": "beauty",
+        "brand": "Rivaanta Skin",
+        "price": 799, "originalPrice": 1399,
+        "rating": 4.5, "reviewsCount": 86,
+        "image": "https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b?auto=format&fit=crop&w=900",
+        "sizes": ["100 ml"],
+        "colors": ["#E8CFC5"],
         "inStock": True, "isFlashSale": False,
-        "discountPercent": 46, "resellerMargin": 350,
-        "description": "Comfortable slip-on loafers with cushioned insole for all-day wear.",
-        "tags": ["loafers", "shoes", "slipon", "casual", "footwear"]
+        "discountPercent": 43, "resellerMargin": 210,
+        "description": "Alcohol-free rose water & 24K gold toner to soothe and hydrate all skin types.",
+        "tags": ["toner", "mist", "skincare", "rose"]
+    },
+    {
+        "name": "Argan Oil Hair Serum",
+        "category": "beauty",
+        "brand": "Rivaanta Hair",
+        "price": 549, "originalPrice": 999,
+        "rating": 4.7, "reviewsCount": 320,
+        "image": "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?auto=format&fit=crop&w=900",
+        "sizes": ["50 ml"],
+        "colors": ["#B8956A"],
+        "inStock": True, "isFlashSale": True,
+        "discountPercent": 45, "resellerMargin": 150,
+        "description": "Nourishing pure argan oil serum for frizz-free, glossy, salon-smooth hair.",
+        "tags": ["hair serum", "argan", "hair care"]
     }
 ]
 
@@ -276,9 +344,13 @@ async def seed_admin():
 
 
 async def seed_products():
+    # Force-reseed if categories are stale (old catalog had hoodies/shoes)
+    sample = await db.products.find_one({})
+    if sample and sample.get("category") in {"clothes", "shoes", "makeup", "accessories"}:
+        await db.products.delete_many({})
     count = await db.products.count_documents({})
     if count == 0:
-        await db.products.insert_many(SEED_PRODUCTS)
+        await db.products.insert_many([{**p} for p in SEED_PRODUCTS])
 
 
 @app.on_event("startup")
@@ -367,6 +439,10 @@ class ProductCreate(BaseModel):
     resellerMargin: float = 200
     description: str
     tags: List[str] = []
+    fabric: Optional[str] = None
+    work: Optional[str] = None
+    shade: Optional[str] = None
+    badge: Optional[str] = None
 
 
 @api_router.get("/products")

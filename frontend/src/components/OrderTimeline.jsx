@@ -49,7 +49,7 @@ export const OrderTimeline = ({ status, timeline }) => {
       <div className="hidden md:flex items-start justify-between relative">
         <div className="absolute top-5 left-0 right-0 h-0.5 bg-gray-200" />
         <div
-          className="absolute top-5 left-0 h-0.5 bg-gradient-to-r from-[#FF3F6C] to-[#FF905A] transition-all"
+          className="absolute top-5 left-0 h-0.5 bg-gradient-to-r from-[#5C1E1E] to-[#B8956A] transition-all"
           style={{ width: `${Math.max(0, (currentIdx / (STEPS.length - 1)) * 100)}%` }}
         />
         {STEPS.map((step, idx) => {
@@ -62,17 +62,17 @@ export const OrderTimeline = ({ status, timeline }) => {
               <div
                 className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all shadow-sm ${
                   done
-                    ? "bg-[#FF3F6C] border-[#FF3F6C] text-white"
+                    ? "bg-[#5C1E1E] border-[#5C1E1E] text-white"
                     : "bg-white border-gray-300 text-gray-400"
-                } ${isCurrent ? "ring-4 ring-[#FF3F6C]/20 scale-110" : ""}`}
+                } ${isCurrent ? "ring-4 ring-[#5C1E1E]/20 scale-110" : ""}`}
               >
                 <Icon className="w-5 h-5" />
               </div>
               <div className="mt-2 text-center px-1">
-                <div className={`text-[11px] font-bold ${done ? "text-[#282C3F]" : "text-gray-400"}`}>
+                <div className={`text-[11px] font-bold ${done ? "text-[#2D2118]" : "text-gray-400"}`}>
                   {step.label}
                 </div>
-                <div className={`text-[10px] mt-0.5 ${isCurrent ? "text-[#FF3F6C] font-bold" : "text-gray-500"}`}>
+                <div className={`text-[10px] mt-0.5 ${isCurrent ? "text-[#5C1E1E] font-bold" : "text-gray-500"}`}>
                   {t?.completed ? formatTime(t.timestamp) : t?.eta ? `ETA ${formatTime(t.eta)}` : ""}
                 </div>
               </div>
@@ -93,20 +93,20 @@ export const OrderTimeline = ({ status, timeline }) => {
               <div className="flex flex-col items-center">
                 <div
                   className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    done ? "bg-[#FF3F6C] text-white" : "bg-gray-100 text-gray-400"
-                  } ${isCurrent ? "ring-4 ring-[#FF3F6C]/20" : ""}`}
+                    done ? "bg-[#5C1E1E] text-white" : "bg-gray-100 text-gray-400"
+                  } ${isCurrent ? "ring-4 ring-[#5C1E1E]/20" : ""}`}
                 >
                   <Icon className="w-4 h-4" />
                 </div>
                 {idx < STEPS.length - 1 && (
-                  <div className={`w-0.5 h-6 ${done ? "bg-[#FF3F6C]" : "bg-gray-200"}`} />
+                  <div className={`w-0.5 h-6 ${done ? "bg-[#5C1E1E]" : "bg-gray-200"}`} />
                 )}
               </div>
               <div className="flex-1 pb-2">
-                <div className={`text-sm font-bold ${done ? "text-[#282C3F]" : "text-gray-400"}`}>
+                <div className={`text-sm font-bold ${done ? "text-[#2D2118]" : "text-gray-400"}`}>
                   {step.label}
                 </div>
-                <div className={`text-[11px] flex items-center gap-1 ${isCurrent ? "text-[#FF3F6C] font-bold" : "text-gray-500"}`}>
+                <div className={`text-[11px] flex items-center gap-1 ${isCurrent ? "text-[#5C1E1E] font-bold" : "text-gray-500"}`}>
                   <Clock className="w-3 h-3" />
                   {t?.completed ? formatTime(t.timestamp) : t?.eta ? `ETA ${formatTime(t.eta)}` : "Pending"}
                 </div>

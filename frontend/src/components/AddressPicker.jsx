@@ -24,7 +24,7 @@ export const AddressAutocomplete = ({ value, onChange, onSelect, placeholder = "
 
   return (
     <div className="relative">
-      <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-[#535766]">
+      <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-[#8B7355]">
         <Search className="w-4 h-4" />
       </span>
       <input
@@ -35,7 +35,7 @@ export const AddressAutocomplete = ({ value, onChange, onSelect, placeholder = "
         onChange={(e) => onChange(e.target.value)}
         placeholder={ready ? placeholder : "Loading places..."}
         disabled={!ready && !error}
-        className="w-full bg-[#FAFAFC] border border-[#EAEAEC] rounded-xl pl-10 pr-4 py-3 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#FF3F6C] shadow-inner"
+        className="w-full bg-[#FAF5EC] border border-[#E8DFC9] rounded-xl pl-10 pr-4 py-3 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#5C1E1E] shadow-inner"
       />
       {error && <p className="text-xs text-red-500 mt-1">Places API unavailable. Enter address manually below.</p>}
     </div>
@@ -79,7 +79,7 @@ export const UseCurrentLocationButton = ({ onLocated }) => {
       type="button"
       onClick={handleClick}
       disabled={loading}
-      className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#FF3F6C] to-[#FF905A] hover:opacity-95 text-white font-bold py-3 rounded-xl text-sm shadow-md shadow-[#FF3F6C]/30 transition disabled:opacity-70"
+      className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#5C1E1E] to-[#B8956A] hover:opacity-95 text-white font-bold py-3 rounded-xl text-sm shadow-md shadow-[#5C1E1E]/30 transition disabled:opacity-70"
     >
       {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Locate className="w-4 h-4" />}
       <span>{loading ? "Detecting your location..." : "Use my current location"}</span>
@@ -118,7 +118,7 @@ export const LocationMapPreview = ({ lat, lng, height = 160 }) => {
     <div
       data-testid="location-map-preview"
       ref={mapRef}
-      className="w-full rounded-xl border border-[#EAEAEC] overflow-hidden shadow-inner"
+      className="w-full rounded-xl border border-[#E8DFC9] overflow-hidden shadow-inner"
       style={{ height }}
     />
   );
@@ -129,82 +129,82 @@ export const AddressForm = ({ address, onChange }) => {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
       <div>
-        <label className="text-xs font-bold text-[#535766]">Full Name</label>
+        <label className="text-xs font-bold text-[#8B7355]">Full Name</label>
         <input
           data-testid="addr-fullname-input"
           type="text"
           value={address.fullName || ""}
           onChange={(e) => set("fullName", e.target.value)}
-          className="w-full mt-1 bg-[#FAFAFC] border border-[#EAEAEC] rounded-xl p-2.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#FF3F6C]"
+          className="w-full mt-1 bg-[#FAF5EC] border border-[#E8DFC9] rounded-xl p-2.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#5C1E1E]"
         />
       </div>
       <div>
-        <label className="text-xs font-bold text-[#535766]">Phone</label>
+        <label className="text-xs font-bold text-[#8B7355]">Phone</label>
         <input
           data-testid="addr-phone-input"
           type="text"
           value={address.phone || ""}
           onChange={(e) => set("phone", e.target.value)}
-          className="w-full mt-1 bg-[#FAFAFC] border border-[#EAEAEC] rounded-xl p-2.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#FF3F6C]"
+          className="w-full mt-1 bg-[#FAF5EC] border border-[#E8DFC9] rounded-xl p-2.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#5C1E1E]"
         />
       </div>
       <div className="sm:col-span-2">
-        <label className="text-xs font-bold text-[#535766]">Address Line</label>
+        <label className="text-xs font-bold text-[#8B7355]">Address Line</label>
         <input
           data-testid="addr-line1-input"
           type="text"
           value={address.line1 || ""}
           onChange={(e) => set("line1", e.target.value)}
-          className="w-full mt-1 bg-[#FAFAFC] border border-[#EAEAEC] rounded-xl p-2.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#FF3F6C]"
+          className="w-full mt-1 bg-[#FAF5EC] border border-[#E8DFC9] rounded-xl p-2.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#5C1E1E]"
         />
       </div>
       <div className="sm:col-span-2">
-        <label className="text-xs font-bold text-[#535766]">Apartment / Landmark (optional)</label>
+        <label className="text-xs font-bold text-[#8B7355]">Apartment / Landmark (optional)</label>
         <input
           data-testid="addr-line2-input"
           type="text"
           value={address.line2 || ""}
           onChange={(e) => set("line2", e.target.value)}
-          className="w-full mt-1 bg-[#FAFAFC] border border-[#EAEAEC] rounded-xl p-2.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#FF3F6C]"
+          className="w-full mt-1 bg-[#FAF5EC] border border-[#E8DFC9] rounded-xl p-2.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#5C1E1E]"
         />
       </div>
       <div>
-        <label className="text-xs font-bold text-[#535766]">City</label>
+        <label className="text-xs font-bold text-[#8B7355]">City</label>
         <input
           data-testid="addr-city-input"
           type="text"
           value={address.city || ""}
           onChange={(e) => set("city", e.target.value)}
-          className="w-full mt-1 bg-[#FAFAFC] border border-[#EAEAEC] rounded-xl p-2.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#FF3F6C]"
+          className="w-full mt-1 bg-[#FAF5EC] border border-[#E8DFC9] rounded-xl p-2.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#5C1E1E]"
         />
       </div>
       <div>
-        <label className="text-xs font-bold text-[#535766]">State</label>
+        <label className="text-xs font-bold text-[#8B7355]">State</label>
         <input
           data-testid="addr-state-input"
           type="text"
           value={address.state || ""}
           onChange={(e) => set("state", e.target.value)}
-          className="w-full mt-1 bg-[#FAFAFC] border border-[#EAEAEC] rounded-xl p-2.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#FF3F6C]"
+          className="w-full mt-1 bg-[#FAF5EC] border border-[#E8DFC9] rounded-xl p-2.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#5C1E1E]"
         />
       </div>
       <div>
-        <label className="text-xs font-bold text-[#535766]">Pincode</label>
+        <label className="text-xs font-bold text-[#8B7355]">Pincode</label>
         <input
           data-testid="addr-pincode-input"
           type="text"
           value={address.pincode || ""}
           onChange={(e) => set("pincode", e.target.value)}
-          className="w-full mt-1 bg-[#FAFAFC] border border-[#EAEAEC] rounded-xl p-2.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#FF3F6C]"
+          className="w-full mt-1 bg-[#FAF5EC] border border-[#E8DFC9] rounded-xl p-2.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#5C1E1E]"
         />
       </div>
       <div>
-        <label className="text-xs font-bold text-[#535766]">Label</label>
+        <label className="text-xs font-bold text-[#8B7355]">Label</label>
         <select
           data-testid="addr-label-select"
           value={address.label || "Home"}
           onChange={(e) => set("label", e.target.value)}
-          className="w-full mt-1 bg-[#FAFAFC] border border-[#EAEAEC] rounded-xl p-2.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#FF3F6C]"
+          className="w-full mt-1 bg-[#FAF5EC] border border-[#E8DFC9] rounded-xl p-2.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#5C1E1E]"
         >
           <option>Home</option>
           <option>Work</option>
@@ -240,9 +240,9 @@ export const AddressPicker = ({ initialAddress, onSave, onCancel }) => {
 
   return (
     <div className="space-y-4">
-      <div className="p-4 bg-gradient-to-br from-[#FFF0F3] to-[#FFF8F0] border border-[#FF3F6C]/20 rounded-2xl space-y-3">
-        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#282C3F]">
-          <MapPin className="w-4 h-4 text-[#FF3F6C]" />
+      <div className="p-4 bg-gradient-to-br from-[#F5EBDC] to-[#FAF5EC] border border-[#5C1E1E]/20 rounded-2xl space-y-3">
+        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#2D2118]">
+          <MapPin className="w-4 h-4 text-[#5C1E1E]" />
           <span>Find your address with Google</span>
         </div>
         <AddressAutocomplete
@@ -258,13 +258,13 @@ export const AddressPicker = ({ initialAddress, onSave, onCancel }) => {
 
       <AddressForm address={address} onChange={setAddress} />
 
-      <label className="flex items-center gap-2 text-xs font-semibold text-[#282C3F] cursor-pointer">
+      <label className="flex items-center gap-2 text-xs font-semibold text-[#2D2118] cursor-pointer">
         <input
           data-testid="addr-default-checkbox"
           type="checkbox"
           checked={!!address.isDefault}
           onChange={(e) => setAddress({ ...address, isDefault: e.target.checked })}
-          className="w-4 h-4 accent-[#FF3F6C]"
+          className="w-4 h-4 accent-[#5C1E1E]"
         />
         <span>Set as default shipping address</span>
       </label>
@@ -275,7 +275,7 @@ export const AddressPicker = ({ initialAddress, onSave, onCancel }) => {
             data-testid="addr-cancel-btn"
             type="button"
             onClick={onCancel}
-            className="flex-1 bg-gray-100 hover:bg-gray-200 text-[#282C3F] font-bold py-3 rounded-xl text-sm transition"
+            className="flex-1 bg-gray-100 hover:bg-gray-200 text-[#2D2118] font-bold py-3 rounded-xl text-sm transition"
           >
             Cancel
           </button>
@@ -285,7 +285,7 @@ export const AddressPicker = ({ initialAddress, onSave, onCancel }) => {
           type="button"
           disabled={!canSave}
           onClick={() => onSave(address)}
-          className="flex-1 bg-[#FF3F6C] hover:bg-[#E02E57] disabled:opacity-60 text-white font-bold py-3 rounded-xl text-sm shadow-lg shadow-[#FF3F6C]/30 transition"
+          className="flex-1 bg-[#5C1E1E] hover:bg-[#4A1717] disabled:opacity-60 text-white font-bold py-3 rounded-xl text-sm shadow-lg shadow-[#5C1E1E]/30 transition"
         >
           Save Address
         </button>

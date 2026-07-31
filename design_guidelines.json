@@ -1,0 +1,45 @@
+{
+  "app_name": "Lumière & Bazar (Myntra x Meesho Hybrid)",
+  "context": "e-commerce",
+  "theme": "vibrant-chic-hybrid",
+  "colors": {
+    "primary": "#FF3F6C",
+    "primary_hover": "#E02E57",
+    "secondary": "#282C3F",
+    "accent_sale": "#FF905A",
+    "reseller_mode": "#7928CA",
+    "background": "#FAFAFC",
+    "surface": "#FFFFFF",
+    "border": "#EAEAEC",
+    "text_dark": "#282C3F",
+    "text_muted": "#535766",
+    "success": "#03A685"
+  },
+  "typography": {
+    "heading_font": "Outfit, sans-serif",
+    "body_font": "Plus Jakarta Sans, sans-serif",
+    "mono_font": "JetBrains Mono, monospace"
+  },
+  "image_urls": {
+    "hero_banner": "https://images.pexels.com/photos/20194705/pexels-photo-20194705.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+    "makeup_flatlay": "https://images.pexels.com/photos/3552894/pexels-photo-3552894.jpeg",
+    "luxury_shoes": "https://images.unsplash.com/photo-1575176647993-a8a6f538e940?crop=entropy&cs=srgb&fm=jpg&q=85",
+    "streetwear_bag": "https://images.pexels.com/photos/14037872/pexels-photo-14037872.jpeg",
+    "editorial_model": "https://images.pexels.com/photos/1066171/pexels-photo-1066171.jpeg"
+  },
+  "features": [
+    "Product catalog with multi-category filtering (Clothes, Shoes, Makeup, Accessories)",
+    "Reseller / Wholesale mode toggle with margin calculator & share to WhatsApp link",
+    "Live Flash Sale countdown timer with urgent badge",
+    "Interactive sliding Cart and Checkout drawer with COD & UPI options",
+    "Curated Lookbooks & Trending Collections with Instagram-style shop the look",
+    "Product Quick-View modal with size selector, color swatch, and instant wishlist",
+    "User review system with photo uploads and verified buyer badges"
+  ],
+  "universal_guidelines": [
+    "All interactive elements must include data-testid attributes",
+    "Never use complete transparent backgrounds on headers or overlays",
+    "Ensure high contrast text for accessibility (WCAG AA compliant)",
+    "Generous spacing with Tailwind scale and clean bento layouts"
+  ]
+}

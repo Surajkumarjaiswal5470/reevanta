@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Sparkles,
   ShoppingBag,
@@ -30,11 +30,18 @@ import {
   Package,
   PlusCircle,
   Trash2,
-  RefreshCw
+  RefreshCw,
+  MapPin,
+  Home as HomeIcon,
+  XCircle
 } from "lucide-react";
 import { toast } from "sonner";
 import axios from "axios";
-import { MOCK_CATEGORIES, MOCK_PRODUCTS, MOCK_LOOKBOOKS, MOCK_FLASH_SALE_ITEMS } from "./mock";
+import { MOCK_CATEGORIES, MOCK_PRODUCTS, MOCK_LOOKBOOKS } from "./mock";
+import { SearchBar } from "./components/SearchBar";
+import { AddressPicker } from "./components/AddressPicker";
+import { OrderTimeline } from "./components/OrderTimeline";
+import { AdminPanel } from "./components/AdminPanel";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -69,16 +76,14 @@ export default function App() {
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedColor, setSelectedColor] = useState("");
   const [productsList, setProductsList] = useState(MOCK_PRODUCTS);
-  const [orders, setOrders] = useState([
-    {
-      id: "ORD-98214",
-      date: "2026-03-30",
-      items: [{ name: "Oversized Vintage Graphic Hoodie", qty: 1, price: 1299 }],
-      total: 1299,
-      status: "Out for Delivery",
-      payment: "COD"
-    }
-  ]);
+  const [orders, setOrders] = useState([]);
+
+  // Address management
+  const [addresses, setAddresses] = useState([]);
+  const [selectedAddressId, setSelectedAddressId] = useState(null);
+  const [showAddressForm, setShowAddressForm] = useState(false);
+  const [editingAddress, setEditingAddress] = useState(null);
+  const [placingOrder, setPlacingOrder] = useState(false);
 
   // Admin New Product Form State
   const [newProduct, setNewProduct] = useState({
@@ -119,28 +124,42 @@ export default function App() {
       });
   }, []);
 
-  // Fetch backend products & orders if admin
+  // Fetch backend products
   useEffect(() => {
     axios.get(`${API}/products`)
       .then((res) => {
-        if (res.data && res.data.length > 0) {
-          setProductsList(res.data);
-        }
+        if (res.data && res.data.length > 0) setProductsList(res.data);
       })
       .catch(() => {});
   }, []);
 
+  // Load user-specific data (addresses + orders) whenever user logs in
+  const loadUserData = useCallback(async () => {
+    if (!currentUser) return;
+    try {
+      const [addrRes, ordRes] = await Promise.all([
+        axios.get(`${API}/addresses`),
+        axios.get(`${API}/orders/mine`)
+      ]);
+      setAddresses(addrRes.data || []);
+      setOrders(ordRes.data || []);
+      const def = (addrRes.data || []).find((a) => a.isDefault) || (addrRes.data || [])[0];
+      if (def) setSelectedAddressId(def.id);
+    } catch (e) {
+      // ignore
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    if (currentUser) loadUserData();
+    else {
+      setAddresses([]);
+      setOrders([]);
+    }
+  }, [currentUser, loadUserData]);
+
   const fetchAdminData = () => {
-    axios.get(`${API}/orders`)
-      .then((res) => {
-        if (res.data) setOrders(res.data);
-      })
-      .catch(() => {});
-    axios.get(`${API}/products`)
-      .then((res) => {
-        if (res.data) setProductsList(res.data);
-      })
-      .catch(() => {});
+    axios.get(`${API}/products`).then((res) => res.data && setProductsList(res.data)).catch(() => {});
   };
 
   const handleLogin = async (e) => {
@@ -315,19 +334,95 @@ export default function App() {
     : 0;
   const finalOrderTotal = cartSubtotal + (resellerMode ? shippingDetails.resellerExtraMargin * cart.length : 0);
 
-  const handlePlaceOrder = () => {
-    const newOrd = {
-      id: `ORD-${Math.floor(10000 + Math.random() * 90000)}`,
-      date: new Date().toISOString().split("T")[0],
-      items: [...cart],
-      total: finalOrderTotal,
-      status: "Order Confirmed",
-      payment: "Cash on Delivery / UPI"
-    };
-    setOrders([newOrd, ...orders]);
-    setCart([]);
-    setCheckoutStep(4);
-    toast.success("Order placed successfully!");
+  const handlePlaceOrder = async () => {
+    if (!currentUser) {
+      toast.error("Please sign in to place an order");
+      setAuthMode("login");
+      setShowAuthModal(true);
+      return;
+    }
+    const addr = addresses.find((a) => a.id === selectedAddressId);
+    if (!addr) {
+      toast.error("Please select or add a delivery address");
+      return;
+    }
+    setPlacingOrder(true);
+    try {
+      const payload = {
+        items: cart.map((c) => ({
+          productId: c.id,
+          name: c.name,
+          price: c.price,
+          qty: c.qty,
+          image: c.image,
+          selectedSize: c.selectedSize,
+          selectedColor: c.selectedColor
+        })),
+        subtotal: cartSubtotal,
+        shipping: 0,
+        total: finalOrderTotal,
+        address: addr,
+        paymentMethod: "COD"
+      };
+      const res = await axios.post(`${API}/orders`, payload);
+      setOrders((prev) => [res.data, ...prev]);
+      setCart([]);
+      setCheckoutStep(4);
+      toast.success(`Order ${res.data.order_number} placed successfully!`);
+    } catch (e) {
+      toast.error(e.response?.data?.detail || "Failed to place order");
+    } finally {
+      setPlacingOrder(false);
+    }
+  };
+
+  // Address CRUD
+  const saveAddress = async (addr) => {
+    try {
+      const res = await axios.post(`${API}/addresses`, addr);
+      setAddresses((prev) => {
+        const next = res.data.isDefault ? prev.map((a) => ({ ...a, isDefault: false })) : prev.slice();
+        return [res.data, ...next];
+      });
+      setSelectedAddressId(res.data.id);
+      setShowAddressForm(false);
+      setEditingAddress(null);
+      toast.success("Address saved!");
+    } catch (e) {
+      toast.error(e.response?.data?.detail || "Failed to save address");
+    }
+  };
+
+  const deleteAddress = async (id) => {
+    try {
+      await axios.delete(`${API}/addresses/${id}`);
+      setAddresses((prev) => prev.filter((a) => a.id !== id));
+      if (selectedAddressId === id) setSelectedAddressId(null);
+      toast.info("Address removed");
+    } catch {
+      toast.error("Failed to remove address");
+    }
+  };
+
+  const setDefaultAddress = async (id) => {
+    try {
+      await axios.patch(`${API}/addresses/${id}/default`);
+      setAddresses((prev) => prev.map((a) => ({ ...a, isDefault: a.id === id })));
+      setSelectedAddressId(id);
+    } catch {
+      toast.error("Failed to update default");
+    }
+  };
+
+  const cancelOrder = async (orderId) => {
+    if (!window.confirm("Cancel this order? This cannot be undone.")) return;
+    try {
+      await axios.post(`${API}/orders/${orderId}/cancel`);
+      setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: "Cancelled" } : o)));
+      toast.success("Order cancelled");
+    } catch (e) {
+      toast.error(e.response?.data?.detail || "Failed to cancel");
+    }
   };
 
   const [copiedLink, setCopiedLink] = useState(false);
@@ -341,11 +436,19 @@ export default function App() {
     setTimeout(() => setCopiedLink(false), 2500);
   };
 
-  const filteredProducts = MOCK_PRODUCTS.filter((p) => {
+  const filteredProducts = productsList.filter((p) => {
     const matchesCategory = selectedCategory === "all" || p.category === selectedCategory;
-    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.brand.toLowerCase().includes(searchQuery.toLowerCase());
+    const q = searchQuery.toLowerCase().trim();
+    const matchesSearch =
+      !q ||
+      p.name.toLowerCase().includes(q) ||
+      (p.brand || "").toLowerCase().includes(q) ||
+      (p.description || "").toLowerCase().includes(q) ||
+      (p.tags || []).some((t) => t.toLowerCase().includes(q));
     return matchesCategory && matchesSearch;
   });
+
+  const flashSaleItems = productsList.filter((p) => p.isFlashSale).slice(0, 4);
 
   return (
     <div className="min-h-screen bg-[#FAFAFC] text-[#282C3F] font-sans selection:bg-[#FF3F6C] selection:text-white">
@@ -413,37 +516,47 @@ export default function App() {
 
           {/* Search Bar */}
           <div className="hidden md:flex flex-1 max-w-xl mx-6">
-            <div className="relative w-full">
-              <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-[#535766]">
-                <Search className="w-4 h-4" />
-              </span>
-              <input
-                data-testid="search-input"
-                type="text"
-                placeholder="Search for clothes, shoes, makeup, bags & more..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-[#FAFAFC] border border-[#EAEAEC] rounded-full pl-10 pr-4 py-2 text-sm text-[#282C3F] placeholder-[#535766]/70 focus:outline-none focus:ring-2 focus:ring-[#FF3F6C] transition shadow-inner"
-              />
-            </div>
+            <SearchBar
+              value={searchQuery}
+              onChange={setSearchQuery}
+              onSubmit={(q) => {
+                setSearchQuery(q);
+                setActiveTab("catalog");
+              }}
+              onSelectProduct={(p) => {
+                setQuickViewProduct(p);
+              }}
+            />
           </div>
 
           {/* Navigation Items */}
-          <div className="flex items-center space-x-6">
+          <div className="flex items-center space-x-4 sm:space-x-6">
             <button
               data-testid="nav-catalog-btn"
               onClick={() => setActiveTab("catalog")}
               className={`text-sm font-semibold transition hover:text-[#FF3F6C] ${activeTab === "catalog" ? "text-[#FF3F6C]" : "text-[#282C3F]"}`}
             >
-              Shop Catalog
+              Shop
             </button>
             <button
-              data-testid="nav-lookbooks-btn"
-              onClick={() => setActiveTab("lookbooks")}
-              className={`hidden sm:block text-sm font-semibold transition hover:text-[#FF3F6C] ${activeTab === "lookbooks" ? "text-[#FF3F6C]" : "text-[#282C3F]"}`}
+              data-testid="nav-orders-btn"
+              onClick={() => {
+                if (!currentUser) { setAuthMode("login"); setShowAuthModal(true); return; }
+                setActiveTab("orders");
+              }}
+              className={`hidden sm:block text-sm font-semibold transition hover:text-[#FF3F6C] ${activeTab === "orders" ? "text-[#FF3F6C]" : "text-[#282C3F]"}`}
             >
-              Lookbooks
+              Orders
             </button>
+            {currentUser?.role === "admin" && (
+              <button
+                data-testid="nav-admin-btn"
+                onClick={() => setActiveTab("admin")}
+                className={`hidden sm:flex items-center gap-1 text-sm font-bold transition hover:text-[#FF3F6C] ${activeTab === "admin" ? "text-[#FF3F6C]" : "text-purple-700"}`}
+              >
+                <LayoutDashboard className="w-4 h-4" /> Admin
+              </button>
+            )}
 
             {/* Reseller Mode Toggle Button */}
             <button
@@ -495,6 +608,16 @@ export default function App() {
           </div>
         </div>
       </header>
+
+      {/* Mobile Search Bar */}
+      <div className="md:hidden px-4 py-3 bg-white border-b border-[#EAEAEC]">
+        <SearchBar
+          value={searchQuery}
+          onChange={setSearchQuery}
+          onSubmit={(q) => { setSearchQuery(q); setActiveTab("catalog"); }}
+          onSelectProduct={(p) => setQuickViewProduct(p)}
+        />
+      </div>
 
       {/* Reseller Banner Notice if Active */}
       {resellerMode && (
@@ -621,7 +744,7 @@ export default function App() {
 
               {/* Flash Sale Product Carousel / Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {MOCK_FLASH_SALE_ITEMS.map((product) => (
+                {flashSaleItems.map((product) => (
                   <div
                     key={product.id}
                     data-testid={`flash-product-${product.id}`}
@@ -1037,42 +1160,122 @@ export default function App() {
         {/* ORDERS VIEW */}
         {activeTab === "orders" && (
           <div className="space-y-6">
-            <div className="bg-white p-6 rounded-3xl border border-[#EAEAEC]">
-              <h2 className="text-2xl font-black text-[#282C3F]">My Orders & Reseller Tracking</h2>
-              <p className="text-xs text-[#535766]">Track your ongoing and past deliveries</p>
+            <div className="bg-white p-6 rounded-3xl border border-[#EAEAEC] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+              <div>
+                <h2 className="text-2xl font-black text-[#282C3F]">My Orders</h2>
+                <p className="text-xs text-[#535766]">Track your ongoing and past deliveries</p>
+              </div>
+              <button
+                data-testid="orders-refresh-btn"
+                onClick={loadUserData}
+                className="flex items-center gap-1.5 bg-[#282C3F] text-white text-xs font-bold px-4 py-2 rounded-full"
+              >
+                <RefreshCw className="w-3.5 h-3.5" /> Refresh
+              </button>
             </div>
 
-            <div className="space-y-4">
-              {orders.map((ord) => (
-                <div key={ord.id} className="bg-white rounded-3xl p-6 border border-[#EAEAEC] shadow-sm space-y-4">
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-[#EAEAEC] pb-4 gap-2">
-                    <div>
-                      <span className="text-xs font-bold text-[#FF3F6C] bg-[#FF3F6C]/10 px-3 py-1 rounded-full">{ord.id}</span>
-                      <span className="text-xs text-[#535766] ml-3">Placed on {ord.date}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                      <span className="text-xs font-bold text-emerald-700">{ord.status}</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    {ord.items.map((it, idx) => (
-                      <div key={idx} className="flex justify-between items-center text-sm">
-                        <span className="font-semibold text-[#282C3F]">{it.name} (Qty: {it.qty})</span>
-                        <span className="font-bold text-[#282C3F]">₹{it.price * it.qty}</span>
+            {!currentUser ? (
+              <div className="text-center py-16 bg-white rounded-3xl border border-[#EAEAEC] space-y-4">
+                <UserIcon className="w-14 h-14 text-gray-300 mx-auto" />
+                <h3 className="text-lg font-bold text-[#282C3F]">Sign in to see your orders</h3>
+                <button
+                  onClick={() => { setAuthMode("login"); setShowAuthModal(true); }}
+                  className="bg-[#FF3F6C] text-white px-6 py-2.5 rounded-full text-xs font-bold"
+                >
+                  Sign in / Register
+                </button>
+              </div>
+            ) : orders.length === 0 ? (
+              <div className="text-center py-16 bg-white rounded-3xl border border-[#EAEAEC] space-y-4">
+                <Package className="w-14 h-14 text-gray-300 mx-auto" />
+                <h3 className="text-lg font-bold text-[#282C3F]">No orders yet</h3>
+                <p className="text-xs text-[#535766]">Add items to your bag and place your first order.</p>
+                <button
+                  onClick={() => setActiveTab("catalog")}
+                  className="bg-[#FF3F6C] text-white px-6 py-2.5 rounded-full text-xs font-bold"
+                >
+                  Start Shopping
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {orders.map((ord) => (
+                  <div key={ord.id} data-testid={`order-card-${ord.id}`} className="bg-white rounded-3xl p-6 border border-[#EAEAEC] shadow-sm space-y-5">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-[#EAEAEC] pb-4 gap-2">
+                      <div>
+                        <span className="text-xs font-bold text-[#FF3F6C] bg-[#FF3F6C]/10 px-3 py-1 rounded-full">
+                          {ord.order_number || ord.id.slice(0, 8)}
+                        </span>
+                        <span className="text-xs text-[#535766] ml-3">
+                          Placed {ord.placed_at ? new Date(ord.placed_at).toLocaleString() : ""}
+                        </span>
                       </div>
-                    ))}
-                  </div>
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
+                          <span className={`w-2.5 h-2.5 rounded-full ${ord.status === "Delivered" ? "bg-emerald-500" : ord.status === "Cancelled" ? "bg-red-500" : "bg-amber-500 animate-pulse"}`}></span>
+                          <span className="text-xs font-bold text-[#282C3F]">{ord.status}</span>
+                        </div>
+                        {!["Shipped", "Out for Delivery", "Delivered", "Cancelled"].includes(ord.status) && (
+                          <button
+                            data-testid={`cancel-order-${ord.id}`}
+                            onClick={() => cancelOrder(ord.id)}
+                            className="text-[10px] font-bold text-red-600 hover:underline"
+                          >
+                            Cancel
+                          </button>
+                        )}
+                      </div>
+                    </div>
 
-                  <div className="flex justify-between items-center pt-4 border-t border-[#EAEAEC]">
-                    <div className="text-xs text-[#535766]">Payment: <strong className="text-[#282C3F]">{ord.payment}</strong></div>
-                    <div className="text-base font-black text-[#282C3F]">Total: ₹{ord.total}</div>
+                    <OrderTimeline status={ord.status} timeline={ord.timeline} />
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                      <div className="space-y-2">
+                        <div className="text-[10px] font-black uppercase tracking-wider text-[#535766]">Items</div>
+                        {(ord.items || []).map((it, idx) => (
+                          <div key={idx} className="flex items-center gap-3 text-xs">
+                            {it.image && <img src={it.image} alt={it.name} className="w-10 h-10 rounded-lg object-cover bg-gray-100" />}
+                            <div className="flex-1 min-w-0">
+                              <div className="font-bold text-[#282C3F] line-clamp-1">{it.name}</div>
+                              <div className="text-[10px] text-[#535766]">Qty {it.qty} · {it.selectedSize || ""}</div>
+                            </div>
+                            <div className="font-bold text-[#282C3F]">₹{it.price * it.qty}</div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="space-y-2 text-xs">
+                        <div className="text-[10px] font-black uppercase tracking-wider text-[#535766]">Delivery to</div>
+                        {ord.address ? (
+                          <div className="bg-[#FAFAFC] rounded-2xl p-3 border border-[#EAEAEC] leading-relaxed">
+                            <div className="font-bold text-[#282C3F]">{ord.address.fullName}</div>
+                            <div className="text-[#535766]">
+                              {ord.address.line1}{ord.address.line2 ? `, ${ord.address.line2}` : ""}, {ord.address.city}, {ord.address.state} {ord.address.pincode}
+                            </div>
+                            <div className="text-[#535766]">📞 {ord.address.phone}</div>
+                          </div>
+                        ) : (
+                          <div className="text-[#535766]">Address on file</div>
+                        )}
+                        <div className="flex justify-between items-center pt-1">
+                          <span className="text-[#535766]">Payment</span>
+                          <strong className="text-[#282C3F]">{ord.paymentMethod || "COD"}</strong>
+                        </div>
+                        <div className="flex justify-between items-center text-base font-black text-[#282C3F] pt-2 border-t border-[#EAEAEC]">
+                          <span>Total</span>
+                          <span>₹{ord.total}</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
+        )}
+
+        {/* ADMIN VIEW */}
+        {activeTab === "admin" && currentUser?.role === "admin" && (
+          <AdminPanel />
         )}
       </main>
 
@@ -1382,59 +1585,115 @@ export default function App() {
                   {/* Step 2: Shipping & Address */}
                   {checkoutStep === 2 && (
                     <div className="space-y-4">
-                      <h4 className="font-bold text-sm text-[#282C3F]">Shipping Address</h4>
-                      <div className="space-y-3">
+                      {!currentUser ? (
+                        <div className="text-center py-12 space-y-4">
+                          <MapPin className="w-12 h-12 text-[#FF3F6C] mx-auto" />
+                          <h4 className="font-bold text-base text-[#282C3F]">Sign in to continue</h4>
+                          <p className="text-xs text-[#535766]">Login to save delivery addresses & place orders.</p>
+                          <button
+                            data-testid="signin-to-checkout-btn"
+                            onClick={() => { setAuthMode("login"); setShowAuthModal(true); }}
+                            className="bg-[#FF3F6C] text-white px-6 py-2.5 rounded-full text-xs font-bold"
+                          >
+                            Sign in / Register
+                          </button>
+                        </div>
+                      ) : showAddressForm ? (
                         <div>
-                          <label className="text-xs font-bold text-[#535766]">Full Name</label>
-                          <input
-                            data-testid="shipping-name-input"
-                            type="text"
-                            value={shippingDetails.name}
-                            onChange={(e) => setShippingDetails({ ...shippingDetails, name: e.target.value })}
-                            className="w-full mt-1 bg-[#FAFAFC] border border-[#EAEAEC] rounded-xl p-2.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#FF3F6C]"
+                          <h4 className="font-bold text-sm text-[#282C3F] mb-3">
+                            {editingAddress ? "Edit Address" : "Add New Address"}
+                          </h4>
+                          <AddressPicker
+                            initialAddress={editingAddress}
+                            onSave={saveAddress}
+                            onCancel={() => { setShowAddressForm(false); setEditingAddress(null); }}
                           />
                         </div>
-                        <div>
-                          <label className="text-xs font-bold text-[#535766]">Phone Number</label>
-                          <input
-                            data-testid="shipping-phone-input"
-                            type="text"
-                            value={shippingDetails.phone}
-                            onChange={(e) => setShippingDetails({ ...shippingDetails, phone: e.target.value })}
-                            className="w-full mt-1 bg-[#FAFAFC] border border-[#EAEAEC] rounded-xl p-2.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#FF3F6C]"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs font-bold text-[#535766]">Street Address</label>
-                          <input
-                            data-testid="shipping-address-input"
-                            type="text"
-                            value={shippingDetails.address}
-                            onChange={(e) => setShippingDetails({ ...shippingDetails, address: e.target.value })}
-                            className="w-full mt-1 bg-[#FAFAFC] border border-[#EAEAEC] rounded-xl p-2.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#FF3F6C]"
-                          />
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <label className="text-xs font-bold text-[#535766]">City</label>
-                            <input
-                              type="text"
-                              value={shippingDetails.city}
-                              onChange={(e) => setShippingDetails({ ...shippingDetails, city: e.target.value })}
-                              className="w-full mt-1 bg-[#FAFAFC] border border-[#EAEAEC] rounded-xl p-2.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#FF3F6C]"
-                            />
+                      ) : (
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-bold text-sm text-[#282C3F]">Select Delivery Address</h4>
+                            <button
+                              data-testid="add-new-address-btn"
+                              onClick={() => { setEditingAddress(null); setShowAddressForm(true); }}
+                              className="text-xs font-bold text-[#FF3F6C] flex items-center gap-1 hover:underline"
+                            >
+                              <Plus className="w-3.5 h-3.5" /> Add New Address
+                            </button>
                           </div>
-                          <div>
-                            <label className="text-xs font-bold text-[#535766]">Pincode</label>
-                            <input
-                              type="text"
-                              value={shippingDetails.pincode}
-                              onChange={(e) => setShippingDetails({ ...shippingDetails, pincode: e.target.value })}
-                              className="w-full mt-1 bg-[#FAFAFC] border border-[#EAEAEC] rounded-xl p-2.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#FF3F6C]"
-                            />
-                          </div>
+                          {addresses.length === 0 ? (
+                            <div className="text-center py-8 bg-[#FAFAFC] rounded-2xl border border-dashed border-[#EAEAEC]">
+                              <MapPin className="w-10 h-10 text-gray-300 mx-auto" />
+                              <p className="text-xs text-[#535766] mt-2">No addresses yet.</p>
+                              <button
+                                onClick={() => setShowAddressForm(true)}
+                                className="mt-3 bg-[#FF3F6C] text-white px-5 py-2 rounded-full text-xs font-bold"
+                              >
+                                Add your first address
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="space-y-2">
+                              {addresses.map((a) => (
+                                <label
+                                  key={a.id}
+                                  data-testid={`address-option-${a.id}`}
+                                  className={`block p-3 rounded-2xl border-2 cursor-pointer transition ${
+                                    selectedAddressId === a.id
+                                      ? "border-[#FF3F6C] bg-[#FFF0F3]"
+                                      : "border-[#EAEAEC] bg-white hover:border-[#FF3F6C]/50"
+                                  }`}
+                                >
+                                  <div className="flex items-start gap-2">
+                                    <input
+                                      type="radio"
+                                      name="selectedAddr"
+                                      checked={selectedAddressId === a.id}
+                                      onChange={() => setSelectedAddressId(a.id)}
+                                      className="mt-1 accent-[#FF3F6C]"
+                                    />
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <span className="text-xs font-black text-[#282C3F]">{a.fullName}</span>
+                                        <span className="text-[10px] font-bold uppercase bg-[#282C3F] text-white px-1.5 py-0.5 rounded">
+                                          {a.label}
+                                        </span>
+                                        {a.isDefault && (
+                                          <span className="text-[10px] font-bold uppercase bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded">
+                                            Default
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div className="text-[11px] text-[#535766] mt-1 leading-relaxed">
+                                        {a.line1}{a.line2 ? `, ${a.line2}` : ""}, {a.city}, {a.state} {a.pincode}
+                                      </div>
+                                      <div className="text-[11px] text-[#535766]">📞 {a.phone}</div>
+                                      <div className="flex gap-3 mt-2">
+                                        {!a.isDefault && (
+                                          <button
+                                            type="button"
+                                            onClick={(e) => { e.preventDefault(); setDefaultAddress(a.id); }}
+                                            className="text-[10px] font-bold text-[#FF3F6C] hover:underline"
+                                          >
+                                            Set default
+                                          </button>
+                                        )}
+                                        <button
+                                          type="button"
+                                          onClick={(e) => { e.preventDefault(); deleteAddress(a.id); }}
+                                          className="text-[10px] font-bold text-red-500 hover:underline"
+                                        >
+                                          Remove
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </label>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                      </div>
+                      )}
                     </div>
                   )}
 
@@ -1519,18 +1778,41 @@ export default function App() {
                   )}
                   <button
                     data-testid="checkout-proceed-btn"
+                    disabled={placingOrder || (checkoutStep === 2 && !showAddressForm && currentUser && !selectedAddressId)}
                     onClick={() => {
                       if (checkoutStep === 1) {
                         setCheckoutStep(2);
-                      } else if (checkoutStep === 2 && resellerMode) {
-                        setCheckoutStep(3);
+                      } else if (checkoutStep === 2) {
+                        if (!currentUser) {
+                          setAuthMode("login");
+                          setShowAuthModal(true);
+                          return;
+                        }
+                        if (showAddressForm) {
+                          toast.info("Finish saving the address first, or cancel to pick a saved one.");
+                          return;
+                        }
+                        if (!selectedAddressId) {
+                          toast.error("Please select or add a delivery address");
+                          return;
+                        }
+                        if (resellerMode) setCheckoutStep(3);
+                        else handlePlaceOrder();
                       } else {
                         handlePlaceOrder();
                       }
                     }}
-                    className="flex-1 bg-[#FF3F6C] hover:bg-[#E02E57] text-white font-bold py-3.5 rounded-2xl text-sm shadow-lg shadow-[#FF3F6C]/30 transition flex items-center justify-center space-x-2"
+                    className="flex-1 bg-[#FF3F6C] hover:bg-[#E02E57] disabled:opacity-60 text-white font-bold py-3.5 rounded-2xl text-sm shadow-lg shadow-[#FF3F6C]/30 transition flex items-center justify-center space-x-2"
                   >
-                    <span>{checkoutStep === 1 ? "Proceed to Address" : checkoutStep === 2 && resellerMode ? "Reseller Details" : "Place Order (COD/UPI)"}</span>
+                    <span>
+                      {placingOrder
+                        ? "Placing order..."
+                        : checkoutStep === 1
+                        ? "Proceed to Address"
+                        : checkoutStep === 2 && resellerMode
+                        ? "Reseller Details"
+                        : "Place Order (Cash on Delivery)"}
+                    </span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>

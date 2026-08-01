@@ -381,45 +381,77 @@ export function Navbar({ activeTab, setActiveTab, onOpenProduct, onCategorySelec
           )}
 
           {/* Navigation Links */}
-          <nav className="flex-1 px-3 py-4">
-            <p className="px-4 mb-2 text-[9px] font-bold tracking-[0.2em] uppercase text-[#8B7355]/60">
-              Browse
-            </p>
-            <div className="space-y-0.5">
-              {NAV_TABS.map((tab) => {
-                const Icon = tab.icon;
-                const isActive = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => goTo(tab.id)}
-                    className={`w-full group flex items-center gap-3 px-4 py-2.5 rounded-2xl text-left transition-all duration-200 ${
-                      isActive
-                        ? "bg-gradient-to-r from-[#2D2118] to-[#3D2E22] text-white shadow-lg shadow-[#2D2118]/15"
-                        : "text-[#2D2118] hover:bg-[#E8DFC9]/40 active:scale-[0.98]"
-                    }`}
-                  >
-                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition ${
-                      isActive
-                        ? "bg-white/15 text-white"
-                        : "bg-[#E8DFC9]/40 text-[#8B7355] group-hover:bg-[#5C1E1E]/10 group-hover:text-[#5C1E1E]"
-                    }`}>
-                      <Icon className="w-4 h-4" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <span className={`text-[13px] font-bold block ${isActive ? "text-white" : ""}`}>
-                        {tab.label}
-                      </span>
-                      <span className={`text-[9px] block ${isActive ? "text-white/50" : "text-[#8B7355]/60"}`}>
-                        {tab.desc}
-                      </span>
-                    </div>
-                    <ChevronRight className={`w-3.5 h-3.5 shrink-0 transition ${
-                      isActive ? "text-white/30" : "text-[#E8DFC9] group-hover:text-[#8B7355] group-hover:translate-x-0.5"
-                    }`} />
-                  </button>
-                );
-              })}
+          <nav className="flex-1 px-3 py-4 space-y-4">
+            <div>
+              <p className="px-4 mb-2 text-[9px] font-bold tracking-[0.2em] uppercase text-[#8B7355]/60">
+                Browse Store
+              </p>
+              <div className="space-y-0.5">
+                {NAV_TABS.map((tab) => {
+                  const Icon = tab.icon;
+                  const isActive = activeTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => goTo(tab.id)}
+                      className={`w-full group flex items-center gap-3 px-4 py-2.5 rounded-2xl text-left transition-all duration-200 ${
+                        isActive
+                          ? "bg-gradient-to-r from-[#2D2118] to-[#3D2E22] text-white shadow-lg shadow-[#2D2118]/15"
+                          : "text-[#2D2118] hover:bg-[#E8DFC9]/40 active:scale-[0.98]"
+                      }`}
+                    >
+                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition ${
+                        isActive
+                          ? "bg-white/15 text-white"
+                          : "bg-[#E8DFC9]/40 text-[#8B7355] group-hover:bg-[#5C1E1E]/10 group-hover:text-[#5C1E1E]"
+                      }`}>
+                        <Icon className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <span className={`text-[13px] font-bold block ${isActive ? "text-white" : ""}`}>
+                          {tab.label}
+                        </span>
+                        <span className={`text-[9px] block ${isActive ? "text-white/50" : "text-[#8B7355]/60"}`}>
+                          {tab.desc}
+                        </span>
+                      </div>
+                      <ChevronRight className={`w-3.5 h-3.5 shrink-0 transition ${
+                        isActive ? "text-white/30" : "text-[#E8DFC9] group-hover:text-[#8B7355] group-hover:translate-x-0.5"
+                      }`} />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Help & Support Section in Hamburger Menu */}
+            <div>
+              <p className="px-4 mb-2 text-[9px] font-bold tracking-[0.2em] uppercase text-[#8B7355]/60">
+                Customer Care & Policies
+              </p>
+              <div className="space-y-1 bg-white/60 p-2 rounded-2xl border border-[#E8DFC9]/50">
+                <button
+                  onClick={() => goTo("shipping")}
+                  className="w-full flex items-center justify-between px-3 py-2 text-xs font-bold text-[#2D2118] hover:text-[#5C1E1E] transition rounded-xl hover:bg-[#FAF5EC]"
+                >
+                  <span>🚚 Shipping & Delivery</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
+                </button>
+                <button
+                  onClick={() => goTo("returns")}
+                  className="w-full flex items-center justify-between px-3 py-2 text-xs font-bold text-[#2D2118] hover:text-[#5C1E1E] transition rounded-xl hover:bg-[#FAF5EC]"
+                >
+                  <span>↩️ Returns & Exchanges</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
+                </button>
+                <button
+                  onClick={() => goTo("reseller-faq")}
+                  className="w-full flex items-center justify-between px-3 py-2 text-xs font-bold text-[#2D2118] hover:text-[#5C1E1E] transition rounded-xl hover:bg-[#FAF5EC]"
+                >
+                  <span>💼 Reseller Program & FAQ</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
+                </button>
+              </div>
             </div>
           </nav>
 

@@ -142,9 +142,10 @@ async def verify_otp(inp: VerifyOTPRequest, response: Response):
         if not user:
             role = "admin" if phone in {"+919999999999", "+9779999999999", "+9779715102007", "+919715102007"} else "user"
             name = inp.name.strip() if inp.name and inp.name.strip() else ("Admin Manager" if role == "admin" else f"User {phone[-4:]}")
+            user_email = inp.email.strip().lower() if inp.email and inp.email.strip() else f"{phone.replace('+', '')}@reevanta.local"
             doc = {
                 "phone": phone,
-                "email": f"{phone.replace('+', '')}@reevanta.local",
+                "email": user_email,
                 "name": name,
                 "role": role,
                 "created_at": datetime.now(timezone.utc)
@@ -154,9 +155,15 @@ async def verify_otp(inp: VerifyOTPRequest, response: Response):
             user = doc
         else:
             user_id = str(user["_id"])
+            updates = {}
             if inp.name and inp.name.strip() and user.get("name", "").startswith("User "):
-                await db.users.update_one({"_id": user["_id"]}, {"$set": {"name": inp.name.strip()}})
+                updates["name"] = inp.name.strip()
                 user["name"] = inp.name.strip()
+            if inp.email and inp.email.strip() and "@reevanta.local" in user.get("email", ""):
+                updates["email"] = inp.email.strip().lower()
+                user["email"] = inp.email.strip().lower()
+            if updates:
+                await db.users.update_one({"_id": user["_id"]}, {"$set": updates})
     except Exception:
         # MongoDB unreachable — create a temporary dev session
         import hashlib

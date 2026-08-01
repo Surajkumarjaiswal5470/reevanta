@@ -23,6 +23,7 @@ class VerifyOTPRequest(BaseModel):
     phone: str
     otp: str
     name: Optional[str] = ""
+    email: Optional[str] = ""
 
 class SendEmailOTPRequest(BaseModel):
     email: str

@@ -4,6 +4,7 @@ import { useCart } from "../context/CartContext";
 import { apiFetch } from "../services/api";
 import { SizeGuideModal } from "./SizeGuideModal";
 import { ShadeMatcherModal } from "./ShadeMatcherModal";
+import { ProductReviews } from "./ProductReviews";
 import { toast } from "sonner";
 
 const COLOR_VARIANTS = [
@@ -321,85 +322,9 @@ export function QuickViewModal({ product, onClose }) {
                 </div>
               )}
 
-              {/* REVIEWS SECTION WITH PHOTO ATTACHMENTS & VERIFIED BADGES */}
-              <div className="pt-4 border-t border-[#E8DFC9] space-y-3">
-                <div className="flex justify-between items-center">
-                  <h4 className="font-black text-xs uppercase tracking-wider text-[#2D2118]">
-                    Customer Reviews & Photos ({reviewsData.reviews.length})
-                  </h4>
-                </div>
-
-                {/* Submit Review Form */}
-                <form onSubmit={handleSubmitReview} className="bg-[#FAF5EC] p-3 rounded-2xl border border-[#E8DFC9] space-y-2 text-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-[#2D2118]">Write a Review:</span>
-                    <div className="flex items-center gap-1">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <button
-                          key={star}
-                          type="button"
-                          onClick={() => setNewRating(star)}
-                          className="text-amber-400 hover:scale-110 transition"
-                        >
-                          <Star className={`w-4 h-4 ${star <= newRating ? "fill-amber-400" : ""}`} />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <input
-                    type="text"
-                    required
-                    placeholder="Share your experience with fit, fabric or shade..."
-                    value={newReviewText}
-                    onChange={(e) => setNewReviewText(e.target.value)}
-                    className="w-full bg-white border border-[#E8DFC9] rounded-xl p-2 text-xs text-[#2D2118]"
-                  />
-
-                  <div className="flex gap-2">
-                    <input
-                      type="url"
-                      placeholder="Photo URL (Optional)"
-                      value={newReviewPhoto}
-                      onChange={(e) => setNewReviewPhoto(e.target.value)}
-                      className="flex-1 bg-white border border-[#E8DFC9] rounded-xl p-2 text-xs text-[#2D2118]"
-                    />
-                    <button
-                      type="submit"
-                      disabled={submittingReview}
-                      className="bg-[#2D2118] hover:bg-[#5C1E1E] text-white px-3 py-1.5 rounded-xl text-xs font-bold"
-                    >
-                      Post
-                    </button>
-                  </div>
-                </form>
-
-                {/* Reviews Feed */}
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {reviewsData.reviews.map((rev) => (
-                    <div key={rev.id} className="p-3 bg-white rounded-xl border border-[#E8DFC9] space-y-1.5 text-xs">
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-bold text-[#2D2118]">{rev.userName}</span>
-                          {rev.verifiedPurchase && (
-                            <span className="bg-emerald-100 text-emerald-800 text-[9px] font-black px-1.5 py-0.2 rounded-full flex items-center gap-0.5">
-                              <ShieldCheck className="w-3 h-3 text-emerald-600" /> VERIFIED
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center text-amber-400 text-[10px]">
-                          {"★".repeat(rev.rating || 5)}
-                        </div>
-                      </div>
-
-                      <p className="text-gray-600 text-[11px] leading-relaxed">{rev.comment}</p>
-
-                      {rev.photoUrl && (
-                        <img src={rev.photoUrl} alt="Review attachment" className="w-16 h-16 rounded-lg object-cover border border-[#E8DFC9]" />
-                      )}
-                    </div>
-                  ))}
-                </div>
+              {/* ENTERPRISE PRODUCT REVIEWS HUB */}
+              <div className="pt-4 border-t border-[#E8DFC9]">
+                <ProductReviews productId={product.id} productName={product.name} />
               </div>
 
             </div>

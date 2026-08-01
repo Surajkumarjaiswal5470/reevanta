@@ -27,7 +27,20 @@ class ProductCreate(BaseModel):
 
 class ReviewCreate(BaseModel):
     userName: str
+    userEmail: Optional[str] = None
     rating: int = 5
+    fitRating: Optional[int] = 3  # 1=Runs Small, 3=True to Size, 5=Runs Large
+    qualityRating: Optional[int] = 5  # 1-5 scale
+    valueRating: Optional[int] = 5  # 1-5 scale
+    title: Optional[str] = None
     comment: str
     photoUrl: Optional[str] = None
-    verifiedPurchase: bool = True
+    photos: List[str] = []
+    verifiedPurchase: Optional[bool] = None
+
+class ReviewVote(BaseModel):
+    voterId: Optional[str] = None
+
+class AdminReviewReply(BaseModel):
+    responseText: str
+

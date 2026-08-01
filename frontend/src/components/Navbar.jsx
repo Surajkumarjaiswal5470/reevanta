@@ -25,14 +25,14 @@ const BOTTOM_TABS = [
   { id: "profile", label: "Profile", icon: UserIcon },
 ];
 
-export function Navbar({ activeTab, setActiveTab, onOpenProduct, onCategorySelect }) {
+export const Navbar = React.memo(function Navbar({ activeTab, setActiveTab, onOpenProduct, onCategorySelect }) {
   const { currentUser, setShowAuthModal, logout } = useAuth();
   const { cart, wishlist, setIsCartOpen, resellerMode, setResellerMode } = useCart();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
 
-  const visibleNavTabs = NAV_TABS.filter((tab) => tab.id !== "orders" || currentUser);
-  const cartItemsCount = cart.reduce((sum, item) => sum + item.qty, 0);
+  const visibleNavTabs = React.useMemo(() => NAV_TABS.filter((tab) => tab.id !== "orders" || currentUser), [currentUser]);
+  const cartItemsCount = React.useMemo(() => cart.reduce((sum, item) => sum + item.qty, 0), [cart]);
 
   useEffect(() => {
     document.body.style.overflow = isMobileMenuOpen ? "hidden" : "";
@@ -530,4 +530,4 @@ export function Navbar({ activeTab, setActiveTab, onOpenProduct, onCategorySelec
       <div className="lg:hidden h-[60px]" />
     </>
   );
-}
+});

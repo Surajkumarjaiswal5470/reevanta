@@ -4,7 +4,7 @@ import { useCart } from "../context/CartContext";
 import { apiFetch } from "../services/api";
 import { toast } from "sonner";
 
-export function ProductCard({ product, onQuickView }) {
+export const ProductCard = React.memo(function ProductCard({ product, onQuickView }) {
   const { wishlist, toggleWishlist, addToCart, resellerMode } = useCart();
   const isWishlisted = wishlist.some((item) => item.id === product.id);
   const [subscribingRestock, setSubscribingRestock] = useState(false);
@@ -71,6 +71,7 @@ export function ProductCard({ product, onQuickView }) {
           alt={product.name}
           className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
           loading="lazy"
+          decoding="async"
         />
         <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
           <button
@@ -155,4 +156,4 @@ export function ProductCard({ product, onQuickView }) {
       </div>
     </div>
   );
-}
+});

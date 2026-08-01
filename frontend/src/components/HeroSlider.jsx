@@ -49,7 +49,7 @@ const DEFAULT_SLIDES = [
 
 const AUTOPLAY_MS = 4500;
 
-export function HeroSlider({ onCategorySelect, onNavigate }) {
+export const HeroSlider = React.memo(function HeroSlider({ onCategorySelect, onNavigate }) {
   const [slides, setSlides] = useState(DEFAULT_SLIDES);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
@@ -261,4 +261,4 @@ export function HeroSlider({ onCategorySelect, onNavigate }) {
       `}</style>
     </section>
   );
-}
+});

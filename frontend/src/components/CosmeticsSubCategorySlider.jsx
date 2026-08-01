@@ -2,7 +2,7 @@ import React, { useRef } from "react";
 import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import { COSMETICS_SUB_CATEGORIES } from "../mock";
 
-export function CosmeticsSubCategorySlider({ onSelectSubCategory, activeSubCategory }) {
+export const CosmeticsSubCategorySlider = React.memo(function CosmeticsSubCategorySlider({ onSelectSubCategory, activeSubCategory }) {
   const scrollRef = useRef(null);
 
   const scroll = (dir) => {
@@ -91,4 +91,4 @@ export function CosmeticsSubCategorySlider({ onSelectSubCategory, activeSubCateg
       </div>
     </section>
   );
-}
+});

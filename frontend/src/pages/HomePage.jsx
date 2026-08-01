@@ -38,17 +38,21 @@ export function HomePage({ products, onCategorySelect, onQuickView, onNavigate }
       .catch(() => {});
   }, []);
 
-  const flashSaleProducts = products.filter((p) => p.isFlashSale);
+  const flashSaleProducts = React.useMemo(() => products.filter((p) => p.isFlashSale), [products]);
   
   // Filter products by active subcategory if selected
-  const filteredProductsBySubCat = products.filter((p) => {
-    if (activeSubCategory === "all") return true;
-    const matchesTags = (p.tags || []).some((t) => t.toLowerCase().includes(activeSubCategory.toLowerCase()));
-    const matchesName = (p.name || "").toLowerCase().includes(activeSubCategory.toLowerCase());
-    return matchesTags || matchesName;
-  });
+  const filteredProductsBySubCat = React.useMemo(() => {
+    return products.filter((p) => {
+      if (activeSubCategory === "all") return true;
+      const matchesTags = (p.tags || []).some((t) => t.toLowerCase().includes(activeSubCategory.toLowerCase()));
+      const matchesName = (p.name || "").toLowerCase().includes(activeSubCategory.toLowerCase());
+      return matchesTags || matchesName;
+    });
+  }, [products, activeSubCategory]);
 
-  const featuredProducts = filteredProductsBySubCat.length > 0 ? filteredProductsBySubCat : products;
+  const featuredProducts = React.useMemo(() => {
+    return filteredProductsBySubCat.length > 0 ? filteredProductsBySubCat : products;
+  }, [filteredProductsBySubCat, products]);
   const hasMore = visibleCount < featuredProducts.length;
 
   // Reset pagination when category changes

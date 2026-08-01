@@ -81,7 +81,7 @@ const CATEGORIES = [
   },
 ];
 
-export function CategorySlider({ onCategorySelect, onNavigate }) {
+function CategorySliderImpl({ onCategorySelect, onNavigate }) {
   const [activeGender, setActiveGender] = useState("all");
   const scrollRef = useRef(null);
 
@@ -129,44 +129,42 @@ export function CategorySlider({ onCategorySelect, onNavigate }) {
           <ChevronLeft className="w-4 h-4" />
         </button>
 
-        {/* Scrollable Track */}
+        {/* Scroll Track */}
         <div
           ref={scrollRef}
-          className="flex gap-5 sm:gap-6 overflow-x-auto scrollbar-none scroll-smooth pt-1 pb-0 px-1"
-          style={{ WebkitOverflowScrolling: "touch" }}
+          className="flex items-center gap-3 sm:gap-5 overflow-x-auto scrollbar-none py-2 px-1 scroll-smooth"
         >
           {filtered.map((cat) => (
-            <button
+            <div
               key={cat.id}
               onClick={() => handleCategoryClick(cat.id)}
-              className="group/item flex flex-col items-center gap-1.5 shrink-0 w-[68px] sm:w-[80px] transition-all duration-200 active:scale-95"
+              className="flex flex-col items-center gap-1 min-w-[70px] sm:min-w-[85px] cursor-pointer group/item flex-shrink-0"
             >
-              {/* Circular Classic Artwork Image */}
-              <div className="relative w-[58px] h-[58px] sm:w-[66px] sm:h-[66px] rounded-full overflow-hidden border-2 border-[#8B7355]/30 group-hover/item:border-[#5C1E1E] shadow-sm group-hover/item:shadow-md transition-all duration-300 bg-[#FAF5EC]">
-                <img
-                  src={cat.image}
-                  alt={cat.label}
-                  className="w-full h-full object-cover group-hover/item:scale-110 transition-transform duration-300"
-                />
-                {cat.comingSoon && (
-                  <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px] flex items-center justify-center">
-                    <span className="bg-[#5C1E1E] text-white text-[8px] font-black tracking-widest px-1.5 py-0.5 rounded-full uppercase shadow">
-                      SOON
-                    </span>
-                  </div>
-                )}
-                {cat.isPriority && (
-                  <span className="absolute bottom-0 inset-x-0 bg-gradient-to-r from-amber-600 to-rose-700 text-white text-[8px] font-black tracking-wider text-center py-0.5 uppercase shadow-sm">
-                    LIVE
-                  </span>
-                )}
-                <div className="absolute inset-0 rounded-full bg-[#5C1E1E]/0 group-hover/item:bg-[#5C1E1E]/10 transition-all duration-300" />
+              {/* Circular Icon Container */}
+              <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full p-[2.5px] bg-gradient-to-tr from-amber-600 via-amber-400 to-amber-700 shadow-md group-hover/item:scale-105 transition-transform duration-200">
+                <div className="w-full h-full rounded-full overflow-hidden bg-[#2D2118] relative">
+                  <img
+                    src={cat.image}
+                    alt={cat.label}
+                    loading="lazy"
+                    decoding="async"
+                    className="w-full h-full object-cover"
+                  />
+                  {cat.comingSoon && (
+                    <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px] flex items-center justify-center">
+                      <span className="text-[8px] font-black text-amber-300 uppercase tracking-widest bg-[#5C1E1E]/90 px-1.5 py-0.5 rounded-full border border-amber-400/30">
+                        SOON
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
-              {/* Label */}
-              <span className="text-[10px] sm:text-[11px] font-bold text-[#2D2118] group-hover/item:text-[#5C1E1E] transition-colors duration-200 text-center leading-tight line-clamp-2">
+
+              {/* Category Label */}
+              <span className="text-[11px] font-extrabold text-[#2D2118] group-hover/item:text-[#5C1E1E] transition-colors text-center leading-tight">
                 {cat.label}
               </span>
-            </button>
+            </div>
           ))}
         </div>
 
@@ -182,3 +180,5 @@ export function CategorySlider({ onCategorySelect, onNavigate }) {
     </section>
   );
 }
+
+export const CategorySlider = React.memo(CategorySliderImpl);

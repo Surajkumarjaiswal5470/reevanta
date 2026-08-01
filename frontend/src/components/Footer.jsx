@@ -1,7 +1,7 @@
 import React from "react";
 import { Sparkles, Phone, Mail, MapPin } from "lucide-react";
 
-export function Footer({ onNavigate }) {
+export const Footer = React.memo(function Footer({ onNavigate }) {
   return (
     <footer className="bg-[#2D2118] text-[#FAF5EC] rounded-3xl p-6 sm:p-8 mt-12 shadow-xl border border-[#B8956A]/20">
       <div className="flex flex-col md:flex-row items-center justify-between gap-6 pb-6 border-b border-[#FAF5EC]/10 text-center md:text-left">
@@ -61,4 +61,4 @@ export function Footer({ onNavigate }) {
       </div>
     </footer>
   );
-}
+});

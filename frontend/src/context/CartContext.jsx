@@ -21,7 +21,6 @@ export function CartProvider({ children }) {
   });
 
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [resellerMode, setResellerMode] = useState(false);
 
   // Sync with MongoDB Atlas Database on Mount for authenticated users
   useEffect(() => {
@@ -133,9 +132,6 @@ export function CartProvider({ children }) {
   };
 
   const cartSubtotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
-  const cartTotalResellerMargin = resellerMode
-    ? cart.reduce((sum, item) => sum + (item.resellerMargin || 0) * item.qty, 0)
-    : 0;
 
   return (
     <CartContext.Provider
@@ -153,10 +149,7 @@ export function CartProvider({ children }) {
         toggleWishlist,
         isCartOpen,
         setIsCartOpen,
-        resellerMode,
-        setResellerMode,
         cartSubtotal,
-        cartTotalResellerMargin,
       }}
     >
       {children}

@@ -6,7 +6,7 @@ import { OptimizedImage } from "./OptimizedImage";
 import { toast } from "sonner";
 
 export const ProductCard = React.memo(function ProductCard({ product, onQuickView }) {
-  const { wishlist, toggleWishlist, addToCart, resellerMode } = useCart();
+  const { wishlist, toggleWishlist, addToCart } = useCart();
   const isWishlisted = wishlist.some((item) => item.id === product.id);
   const [subscribingRestock, setSubscribingRestock] = useState(false);
 
@@ -109,30 +109,17 @@ export const ProductCard = React.memo(function ProductCard({ product, onQuickVie
 
         {/* Pricing & Actions */}
         <div>
-          {resellerMode ? (
-            <div className="bg-[#FAF5EC] p-1.5 sm:p-2 rounded-xl border border-[#E8DFC9] mb-1.5">
-              <div className="flex justify-between text-[10px] sm:text-[11px] text-gray-600 font-medium">
-                <span>Wholesale:</span>
-                <span className="font-bold text-[#2D2118]">₹{product.price}</span>
-              </div>
-              <div className="flex justify-between text-[10px] sm:text-xs font-bold text-emerald-700 mt-0.5">
-                <span>Profit:</span>
-                <span>+₹{product.resellerMargin || 200}</span>
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-baseline gap-1.5 mb-1.5 flex-wrap">
-              <span className="text-sm sm:text-base font-black text-[#2D2118]">₹{product.price}</span>
-              {product.originalPrice && product.originalPrice > product.price && (
-                <span className="text-[10px] sm:text-xs text-gray-400 line-through">₹{product.originalPrice}</span>
-              )}
-              {product.discountPercent && (
-                <span className="text-[9px] sm:text-[10px] font-bold text-[#5C1E1E] bg-[#5C1E1E]/10 px-1 py-0.2 rounded">
-                  {product.discountPercent}% OFF
-                </span>
-              )}
-            </div>
-          )}
+          <div className="flex items-baseline gap-1.5 mb-1.5 flex-wrap">
+            <span className="text-sm sm:text-base font-black text-[#2D2118]">₹{product.price}</span>
+            {product.originalPrice && product.originalPrice > product.price && (
+              <span className="text-[10px] sm:text-xs text-gray-400 line-through">₹{product.originalPrice}</span>
+            )}
+            {product.discountPercent && (
+              <span className="text-[9px] sm:text-[10px] font-bold text-[#5C1E1E] bg-[#5C1E1E]/10 px-1 py-0.2 rounded">
+                {product.discountPercent}% OFF
+              </span>
+            )}
+          </div>
 
           {isOutOfStock ? (
             <button

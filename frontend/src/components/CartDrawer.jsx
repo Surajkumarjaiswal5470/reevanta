@@ -7,7 +7,7 @@ import { AddressPicker } from "./AddressPicker";
 import { toast } from "sonner";
 
 export function CartDrawer({ onOrderPlaced }) {
-  const { cart, removeFromCart, updateCartQty, saveForLater, savedForLater, moveSavedToCart, removeSavedForLater, clearCart, isCartOpen, setIsCartOpen, resellerMode, cartSubtotal, cartTotalResellerMargin } = useCart();
+  const { cart, removeFromCart, updateCartQty, saveForLater, savedForLater, moveSavedToCart, removeSavedForLater, clearCart, isCartOpen, setIsCartOpen, cartSubtotal } = useCart();
   const { currentUser, setShowAuthModal } = useAuth();
 
   const [checkoutStep, setCheckoutStep] = useState(1); // 1: Cart Items, 2: Address & Payment
@@ -598,12 +598,6 @@ export function CartDrawer({ onOrderPlaced }) {
                   </span>
                 </div>
 
-                {resellerMode && cartTotalResellerMargin > 0 && (
-                  <div className="flex justify-between text-purple-700 font-bold">
-                    <span>Reseller Margin:</span>
-                    <span>+₹{cartTotalResellerMargin}</span>
-                  </div>
-                )}
 
                 <div className="flex justify-between text-sm font-black text-[#2D2118] pt-2 border-t border-[#E8DFC9]">
                   <span>Total Payable Amount</span>

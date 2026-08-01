@@ -170,7 +170,6 @@ export function ContactPage() {
                     <option value="General Inquiry">General Inquiry</option>
                     <option value="Order Tracking & Status">Order Tracking & Status</option>
                     <option value="Returns & Exchange">Returns & Exchange</option>
-                    <option value="Reseller & Wholesale Application">Reseller & Wholesale Application</option>
                     <option value="Bridal Custom Fitting">Bridal Custom Fitting</option>
                   </select>
                 </div>

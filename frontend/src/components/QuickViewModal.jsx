@@ -15,7 +15,7 @@ const COLOR_VARIANTS = [
 ];
 
 export function QuickViewModal({ product, onClose }) {
-  const { addToCart, wishlist, toggleWishlist, resellerMode } = useCart();
+  const { addToCart, wishlist, toggleWishlist } = useCart();
 
   // Gallery Images State
   const [activeImgIdx, setActiveImgIdx] = useState(0);
@@ -33,7 +33,6 @@ export function QuickViewModal({ product, onClose }) {
   const [selectedSize, setSelectedSize] = useState(sizes[0] || "M");
   const [selectedColor, setSelectedColor] = useState(colors[0]);
   const [selectedShade, setSelectedShade] = useState(product?.shade || shades[0]);
-  const [resellerExtraMargin, setResellerExtraMargin] = useState(product?.resellerMargin || 200);
 
   // Reviews State
   const [reviewsData, setReviewsData] = useState({ reviews: [], total: 0, avg_rating: 4.8, breakdown: {} });

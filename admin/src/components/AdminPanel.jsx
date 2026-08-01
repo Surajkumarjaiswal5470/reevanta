@@ -433,8 +433,7 @@ export const AdminPanel = () => {
             { id: "orders", label: `Orders (${orders.length})`, icon: Truck },
             { id: "products", label: `Products (${products.length})`, icon: Package },
             { id: "vouchers", label: `Vouchers (${vouchers.length})`, icon: Tag },
-            { id: "add", label: "Add Product", icon: PlusCircle },
-            { id: "reseller", label: "Reseller Earnings", icon: DollarSign }
+            { id: "add", label: "Add Product", icon: PlusCircle }
           ].map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;

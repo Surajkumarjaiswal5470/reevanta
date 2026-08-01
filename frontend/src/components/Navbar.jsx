@@ -27,7 +27,7 @@ const BOTTOM_TABS = [
 
 export const Navbar = React.memo(function Navbar({ activeTab, setActiveTab, onOpenProduct, onCategorySelect }) {
   const { currentUser, setShowAuthModal, logout } = useAuth();
-  const { cart, wishlist, setIsCartOpen, resellerMode, setResellerMode } = useCart();
+  const { cart, wishlist, setIsCartOpen } = useCart();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
 
@@ -166,18 +166,6 @@ export const Navbar = React.memo(function Navbar({ activeTab, setActiveTab, onOp
               <div className="w-56">
                 <SearchBar onSelectProduct={onOpenProduct} />
               </div>
-
-              {/* Reseller Mode Toggle */}
-              <button
-                onClick={() => setResellerMode(!resellerMode)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition border ${resellerMode
-                  ? "bg-emerald-600 text-white border-emerald-600 shadow-md"
-                  : "bg-white text-gray-700 border-gray-200 hover:border-[#2D2118]"
-                  }`}
-              >
-                <span className={`w-2 h-2 rounded-full ${resellerMode ? "bg-white animate-pulse" : "bg-emerald-500"}`} />
-                <span>{resellerMode ? "Reseller" : "Reseller"}</span>
-              </button>
 
               {/* Wishlist */}
               <button
@@ -445,36 +433,12 @@ export const Navbar = React.memo(function Navbar({ activeTab, setActiveTab, onOp
                   <span>↩️ Returns & Exchanges</span>
                   <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
                 </button>
-                <button
-                  onClick={() => goTo("reseller-faq")}
-                  className="w-full flex items-center justify-between px-3 py-2 text-xs font-bold text-[#2D2118] hover:text-[#5C1E1E] transition rounded-xl hover:bg-[#FAF5EC]"
-                >
-                  <span>💼 Reseller Program & FAQ</span>
-                  <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
-                </button>
               </div>
             </div>
           </nav>
 
           {/* Bottom Section */}
           <div className="p-4 space-y-3 border-t border-[#E8DFC9]/40 mt-auto">
-            {/* Reseller toggle */}
-            <button
-              onClick={() => setResellerMode(!resellerMode)}
-              className={`w-full flex items-center justify-between px-4 py-2.5 rounded-2xl text-xs font-bold transition border ${
-                resellerMode
-                  ? "bg-emerald-600 text-white border-emerald-600 shadow-lg shadow-emerald-600/15"
-                  : "bg-white text-[#2D2118] border-[#E8DFC9] hover:border-emerald-300"
-              }`}
-            >
-              <span className="flex items-center gap-2">
-                <Zap className={`w-3.5 h-3.5 ${resellerMode ? "text-white" : "text-emerald-500"}`} />
-                <span>{resellerMode ? "Reseller Active" : "Reseller Mode"}</span>
-              </span>
-              <div className={`w-8 h-[18px] rounded-full p-0.5 transition-all duration-300 ${resellerMode ? "bg-white/30" : "bg-gray-200"}`}>
-                <div className={`w-3.5 h-3.5 rounded-full bg-white shadow-sm transition-all duration-300 ${resellerMode ? "translate-x-3.5" : "translate-x-0"}`} />
-              </div>
-            </button>
             <p className="text-center text-[8px] text-[#8B7355]/40 font-medium tracking-wider">
               RIVAANTA © 2026 · Luxury Redefined
             </p>

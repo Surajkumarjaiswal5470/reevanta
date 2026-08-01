@@ -38,6 +38,19 @@ export function CatalogPage({ products, selectedCategory, onCategorySelect, onQu
   const [filters, setFilters] = useState(getInitialFilters);
   const [showFilterDrawer, setShowFilterDrawer] = useState(false);
 
+  // Sync prop changes to filters state (e.g. clicking Sarees or Kurtas in header)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const catFromUrl = params.get("category");
+    const targetCat = catFromUrl || selectedCategory || "all";
+    setFilters((prev) => {
+      if (prev.category !== targetCat) {
+        return { ...prev, category: targetCat };
+      }
+      return prev;
+    });
+  }, [selectedCategory]);
+
   // Synchronize state changes to URL Query Parameters (Bookmarkable & Shareable)
   const syncFiltersToUrl = useCallback((newFilters) => {
     const params = new URLSearchParams();

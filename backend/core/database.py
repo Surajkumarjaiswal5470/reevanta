@@ -5,25 +5,29 @@ from bson import ObjectId
 from fastapi import HTTPException
 from core.config import MONGO_URL, DB_NAME
 
-# Check if connection is MongoDB Atlas (mongodb+srv or mongodb:// with SSL)
+# High-Concurrency Motor Async Connection Pool Configuration (5,000+ Concurrent Users)
+POOL_SETTINGS = {
+    "maxPoolSize": 200,
+    "minPoolSize": 20,
+    "maxIdleTimeMS": 45000,
+    "waitQueueTimeoutMS": 5000,
+    "serverSelectionTimeoutMS": 3000,
+    "connectTimeoutMS": 5000,
+    "socketTimeoutMS": 10000,
+}
+
 if "mongodb+srv" in MONGO_URL or "ssl=true" in MONGO_URL.lower() or "tls=true" in MONGO_URL.lower():
-    # Create a permissive SSL context to handle Atlas TLS handshake issues
-    ssl_context = ssl.create_default_context(cafile=certifi.where())
-    ssl_context.check_hostname = False
-    ssl_context.verify_mode = ssl.CERT_NONE
-    
+    # SSL context for Mongo Atlas
     client = AsyncIOMotorClient(
         MONGO_URL,
         tls=True,
         tlsCAFile=certifi.where(),
         tlsAllowInvalidCertificates=True,
         tlsAllowInvalidHostnames=True,
-        serverSelectionTimeoutMS=3000,
-        connectTimeoutMS=5000,
-        socketTimeoutMS=10000,
+        **POOL_SETTINGS
     )
 else:
-    client = AsyncIOMotorClient(MONGO_URL, serverSelectionTimeoutMS=10000)
+    client = AsyncIOMotorClient(MONGO_URL, **POOL_SETTINGS)
 
 db = client[DB_NAME]
 

@@ -19,28 +19,32 @@ class RateLimiter:
         self.checkout_attempts = defaultdict(list)
 
     def is_rate_limited(self, ip: str, path: str, method: str) -> tuple[bool, int]:
-        # Allow tests to bypass rate limiting
         if os.getenv("DISABLE_RATE_LIMIT") == "1":
             return False, 0
         now = time.time()
         window_sec = 60
-        
-        # Clean old timestamps
+
+        # Periodic dictionary cleanup if tracking over 5,000 IPs
+        if len(self.ip_requests) > 5000:
+            stale_keys = [k for k, v in self.ip_requests.items() if not v or now - v[-1] > window_sec]
+            for k in stale_keys:
+                del self.ip_requests[k]
+
+        # Clean old timestamps for this IP
         self.ip_requests[ip] = [t for t in self.ip_requests[ip] if now - t < window_sec]
         
-        # Check global IP rate limit (120 reqs/min)
-        if len(self.ip_requests[ip]) >= 120:
+        # Global IP rate limit (300 reqs/min for high concurrency)
+        if len(self.ip_requests[ip]) >= 300:
             return True, 60
 
-        # Check endpoint-specific limits
+        # Auth endpoint rate limit
         if "/api/auth/" in path:
             key = f"{ip}:{path}"
             self.endpoint_requests[key] = [t for t in self.endpoint_requests[key] if now - t < window_sec]
-            if len(self.endpoint_requests[key]) >= 15:
+            if len(self.endpoint_requests[key]) >= 30:
                 return True, 30
             self.endpoint_requests[key].append(now)
 
-        # Record request
         self.ip_requests[ip].append(now)
         return False, 0
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Sparkles, ArrowRight } from "lucide-react";
 import { ProductCard } from "../components/ProductCard";
 import { HeroSlider } from "../components/HeroSlider";
+import { CosmeticsSubCategorySlider } from "../components/CosmeticsSubCategorySlider";
 import { Footer } from "../components/Footer";
 import { MOCK_CATEGORIES } from "../mock";
 import { apiFetch } from "../services/api";
@@ -9,6 +10,7 @@ import { apiFetch } from "../services/api";
 export function HomePage({ products, onCategorySelect, onQuickView, onNavigate }) {
   const [timeLeft, setTimeLeft] = useState({ hours: 4, minutes: 22, seconds: 45 });
   const [personalizedData, setPersonalizedData] = useState({ recommendedForYou: [], trendingLuxury: [] });
+  const [activeSubCategory, setActiveSubCategory] = useState("all");
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -32,15 +34,16 @@ export function HomePage({ products, onCategorySelect, onQuickView, onNavigate }
   }, []);
 
   const flashSaleProducts = products.filter((p) => p.isFlashSale);
-  // Sort products so Cosmetics & Beauty appear first
-  const cosmeticsFirstProducts = [...products].sort((a, b) => {
-    const aIsLive = a.category === "cosmetics" || a.category === "beauty";
-    const bIsLive = b.category === "cosmetics" || b.category === "beauty";
-    if (aIsLive && !bIsLive) return -1;
-    if (!aIsLive && bIsLive) return 1;
-    return 0;
+  
+  // Filter products by active subcategory if selected
+  const filteredProductsBySubCat = products.filter((p) => {
+    if (activeSubCategory === "all") return true;
+    const matchesTags = (p.tags || []).some((t) => t.toLowerCase().includes(activeSubCategory.toLowerCase()));
+    const matchesName = (p.name || "").toLowerCase().includes(activeSubCategory.toLowerCase());
+    return matchesTags || matchesName;
   });
-  const featuredProducts = cosmeticsFirstProducts.slice(0, 8);
+
+  const featuredProducts = filteredProductsBySubCat.length > 0 ? filteredProductsBySubCat : products;
 
   return (
     <div className="space-y-3 sm:space-y-6 lg:space-y-8 pb-12 pt-0 -mt-6 sm:-mt-2">
@@ -50,6 +53,14 @@ export function HomePage({ products, onCategorySelect, onQuickView, onNavigate }
         <HeroSlider onCategorySelect={onCategorySelect} onNavigate={onNavigate} />
       </div>
 
+      {/* ── Middle Cosmetics Sub-Category Slider ── */}
+      <CosmeticsSubCategorySlider
+        activeSubCategory={activeSubCategory}
+        onSelectSubCategory={(tag) => {
+          setActiveSubCategory((prev) => (prev === tag ? "all" : tag));
+        }}
+      />
+
       {/* ── Top Instant Featured Items Showcase ── */}
       <section className="space-y-6">
         <div className="flex justify-between items-end">
@@ -57,7 +68,11 @@ export function HomePage({ products, onCategorySelect, onQuickView, onNavigate }
             <span className="text-xs font-bold uppercase tracking-widest text-[#8B7355] flex items-center gap-1.5">
               <Sparkles className="w-4 h-4 text-amber-600" /> Handpicked Arrivals
             </span>
-            <h2 className="text-2xl sm:text-3xl font-black text-[#2D2118]">Trending Luxury Cosmetics</h2>
+            <h2 className="text-2xl sm:text-3xl font-black text-[#2D2118]">
+              {activeSubCategory !== "all"
+                ? `Trending ${activeSubCategory.toUpperCase()} Collection`
+                : "Trending Luxury Cosmetics"}
+            </h2>
           </div>
           <button
             onClick={() => onNavigate("catalog")}

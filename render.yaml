@@ -1,7 +1,8 @@
 services:
   - type: web
     name: reevanta-backend
-    env: python
+    runtime: python
+    plan: free
     region: singapore
     rootDir: backend
     buildCommand: pip install -r requirements.txt

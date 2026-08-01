@@ -4,7 +4,6 @@ import {
   CheckCircle2, Loader2, Clock, RefreshCw
 } from "lucide-react";
 import { apiFetch } from "../services/api";
-import { sendFirebasePhoneOtp } from "../config/firebase";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "sonner";
 
@@ -196,7 +195,7 @@ export function AuthModal() {
 
   if (!showAuthModal) return null;
 
-  // ─── Step 1: Send OTP ──────────────────────────────────────────────────
+  // ─── Step 1: Send OTP (Pure Backend) ────────────────────────────────────
   const handleSendOtp = async (e) => {
     e?.preventDefault?.();
     if (!authPhone || authPhone.trim().length < 10) {
@@ -207,21 +206,21 @@ export function AuthModal() {
     setOtpError("");
 
     try {
-      // Fire both in parallel — don't block on Firebase
-      const backendPromise = apiFetch("/auth/send-otp", {
+      const res = await apiFetch("/auth/send-otp", {
         method: "POST",
         body: { phone: fullPhone },
       });
 
-      sendFirebasePhoneOtp(fullPhone).catch((fbErr) => {
-        console.warn("Firebase SMS fallback:", fbErr.message);
-      });
-
-      const res = await backendPromise;
       setIsExistingUser(res.is_existing_user);
       setStep(2);
       countdown.restart();
-      toast.success("Verification code sent!", { icon: "📲" });
+
+      // In dev mode (no Twilio), show the OTP code for easy testing
+      if (res.otp) {
+        toast.success(`Verification code: ${res.otp}`, { icon: "📲", duration: 10000 });
+      } else {
+        toast.success("Verification code sent!", { icon: "📲" });
+      }
     } catch (err) {
       toast.error(err.message || "Failed to send OTP");
     } finally {
@@ -229,7 +228,7 @@ export function AuthModal() {
     }
   };
 
-  // ─── Step 2: Verify OTP ────────────────────────────────────────────────
+  // ─── Step 2: Verify OTP (Pure Backend) ─────────────────────────────────
   const handleVerifyOtp = async (otpCode) => {
     const code = otpCode || authOtp;
     if (!code || code.length < 4) {
@@ -240,17 +239,6 @@ export function AuthModal() {
     setOtpError("");
 
     try {
-      let firebaseToken = null;
-      if (window.confirmationResult) {
-        try {
-          const fbRes = await window.confirmationResult.confirm(code);
-          firebaseToken = await fbRes.user.getIdToken();
-        } catch (fbErr) {
-          console.warn("Firebase confirm note:", fbErr.message);
-        }
-      }
-
-      let user;
       const body = {
         phone: fullPhone,
         otp: code,
@@ -258,21 +246,13 @@ export function AuthModal() {
         email: authEmail.trim(),
       };
 
-      if (firebaseToken) {
-        user = await apiFetch("/auth/verify-firebase-token", {
-          method: "POST",
-          body: { idToken: firebaseToken, ...body },
-        });
-      } else {
-        user = await apiFetch("/auth/verify-otp", {
-          method: "POST",
-          body,
-        });
-      }
+      const user = await apiFetch("/auth/verify-otp", {
+        method: "POST",
+        body,
+      });
 
-      // If new user and backend created with default name, show profile step
+      // If new user, show profile step
       if (!isExistingUser && step === 2) {
-        // Existing user flow just verified — check if we have profile data
         setStep(3);
         setVerifying(false);
         return;
@@ -298,7 +278,7 @@ export function AuthModal() {
     }
   };
 
-  // ─── Step 3: Complete Profile (new users) ──────────────────────────────
+  // ─── Step 3: Complete Profile (new users, Pure Backend) ────────────────
   const handleCompleteProfile = async (e) => {
     e.preventDefault();
     if (!authName.trim()) {
@@ -311,17 +291,6 @@ export function AuthModal() {
     }
     setLoading(true);
     try {
-      let firebaseToken = null;
-      if (window.confirmationResult) {
-        try {
-          const fbRes = await window.confirmationResult.confirm(authOtp);
-          firebaseToken = await fbRes.user.getIdToken();
-        } catch {
-          // Use backend verification
-        }
-      }
-
-      let user;
       const body = {
         phone: fullPhone,
         otp: authOtp,
@@ -329,17 +298,10 @@ export function AuthModal() {
         email: authEmail.trim(),
       };
 
-      if (firebaseToken) {
-        user = await apiFetch("/auth/verify-firebase-token", {
-          method: "POST",
-          body: { idToken: firebaseToken, ...body },
-        });
-      } else {
-        user = await apiFetch("/auth/verify-otp", {
-          method: "POST",
-          body,
-        });
-      }
+      const user = await apiFetch("/auth/verify-otp", {
+        method: "POST",
+        body,
+      });
 
       setCurrentUser(user);
       setShowAuthModal(false);

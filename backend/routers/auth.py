@@ -20,13 +20,13 @@ from core.security import (
 )
 from models.auth import (
     UserRegister, UserLogin, AdminSecretLoginRequest, SendOTPRequest,
-    VerifyOTPRequest, SendEmailOTPRequest, VerifyFirebaseOTPRequest
+    VerifyOTPRequest, SendEmailOTPRequest
 )
 from core.config import ADMIN_NAME, ADMIN_SECRET_KEY, ADMIN_EMAIL
 from services.email_service import send_email_brevo
 from services.sms_service import send_twilio_sms_fire_and_forget, send_twilio_sms
-from core.config import TWILIO_ACCOUNT_SID
-from core.firebase_config import verify_firebase_id_token
+from services.nepalotp_service import send_nepalotp_sms, verify_nepalotp_sms
+from core.config import TWILIO_ACCOUNT_SID, NEPALOTP_API_KEY
 from core.rate_limiter import rate_limiter
 import hmac
 
@@ -128,31 +128,55 @@ async def send_otp(inp: SendOTPRequest):
     except Exception:
         pass
 
-    otp = _generate_otp()
+    otp_id = None
+    sent_via_nepalotp = False
+    otp = None
+
+    # Try sending via NepalOTP if API key is provided
+    if NEPALOTP_API_KEY:
+        np_res = send_nepalotp_sms(phone)
+        if np_res.get("success"):
+            otp_id = np_res.get("otp_id")
+            sent_via_nepalotp = True
+
+    # Fallback to local OTP generation if NepalOTP didn't handle it
+    if not sent_via_nepalotp:
+        otp = _generate_otp()
+        send_twilio_sms_fire_and_forget(
+            phone,
+            f"Your RIVAANTA verification code is {otp}. Valid for {OTP_EXPIRY_MINUTES} minutes."
+        )
+
     expires_at = datetime.now(timezone.utc) + timedelta(minutes=OTP_EXPIRY_MINUTES)
     
-    # Store OTP with attempt counter — don't await if it's slow
+    # Store OTP / otp_id with attempt counter
     try:
+        otp_doc = {
+            "phone": phone,
+            "expires_at": expires_at,
+            "attempts": 0,
+            "sent_via_nepalotp": sent_via_nepalotp
+        }
+        if otp_id:
+            otp_doc["otp_id"] = otp_id
+        if otp:
+            otp_doc["otp"] = otp
+
         await db.otps.update_one(
             {"phone": phone},
-            {"$set": {"otp": otp, "expires_at": expires_at, "attempts": 0}},
+            {"$set": otp_doc},
             upsert=True
         )
     except Exception:
         pass
     
-    # FIRE-AND-FORGET: Send SMS in background thread — don't block response
-    send_twilio_sms_fire_and_forget(
-        phone,
-        f"Your RIVAANTA verification code is {otp}. Valid for {OTP_EXPIRY_MINUTES} minutes."
-    )
-    
     return {
         "message": f"Verification code sent to {phone}.",
         "phone": phone,
-        "otp": otp,
+        "otp": otp,  # None when sent via NepalOTP (security: OTP verified remotely)
         "is_existing_user": is_existing,
-        "sent_via_twilio": bool(TWILIO_ACCOUNT_SID)
+        "sent_via_nepalotp": sent_via_nepalotp,
+        "sent_via_twilio": bool(TWILIO_ACCOUNT_SID) and not sent_via_nepalotp
     }
 
 
@@ -183,18 +207,29 @@ async def verify_otp(inp: VerifyOTPRequest, response: Response):
         if expires_at and datetime.now(timezone.utc) > expires_at:
             raise HTTPException(status_code=400, detail="Verification code has expired. Please request a new one.")
 
-        # Constant-time OTP comparison
-        expected_otp = otp_record.get("otp", "")
-        if expected_otp and not _safe_otp_compare(inp.otp, expected_otp):
-            # Increment attempt counter
-            try:
-                await db.otps.update_one(
-                    {"phone": phone},
-                    {"$inc": {"attempts": 1}}
-                )
-            except Exception:
-                pass
-            raise HTTPException(status_code=400, detail="Incorrect verification code. Please check and try again.")
+        # Verify via NepalOTP API if otp_id exists
+        if otp_record.get("sent_via_nepalotp") and otp_record.get("otp_id"):
+            np_ver = verify_nepalotp_sms(otp_record["otp_id"], inp.otp)
+            if not np_ver.get("success"):
+                try:
+                    await db.otps.update_one({"phone": phone}, {"$inc": {"attempts": 1}})
+                except Exception:
+                    pass
+                err_msg = np_ver.get("message") or "Incorrect verification code. Please check and try again."
+                raise HTTPException(status_code=400, detail=err_msg)
+        else:
+            # Constant-time local OTP comparison
+            expected_otp = otp_record.get("otp", "")
+            if expected_otp and not _safe_otp_compare(inp.otp, expected_otp):
+                # Increment attempt counter
+                try:
+                    await db.otps.update_one(
+                        {"phone": phone},
+                        {"$inc": {"attempts": 1}}
+                    )
+                except Exception:
+                    pass
+                raise HTTPException(status_code=400, detail="Incorrect verification code. Please check and try again.")
 
         # OTP valid — clean up
         try:
@@ -246,45 +281,6 @@ async def verify_otp(inp: VerifyOTPRequest, response: Response):
         "role": user.get("role", "user")
     }
 
-
-# ─── Firebase Token Verification ─────────────────────────────────────────────
-@router.post("/verify-firebase-token")
-async def verify_firebase_token(inp: VerifyFirebaseOTPRequest, response: Response):
-    phone = format_phone(inp.phone)
-    decoded = verify_firebase_id_token(inp.idToken)
-    
-    # Fallback if in local test mode
-    if not decoded and inp.idToken == "test-firebase-token":
-        decoded = {"phone_number": phone}
-    elif not decoded:
-        raise HTTPException(status_code=400, detail="Invalid Firebase Token")
-
-    user = await db.users.find_one({"phone": phone})
-    if not user:
-        role = "admin" if phone in ADMIN_PHONES else "user"
-        name = inp.name.strip() if inp.name and inp.name.strip() else f"User {phone[-4:]}"
-        user_email = inp.email.strip().lower() if inp.email and inp.email.strip() else f"{phone.replace('+', '')}@reevanta.local"
-        doc = {
-            "phone": phone,
-            "email": user_email,
-            "name": name,
-            "role": role,
-            "created_at": datetime.now(timezone.utc)
-        }
-        res = await db.users.insert_one(doc)
-        user_id = str(res.inserted_id)
-        user = doc
-    else:
-        user_id = str(user["_id"])
-
-    set_auth_cookies(response, user_id, phone)
-    return {
-        "id": user_id,
-        "phone": phone,
-        "email": user.get("email", ""),
-        "name": user.get("name", f"User {phone[-4:]}"),
-        "role": user.get("role", "user")
-    }
 
 
 # ─── Register ────────────────────────────────────────────────────────────────

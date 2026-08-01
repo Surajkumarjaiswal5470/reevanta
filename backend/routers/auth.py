@@ -193,7 +193,13 @@ async def verify_otp(inp: VerifyOTPRequest, response: Response):
     except Exception:
         db_reachable = False
 
-    if db_reachable and otp_record:
+    if db_reachable:
+        if not otp_record:
+            raise HTTPException(
+                status_code=400,
+                detail="No verification code requested or code has expired. Please request a new code."
+            )
+
         # Check attempt limit
         attempts = otp_record.get("attempts", 0)
         if attempts >= MAX_OTP_VERIFY_ATTEMPTS:
@@ -202,10 +208,13 @@ async def verify_otp(inp: VerifyOTPRequest, response: Response):
                 detail="Too many verification attempts. Please request a new code."
             )
 
-        # Check expiry
+        # Check expiry safely (handle naive datetimes from MongoDB)
         expires_at = otp_record.get("expires_at")
-        if expires_at and datetime.now(timezone.utc) > expires_at:
-            raise HTTPException(status_code=400, detail="Verification code has expired. Please request a new one.")
+        if expires_at:
+            if isinstance(expires_at, datetime) and expires_at.tzinfo is None:
+                expires_at = expires_at.replace(tzinfo=timezone.utc)
+            if datetime.now(timezone.utc) > expires_at:
+                raise HTTPException(status_code=400, detail="Verification code has expired. Please request a new one.")
 
         # Verify via NepalOTP API if otp_id exists
         if otp_record.get("sent_via_nepalotp") and otp_record.get("otp_id"):

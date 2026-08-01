@@ -52,6 +52,12 @@ async def lifespan(app: FastAPI):
 from core.rate_limiter import RateLimitMiddleware
 from core.security_middleware import SecurityHeadersMiddleware
 
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from core.exception_handler import (
+    http_exception_handler, validation_exception_handler, global_unhandled_exception_handler
+)
+
 app = FastAPI(
     title="RIVAANTA Luxury Wear API",
     description="Production-ready REST API backend for Reevanta E-Commerce platform.",
@@ -59,9 +65,16 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+app.add_exception_handler(StarletteHTTPException, http_exception_handler)
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
+app.add_exception_handler(Exception, global_unhandled_exception_handler)
+
 from routers.admin.cms import router as admin_cms_router
 
+from routers.health import router as health_router
+
 api_router = APIRouter(prefix="/api")
+api_router.include_router(health_router)
 api_router.include_router(auth_router)
 api_router.include_router(products_router)
 api_router.include_router(addresses_router)

@@ -98,8 +98,11 @@ async def get_product_reviews(
             {"photoUrl": {"$ne": None}}
         ]
 
-    # Fetch all matching reviews for breakdown calculation
-    all_reviews = await db.reviews.find({"product_id": product_id}).to_list(1000)
+    try:
+        all_reviews = await db.reviews.find({"product_id": product_id}).to_list(1000)
+    except Exception:
+        all_reviews = []
+
     total_all = len(all_reviews)
 
     # Compute overall metrics across ALL reviews for this product
@@ -124,18 +127,20 @@ async def get_product_reviews(
     avg_quality = round(sum(quality_ratings) / len(quality_ratings), 1) if quality_ratings else 4.8
     avg_value = round(sum(value_ratings) / len(value_ratings), 1) if value_ratings else 4.7
 
-    # Apply sorting to filtered items
-    cursor = db.reviews.find(query)
-    if sort_by == "highest":
-        cursor = cursor.sort("rating", -1)
-    elif sort_by == "lowest":
-        cursor = cursor.sort("rating", 1)
-    elif sort_by == "helpful":
-        cursor = cursor.sort("helpfulVotes", -1)
-    else:  # recent
-        cursor = cursor.sort("created_at", -1)
+    try:
+        cursor = db.reviews.find(query)
+        if sort_by == "highest":
+            cursor = cursor.sort("rating", -1)
+        elif sort_by == "lowest":
+            cursor = cursor.sort("rating", 1)
+        elif sort_by == "helpful":
+            cursor = cursor.sort("helpfulVotes", -1)
+        else:  # recent
+            cursor = cursor.sort("created_at", -1)
 
-    filtered_reviews = await cursor.to_list(limit)
+        filtered_reviews = await cursor.to_list(limit)
+    except Exception:
+        filtered_reviews = []
 
     return {
         "reviews": [serialize_doc(r) for r in filtered_reviews],

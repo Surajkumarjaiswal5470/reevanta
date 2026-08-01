@@ -37,6 +37,7 @@ from routers.admin.cms import router as admin_cms_router
 from routers.upload import router as upload_router
 from routers.search import router as search_router
 from routers.chat_ws import router as chat_ws_router
+from services.otp_queue_service import start_otp_worker
 
 logging.basicConfig(
     level=logging.INFO,
@@ -48,6 +49,7 @@ logger = logging.getLogger("reevanta.server")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Initializing Reevanta backend...")
+    worker_task = asyncio.create_task(start_otp_worker())
 
     async def init_db():
         try:

@@ -26,6 +26,7 @@ from core.config import ADMIN_NAME, ADMIN_SECRET_KEY, ADMIN_EMAIL
 from services.email_service import send_email_brevo
 from services.sms_service import send_twilio_sms_fire_and_forget, send_twilio_sms
 from services.nepalotp_service import send_nepalotp_sms, verify_nepalotp_sms
+from services.otp_queue_service import enqueue_otp_job
 from core.config import TWILIO_ACCOUNT_SID, NEPALOTP_API_KEY
 from core.rate_limiter import rate_limiter
 import hmac
@@ -132,20 +133,21 @@ async def send_otp(inp: SendOTPRequest):
     sent_via_nepalotp = False
     otp = None
 
-    # Try sending via NepalOTP if API key is provided
+    # Enqueue background OTP job into Redis Queue (< 5ms response time)
     if NEPALOTP_API_KEY:
-        np_res = send_nepalotp_sms(phone)
-        if np_res.get("success"):
-            otp_id = np_res.get("otp_id")
+        enqueued = await enqueue_otp_job("nepal_otp", {"phone": phone})
+        if enqueued:
             sent_via_nepalotp = True
+        else:
+            np_res = send_nepalotp_sms(phone)
+            if np_res.get("success"):
+                otp_id = np_res.get("otp_id")
+                sent_via_nepalotp = True
 
     # Fallback to local OTP generation if NepalOTP didn't handle it
     if not sent_via_nepalotp:
         otp = _generate_otp()
-        send_twilio_sms_fire_and_forget(
-            phone,
-            f"Your RIVAANTA verification code is {otp}. Valid for {OTP_EXPIRY_MINUTES} minutes."
-        )
+        await enqueue_otp_job("sms_otp", {"phone": phone, "otp": otp})
 
     expires_at = datetime.now(timezone.utc) + timedelta(minutes=OTP_EXPIRY_MINUTES)
     

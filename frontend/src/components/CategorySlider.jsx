@@ -132,7 +132,7 @@ export function CategorySlider({ onCategorySelect, onNavigate }) {
         {/* Scrollable Track */}
         <div
           ref={scrollRef}
-          className="flex gap-5 sm:gap-6 overflow-x-auto scrollbar-none scroll-smooth py-2 px-1"
+          className="flex gap-5 sm:gap-6 overflow-x-auto scrollbar-none scroll-smooth pt-1 pb-0 px-1"
           style={{ WebkitOverflowScrolling: "touch" }}
         >
           {filtered.map((cat) => (

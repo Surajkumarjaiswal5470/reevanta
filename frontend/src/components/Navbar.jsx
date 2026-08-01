@@ -235,7 +235,7 @@ export function Navbar({ activeTab, setActiveTab, onOpenProduct, onCategorySelec
 
         {/* ── Category Bar attached to Header with 0 Gap ── */}
         {activeTab === "home" && (
-          <div className="border-t border-[#E8DFC9]/60 bg-[#FAF5EC] py-1 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+          <div className="border-t border-[#E8DFC9]/60 bg-[#FAF5EC] pt-1 pb-0 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
             <CategorySlider onCategorySelect={onCategorySelect} onNavigate={setActiveTab} />
           </div>
         )}

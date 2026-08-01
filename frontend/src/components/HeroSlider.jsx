@@ -102,29 +102,29 @@ export function HeroSlider({ onCategorySelect, onNavigate }) {
 
   return (
     <section
-      className="relative rounded-2xl sm:rounded-3xl overflow-hidden bg-[#FAF5EC] border border-[#E8DFC9] shadow-sm group transition-all duration-300"
+      className="relative rounded-xl sm:rounded-3xl overflow-hidden bg-[#FAF5EC] border border-[#E8DFC9] shadow-sm group transition-all duration-300"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
-      <div className="flex flex-col md:flex-row items-center justify-between p-3.5 sm:p-6 lg:p-8 gap-3 sm:gap-6 md:gap-8">
+      <div className="flex flex-col md:flex-row items-center justify-between p-2.5 sm:p-5 lg:p-8 gap-2.5 sm:gap-6 md:gap-8">
         
         {/* Left Text Content */}
-        <div className="w-full md:w-1/2 space-y-2 sm:space-y-3 text-left z-10">
+        <div className="w-full md:w-1/2 space-y-1.5 sm:space-y-3 text-left z-10">
           {activeSlide.badge && (
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#5C1E1E]/10 text-[#5C1E1E] text-[9px] sm:text-[11px] font-black tracking-widest uppercase border border-[#5C1E1E]/20">
-              <Sparkles className="w-3 h-3 text-[#5C1E1E]" /> {activeSlide.badge}
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#5C1E1E]/10 text-[#5C1E1E] text-[8px] sm:text-[10px] font-black tracking-widest uppercase border border-[#5C1E1E]/20">
+              <Sparkles className="w-2.5 h-2.5 text-[#5C1E1E]" /> {activeSlide.badge}
             </span>
           )}
-          <h2 className="text-xl sm:text-3xl lg:text-4xl font-serif font-black text-[#2D2118] leading-tight tracking-tight transition-all duration-300">
+          <h2 className="text-lg sm:text-2xl lg:text-4xl font-serif font-black text-[#2D2118] leading-tight tracking-tight transition-all duration-300">
             {activeSlide.title}
           </h2>
-          <p className="text-[11px] sm:text-xs md:text-sm text-[#8B7355] font-medium max-w-md leading-relaxed line-clamp-2 sm:line-clamp-none">
+          <p className="text-[10px] sm:text-xs md:text-sm text-[#8B7355] font-medium max-w-md leading-snug line-clamp-1 sm:line-clamp-none">
             {activeSlide.subtitle}
           </p>
           <div className="pt-0.5 sm:pt-1">
             <button
               onClick={() => handleSlideClick(activeSlide)}
-              className="bg-[#2D2118] hover:bg-[#5C1E1E] text-white px-4 py-2 sm:px-6 sm:py-2.5 rounded-xl text-[10px] sm:text-xs font-black tracking-wider uppercase shadow-sm hover:shadow-md transition-all duration-300 active:scale-95 flex items-center gap-1.5"
+              className="bg-[#2D2118] hover:bg-[#5C1E1E] text-white px-3.5 py-1.5 sm:px-5 sm:py-2.5 rounded-lg sm:rounded-xl text-[9px] sm:text-xs font-black tracking-wider uppercase shadow-sm hover:shadow-md transition-all duration-300 active:scale-95 flex items-center gap-1"
             >
               <span>{activeSlide.buttonText || "EXPLORE COSMETICS"}</span>
             </button>
@@ -134,7 +134,7 @@ export function HeroSlider({ onCategorySelect, onNavigate }) {
         {/* Right Image */}
         <div
           onClick={() => handleSlideClick(activeSlide)}
-          className="w-full md:w-1/2 h-[140px] sm:h-[220px] md:h-[260px] lg:h-[290px] rounded-xl sm:rounded-2xl overflow-hidden relative cursor-pointer group/img shrink-0 border border-[#E8DFC9]"
+          className="w-full md:w-1/2 h-[110px] sm:h-[190px] md:h-[240px] lg:h-[280px] rounded-lg sm:rounded-2xl overflow-hidden relative cursor-pointer group/img shrink-0 border border-[#E8DFC9]"
         >
           <img
             src={activeSlide.image}
@@ -148,30 +148,30 @@ export function HeroSlider({ onCategorySelect, onNavigate }) {
       {/* Prev / Next Controls */}
       <button
         onClick={prevSlide}
-        className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/90 border border-[#E8DFC9] shadow-md flex items-center justify-center text-[#2D2118] opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-[#FAF5EC]"
+        className="absolute left-1.5 top-1/2 -translate-y-1/2 z-20 w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-white/90 border border-[#E8DFC9] shadow-md flex items-center justify-center text-[#2D2118] opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-[#FAF5EC]"
         aria-label="Previous Slide"
       >
-        <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+        <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
       </button>
 
       <button
         onClick={nextSlide}
-        className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/90 border border-[#E8DFC9] shadow-md flex items-center justify-center text-[#2D2118] opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-[#FAF5EC]"
+        className="absolute right-1.5 top-1/2 -translate-y-1/2 z-20 w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-white/90 border border-[#E8DFC9] shadow-md flex items-center justify-center text-[#2D2118] opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-[#FAF5EC]"
         aria-label="Next Slide"
       >
-        <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
+        <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
       </button>
 
       {/* Pagination Dots */}
-      <div className="absolute bottom-2.5 sm:bottom-3.5 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 sm:gap-2">
+      <div className="absolute bottom-1.5 sm:bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 sm:gap-1.5">
         {slides.map((_, idx) => (
           <button
             key={idx}
             onClick={() => setCurrentIndex(idx)}
             className={`transition-all duration-300 rounded-full ${
               currentIndex === idx
-                ? "w-5 sm:w-6 h-1.5 sm:h-2 bg-[#2D2118]"
-                : "w-1.5 sm:w-2 h-1.5 sm:h-2 bg-[#8B7355]/40 hover:bg-[#8B7355]"
+                ? "w-4 sm:w-5 h-1 sm:h-1.5 bg-[#2D2118]"
+                : "w-1 sm:w-1.5 h-1 sm:h-1.5 bg-[#8B7355]/40 hover:bg-[#8B7355]"
             }`}
             aria-label={`Go to slide ${idx + 1}`}
           />

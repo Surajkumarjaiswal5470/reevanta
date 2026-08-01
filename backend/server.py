@@ -37,6 +37,7 @@ from routers.admin.cms import router as admin_cms_router
 from routers.upload import router as upload_router
 from routers.search import router as search_router
 from routers.chat_ws import router as chat_ws_router
+from routers.queues import router as queues_router
 from services.otp_queue_service import start_otp_worker
 
 logging.basicConfig(
@@ -110,6 +111,7 @@ api_router.include_router(admin_cms_router)
 api_router.include_router(admin_router)
 api_router.include_router(upload_router)
 api_router.include_router(search_router)
+api_router.include_router(queues_router)
 
 app.include_router(api_router)
 app.include_router(chat_ws_router)

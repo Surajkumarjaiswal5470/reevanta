@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { ImageUploader } from "./ImageUploader";
 import { AdminChatDesk } from "./AdminChatDesk";
+import { AdminQueueDashboard } from "./AdminQueueDashboard";
 import {
   Package,
   ShoppingBag,
@@ -23,7 +24,8 @@ import {
   Tag,
   Layers,
   ArrowUpRight,
-  Headset
+  Headset,
+  Cpu
 } from "lucide-react";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || (process.env.NODE_ENV === 'production' ? "https://reevanta-backend-pg3v.onrender.com" : "http://localhost:8001");
@@ -436,6 +438,7 @@ export const AdminPanel = () => {
             { id: "products", label: `Products (${products.length})`, icon: Package },
             { id: "vouchers", label: `Vouchers (${vouchers.length})`, icon: Tag },
             { id: "support", label: "Live Support Chat", icon: Headset },
+            { id: "queues", label: "BullMQ Dashboard", icon: Cpu },
             { id: "add", label: "Add Product", icon: PlusCircle }
           ].map((item) => {
             const Icon = item.icon;
@@ -1351,6 +1354,13 @@ export const AdminPanel = () => {
       {activeTab === "support" && (
         <div className="space-y-4">
           <AdminChatDesk />
+        </div>
+      )}
+
+      {/* BULLMQ QUEUES DASHBOARD TAB */}
+      {activeTab === "queues" && (
+        <div className="space-y-4">
+          <AdminQueueDashboard />
         </div>
       )}
 

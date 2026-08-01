@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { MessageSquare, Headset, Send, User, RefreshCw, Circle, CheckCircle2 } from "lucide-react";
+import { MessageSquare, Headset, Send, User, RefreshCw, Circle, CheckCheck, Check, BellRing } from "lucide-react";
 import { toast } from "sonner";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || (process.env.NODE_ENV === 'production' ? 'https://reevanta-backend-pg3v.onrender.com' : 'http://localhost:8001');
@@ -12,11 +12,23 @@ export function AdminChatDesk() {
   const [messages, setMessages] = useState({});
   const [replyInput, setReplyInput] = useState("");
   const [connected, setConnected] = useState(false);
+  const [customerTyping, setCustomerTyping] = useState({});
+  const [roomPresence, setRoomPresence] = useState({});
 
   const wsRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const typingTimerRef = useRef(null);
 
-  // Fetch Active Chat Rooms
+  // Request Notification permission
+  useEffect(() => {
+    if (typeof window !== "undefined" && "Notification" in window) {
+      if (Notification.permission === "default") {
+        Notification.requestPermission().catch(() => {});
+      }
+    }
+  }, []);
+
+  // Fetch Active Rooms
   const fetchActiveRooms = async () => {
     try {
       const res = await fetch(`${API_URL}/chat/active-rooms`);
@@ -36,6 +48,24 @@ export function AdminChatDesk() {
     fetchActiveRooms();
   }, []);
 
+  // Send Read Receipt when selected room changes
+  useEffect(() => {
+    if (selectedRoomId && wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(
+        JSON.stringify({
+          type: "read_receipt",
+          room_id: selectedRoomId,
+          sender: "admin"
+        })
+      );
+
+      // Clear unread badge in local rooms state
+      setRooms((prev) =>
+        prev.map((r) => (r.room_id === selectedRoomId ? { ...r, unread_count: 0 } : r))
+      );
+    }
+  }, [selectedRoomId]);
+
   // Connect to Admin WebSocket
   useEffect(() => {
     const ws = new WebSocket(`${WS_URL}/ws/chat/admin`);
@@ -50,8 +80,8 @@ export function AdminChatDesk() {
       try {
         const payload = JSON.parse(event.data);
 
+        // 1. History Event
         if (payload.type === "history") {
-          // Group history messages by room_id
           const grouped = {};
           (payload.data || []).forEach((m) => {
             const rId = m.room_id || "default";
@@ -59,9 +89,48 @@ export function AdminChatDesk() {
             grouped[rId].push(m);
           });
           setMessages(grouped);
-        } else if (payload.type === "message") {
+        }
+        
+        // 2. Typing Indicator Event
+        else if (payload.type === "typing") {
+          if (payload.sender === "user") {
+            setCustomerTyping((prev) => ({ ...prev, [payload.room_id]: !!payload.is_typing }));
+          }
+        }
+
+        // 3. Read Receipt Event
+        else if (payload.type === "read_receipt") {
+          const rId = payload.room_id;
+          setMessages((prev) => {
+            if (!prev[rId]) return prev;
+            return {
+              ...prev,
+              [rId]: prev[rId].map((m) => ({ ...m, read: true }))
+            };
+          });
+        }
+
+        // 4. Presence Event
+        else if (payload.type === "presence") {
+          setRoomPresence((prev) => ({ ...prev, [payload.room_id]: payload.status || "online" }));
+        }
+
+        // 5. Message Event
+        else if (payload.type === "message") {
           const m = payload.data;
           const rId = m.room_id;
+
+          setCustomerTyping((prev) => ({ ...prev, [rId]: false }));
+
+          // Push Notification if customer messages while admin tab is backgrounded
+          if (m.sender === "user" && document.hidden && "Notification" in window && Notification.permission === "granted") {
+            try {
+              new Notification(`New Customer Message (${m.user_name || 'Customer'})`, {
+                body: m.text,
+                icon: "/favicon.ico"
+              });
+            } catch (err) {}
+          }
 
           setMessages((prev) => {
             const cur = prev[rId] || [];
@@ -69,7 +138,6 @@ export function AdminChatDesk() {
             return { ...prev, [rId]: [...cur, m] };
           });
 
-          // Refresh rooms list snippet
           fetchActiveRooms();
         }
       } catch (err) {
@@ -85,10 +153,40 @@ export function AdminChatDesk() {
     };
   }, []);
 
-  // Auto scroll to bottom of chat
+  // Auto scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, selectedRoomId]);
+  }, [messages, selectedRoomId, customerTyping]);
+
+  // Handle Typing on input
+  const handleInputChange = (e) => {
+    setReplyInput(e.target.value);
+
+    if (selectedRoomId && wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(
+        JSON.stringify({
+          type: "typing",
+          room_id: selectedRoomId,
+          sender: "admin",
+          is_typing: true
+        })
+      );
+
+      if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+      typingTimerRef.current = setTimeout(() => {
+        if (selectedRoomId && wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+          wsRef.current.send(
+            JSON.stringify({
+              type: "typing",
+              room_id: selectedRoomId,
+              sender: "admin",
+              is_typing: false
+            })
+          );
+        }
+      }, 1500);
+    }
+  };
 
   const handleSendReply = (e) => {
     e.preventDefault();
@@ -97,27 +195,22 @@ export function AdminChatDesk() {
     const textToSend = replyInput.trim();
     setReplyInput("");
 
-    const adminMsg = {
-      room_id: selectedRoomId,
-      sender: "admin",
-      user_name: "RIVAANTA Support Agent",
-      text: textToSend,
-      timestamp: new Date().toISOString()
-    };
-
-    // Append locally
-    setMessages((prev) => ({
-      ...prev,
-      [selectedRoomId]: [...(prev[selectedRoomId] || []), adminMsg]
-    }));
-
-    // Broadcast via Admin WebSocket
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.send(
         JSON.stringify({
+          type: "typing",
           room_id: selectedRoomId,
           sender: "admin",
-          user_name: "RIVAANTA Support Agent",
+          is_typing: false
+        })
+      );
+
+      wsRef.current.send(
+        JSON.stringify({
+          type: "message",
+          room_id: selectedRoomId,
+          sender: "admin",
+          user_name: "Support Agent",
           text: textToSend
         })
       );
@@ -126,9 +219,10 @@ export function AdminChatDesk() {
 
   const activeMessages = selectedRoomId ? messages[selectedRoomId] || [] : [];
   const selectedRoomInfo = rooms.find((r) => r.room_id === selectedRoomId);
+  const isSelectedRoomTyping = selectedRoomId ? customerTyping[selectedRoomId] : false;
 
   return (
-    <div className="bg-white border border-[#E8DFC9] rounded-3xl overflow-hidden shadow-sm flex flex-col md:flex-row h-[600px]">
+    <div className="bg-white border border-[#E8DFC9] rounded-3xl overflow-hidden shadow-sm flex flex-col md:flex-row h-[620px]">
       
       {/* Left Sidebar: Active Rooms */}
       <div className="w-full md:w-80 border-r border-[#E8DFC9] bg-[#FAF5EC]/40 flex flex-col justify-between">
@@ -147,7 +241,7 @@ export function AdminChatDesk() {
             </button>
           </div>
 
-          <div className="overflow-y-auto max-h-[500px] divide-y divide-[#E8DFC9]/50">
+          <div className="overflow-y-auto max-h-[510px] divide-y divide-[#E8DFC9]/50">
             {rooms.length === 0 ? (
               <div className="p-6 text-center text-xs font-semibold text-gray-400">
                 No active chat sessions found
@@ -155,19 +249,31 @@ export function AdminChatDesk() {
             ) : (
               rooms.map((room) => {
                 const isSelected = room.room_id === selectedRoomId;
+                const isOnline = roomPresence[room.room_id] !== "offline";
+                const isTyping = customerTyping[room.room_id];
+
                 return (
                   <button
                     key={room.room_id}
                     onClick={() => setSelectedRoomId(room.room_id)}
-                    className={`w-full text-left p-3.5 transition flex items-start gap-3 ${
+                    className={`w-full text-left p-3.5 transition flex items-start gap-3 relative ${
                       isSelected
                         ? "bg-[#FAF5EC] border-l-4 border-[#5C1E1E]"
                         : "hover:bg-[#FAF5EC]/60"
                     }`}
                   >
-                    <div className="w-9 h-9 rounded-2xl bg-[#5C1E1E]/10 flex items-center justify-center text-[#5C1E1E] shrink-0 mt-0.5">
-                      <User className="w-4 h-4" />
+                    <div className="relative shrink-0 mt-0.5">
+                      <div className="w-9 h-9 rounded-2xl bg-[#5C1E1E]/10 flex items-center justify-center text-[#5C1E1E]">
+                        <User className="w-4 h-4" />
+                      </div>
+                      <span
+                        className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${
+                          isOnline ? "bg-emerald-500" : "bg-gray-300"
+                        }`}
+                        title={isOnline ? "Online" : "Offline"}
+                      />
                     </div>
+
                     <div className="flex-1 overflow-hidden">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-black text-[#2D2118] truncate">
@@ -177,10 +283,20 @@ export function AdminChatDesk() {
                           {room.latest_timestamp ? new Date(room.latest_timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
                         </span>
                       </div>
-                      <p className="text-[11px] text-gray-500 truncate mt-0.5">
-                        {room.latest_message || "No messages"}
+                      <p className="text-[11px] text-gray-500 truncate mt-0.5 flex items-center gap-1">
+                        {isTyping ? (
+                          <span className="text-[#5C1E1E] font-bold animate-pulse">Typing...</span>
+                        ) : (
+                          room.latest_message || "No messages"
+                        )}
                       </p>
                     </div>
+
+                    {room.unread_count > 0 && (
+                      <span className="bg-[#5C1E1E] text-white text-[9px] font-black px-1.5 py-0.5 rounded-full shadow">
+                        {room.unread_count}
+                      </span>
+                    )}
                   </button>
                 );
               })
@@ -214,8 +330,9 @@ export function AdminChatDesk() {
                   {selectedRoomInfo?.user_name?.substring(0, 2)?.toUpperCase() || "CU"}
                 </div>
                 <div>
-                  <h4 className="text-xs font-black text-[#2D2118]">
-                    {selectedRoomInfo?.user_name || selectedRoomId}
+                  <h4 className="text-xs font-black text-[#2D2118] flex items-center gap-2">
+                    <span>{selectedRoomInfo?.user_name || selectedRoomId}</span>
+                    <span className={`w-2 h-2 rounded-full ${roomPresence[selectedRoomId] !== 'offline' ? 'bg-emerald-500 animate-pulse' : 'bg-gray-300'}`} />
                   </h4>
                   <span className="text-[10px] text-gray-400 font-mono">
                     Room: {selectedRoomId}
@@ -240,21 +357,49 @@ export function AdminChatDesk() {
                         isAdmin ? "ml-auto flex-row-reverse" : "mr-auto"
                       }`}
                     >
-                      <div
-                        className={`p-3 rounded-2xl text-xs leading-relaxed ${
-                          isAdmin
-                            ? "bg-[#5C1E1E] text-white rounded-tr-none shadow"
-                            : "bg-white text-[#2D2118] border border-[#E8DFC9] rounded-tl-none shadow-sm font-medium"
-                        }`}
-                      >
-                        <span className="text-[9px] font-bold block mb-1 opacity-70">
-                          {isAdmin ? "Admin Desk" : m.user_name || "Customer"}
-                        </span>
-                        {m.text}
+                      <div>
+                        <div
+                          className={`p-3 rounded-2xl text-xs leading-relaxed ${
+                            isAdmin
+                              ? "bg-[#5C1E1E] text-white rounded-tr-none shadow"
+                              : "bg-white text-[#2D2118] border border-[#E8DFC9] rounded-tl-none shadow-sm font-medium"
+                          }`}
+                        >
+                          <span className="text-[9px] font-bold block mb-1 opacity-70">
+                            {isAdmin ? "Admin Desk" : m.user_name || "Customer"}
+                          </span>
+                          {m.text}
+                        </div>
+
+                        {/* Read Receipts (✓✓) & Timestamp */}
+                        <div className={`flex items-center gap-1 text-[9px] text-gray-400 mt-1 ${isAdmin ? "justify-end" : "justify-start"}`}>
+                          <span>{m.timestamp ? new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</span>
+                          {isAdmin && (
+                            m.read ? (
+                              <CheckCheck className="w-3.5 h-3.5 text-blue-500 font-bold" title="Read by Customer" />
+                            ) : (
+                              <Check className="w-3 h-3 text-gray-400" title="Delivered" />
+                            )
+                          )}
+                        </div>
                       </div>
                     </div>
                   );
                 })
+              )}
+
+              {/* Customer Typing Indicator */}
+              {isSelectedRoomTyping && (
+                <div className="flex gap-2.5 max-w-[80%] mr-auto items-center">
+                  <div className="bg-white text-[#5C1E1E] border border-[#E8DFC9] px-3 py-2 rounded-2xl text-xs font-bold flex items-center gap-1.5 shadow-sm">
+                    <span>Customer is typing</span>
+                    <span className="flex gap-0.5">
+                      <span className="w-1 h-1 bg-[#5C1E1E] rounded-full animate-bounce" />
+                      <span className="w-1 h-1 bg-[#5C1E1E] rounded-full animate-bounce [animation-delay:0.2s]" />
+                      <span className="w-1 h-1 bg-[#5C1E1E] rounded-full animate-bounce [animation-delay:0.4s]" />
+                    </span>
+                  </div>
+                </div>
               )}
               <div ref={messagesEndRef} />
             </div>
@@ -265,7 +410,7 @@ export function AdminChatDesk() {
                 type="text"
                 placeholder={`Reply to ${selectedRoomInfo?.user_name || 'Customer'}...`}
                 value={replyInput}
-                onChange={(e) => setReplyInput(e.target.value)}
+                onChange={handleInputChange}
                 className="flex-1 bg-[#FAF5EC] border border-[#E8DFC9] rounded-xl px-4 py-2.5 text-xs font-semibold text-[#2D2118] focus:outline-none focus:border-[#5C1E1E]"
               />
               <button

@@ -44,12 +44,13 @@ export function Navbar({ activeTab, setActiveTab, onOpenProduct, onCategorySelec
   }, [activeTab]);
 
   const goTo = (tabId) => {
-    if (tabId === "profile") {
-      if (currentUser) {
-        setActiveTab("orders");
-      } else {
+    if (tabId === "profile" || tabId === "orders") {
+      if (!currentUser) {
         setShowAuthModal(true);
+        setIsMobileMenuOpen(false);
+        return;
       }
+      setActiveTab("orders");
     } else {
       setActiveTab(tabId);
     }

@@ -31,6 +31,7 @@ export function Navbar({ activeTab, setActiveTab, onOpenProduct, onCategorySelec
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
 
+  const visibleNavTabs = NAV_TABS.filter((tab) => tab.id !== "orders" || currentUser);
   const cartItemsCount = cart.reduce((sum, item) => sum + item.qty, 0);
 
   useEffect(() => {

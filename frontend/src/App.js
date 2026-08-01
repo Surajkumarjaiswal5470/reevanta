@@ -365,6 +365,7 @@ function MainLayout() {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [quickViewProduct, setQuickViewProduct] = useState(null);
+  const { currentUser } = useAuth();
 
   const activeTab = PATH_TO_TAB[location.pathname] ?? "home";
   const selectedCategory = searchParams.get("category") ?? "all";

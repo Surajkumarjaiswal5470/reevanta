@@ -2,16 +2,29 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+    --bg-cream: #FAF5EC;
+    --text-dark: #2D2118;
+    --burgundy-main: #5C1E1E;
+    --burgundy-dark: #4A1717;
+    --gold-accent: #B8956A;
+    --gold-light: #F5EBDC;
+    --border-beige: #E8DFC9;
+}
+
 body {
     margin: 0;
     font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
         "Helvetica Neue", sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background: #FAF5EC;
-    color: #2D2118;
+    background: var(--bg-cream);
+    color: var(--text-dark);
+    overflow-x: hidden;
+    scroll-behavior: smooth;
 }
 
+/* Typography styles */
 .font-display {
     font-family: "Cormorant Garamond", "Marcellus", "Playfair Display", serif;
     letter-spacing: 0.01em;
@@ -22,7 +35,6 @@ body {
     letter-spacing: 0.08em;
 }
 
-/* Elegant tracking for RIVAANTA wordmark */
 .rivaanta-mark {
     font-family: "Marcellus", serif;
     letter-spacing: 0.35em;
@@ -30,8 +42,89 @@ body {
 }
 
 code {
-    font-family:
-        source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
+    font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
+}
+
+/* Custom Styled Luxury Scrollbars */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #FAF5EC;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #B8956A;
+    border-radius: 9999px;
+    border: 2px solid #FAF5EC;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #5C1E1E;
+}
+
+/* Custom Micro-Animations & Glow Effects */
+@keyframes goldPulse {
+    0%, 100% {
+        box-shadow: 0 0 15px rgba(184, 149, 106, 0.2);
+    }
+    50% {
+        box-shadow: 0 0 25px rgba(184, 149, 106, 0.45);
+    }
+}
+
+@keyframes burgundyGlow {
+    0%, 100% {
+        box-shadow: 0 4px 20px rgba(92, 30, 30, 0.25);
+    }
+    50% {
+        box-shadow: 0 6px 30px rgba(92, 30, 30, 0.45);
+    }
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+.shimmer-effect {
+    background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 2.5s infinite;
+}
+
+/* Glassmorphism & Card Utilities */
+.glass-panel {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(232, 223, 201, 0.7);
+}
+
+.glass-dark {
+    background: rgba(45, 33, 24, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(184, 149, 106, 0.3);
+}
+
+.hover-lift {
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+}
+
+.hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px -6px rgba(45, 33, 24, 0.15);
+}
+
+.hover-glow:hover {
+    animation: burgundyGlow 2s infinite;
 }
 
 @layer base {
@@ -130,3 +223,16 @@ code {
         border-bottom-color: inherit;
     }
 }
+
+@layer utilities {
+    /* Hide scrollbar for Chrome, Safari and Opera */
+    .scrollbar-none::-webkit-scrollbar {
+        display: none;
+    }
+    /* Hide scrollbar for IE, Edge and Firefox */
+    .scrollbar-none {
+        -ms-overflow-style: none;  /* IE and Edge */
+        scrollbar-width: none;  /* Firefox */
+    }
+}
+

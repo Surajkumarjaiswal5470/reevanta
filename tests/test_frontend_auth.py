@@ -11,7 +11,8 @@ async def run_test():
 
         try:
             # Load frontend
-            frontend_url = "https://style-hub-1961.preview.emergentagent.com"
+            frontend_url = "http://localhost:3000"
+
             print(f"Navigating to {frontend_url}")
             await page.goto(frontend_url, timeout=15000)
             await page.wait_for_selector("text=LUMIÈRE & BAZAR", timeout=10000)

@@ -86,3 +86,7 @@ android-sdk/
 credentials.json
 *.key
 .credentials
+
+# Local MongoDB data directory
+backend/mongodb_data/
+

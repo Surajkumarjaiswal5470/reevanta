@@ -9,7 +9,11 @@ import pytest
 import requests
 from dotenv import dotenv_values
 
-frontend_env = dotenv_values("/app/frontend/.env")
+# Load environment variables from the project's frontend .env file.
+# The original absolute path "/app/frontend/.env" does not exist in the local
+# development environment, causing the REACT_APP_BACKEND_URL to be missing.
+# Use a path relative to the repository root instead.
+frontend_env = dotenv_values("frontend/.env")
 BASE_URL = (os.environ.get("REACT_APP_BACKEND_URL") or frontend_env.get("REACT_APP_BACKEND_URL") or "").rstrip("/")
 if not BASE_URL:
     raise RuntimeError("REACT_APP_BACKEND_URL is missing")

@@ -1,8 +1,17 @@
 import pytest
 import requests
 import os
+from dotenv import dotenv_values
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL').rstrip('/')
+# Determine the backend URL. Prefer the environment variable, but fall back to the
+# frontend .env file when running locally (the CI environment may not have the
+# variable set). This mirrors the logic used in ``backend/tests/backend_test.py``.
+frontend_env = dotenv_values("frontend/.env")
+BASE_URL = (
+    os.environ.get("REACT_APP_BACKEND_URL")
+    or frontend_env.get("REACT_APP_BACKEND_URL")
+    or ""
+).rstrip("/")
 
 class TestAdminEcommerce:
     """Test Suite for Admin Panel, Products CRUD, and Orders status updates"""

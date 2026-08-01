@@ -29,6 +29,10 @@ TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN', '').strip()
 TWILIO_PHONE_NUMBER = os.environ.get('TWILIO_PHONE_NUMBER', '').strip()
 TWILIO_MAIN_ACCOUNT_SID = os.environ.get('TWILIO_MAIN_ACCOUNT_SID', '').strip() or TWILIO_ACCOUNT_SID
 
+# Redis & CDN Configuration
+REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379/0').strip()
+CDN_BASE_URL = os.environ.get('CDN_BASE_URL', '').strip()
+
 # Meilisearch Configuration
 MEILISEARCH_URL = os.environ.get('MEILISEARCH_URL', 'http://127.0.0.1:7700').strip()
 MEILISEARCH_MASTER_KEY = os.environ.get('MEILISEARCH_MASTER_KEY', 'reevanta_meilisearch_master_key').strip()

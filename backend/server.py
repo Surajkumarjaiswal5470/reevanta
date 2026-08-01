@@ -75,8 +75,11 @@ api_router.include_router(admin_router)
 app.include_router(api_router)
 
 
+from starlette.middleware.gzip import GZipMiddleware
+
 # Middleware order matters: last-added runs first.
 # CORS must be outermost so it handles preflight and attaches headers even on 500s.
+app.add_middleware(GZipMiddleware, minimum_size=500)
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RateLimitMiddleware)
 

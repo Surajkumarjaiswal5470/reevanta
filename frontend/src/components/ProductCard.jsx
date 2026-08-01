@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Heart, Sparkles, ShoppingBag, Eye, Bell } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import { apiFetch } from "../services/api";
+import { OptimizedImage } from "./OptimizedImage";
 import { toast } from "sonner";
 
 export const ProductCard = React.memo(function ProductCard({ product, onQuickView }) {
@@ -66,14 +67,14 @@ export const ProductCard = React.memo(function ProductCard({ product, onQuickVie
         onClick={() => onQuickView(product)}
         className="relative aspect-[3/4] bg-[#FAF5EC] overflow-hidden cursor-pointer"
       >
-        <img
+        <OptimizedImage
           src={product.image}
           alt={product.name}
+          width={600}
+          aspectRatio="aspect-[3/4]"
           className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
-          loading="lazy"
-          decoding="async"
         />
-        <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+        <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 z-10">
           <button
             onClick={(e) => {
               e.stopPropagation();

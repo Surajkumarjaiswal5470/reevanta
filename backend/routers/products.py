@@ -6,22 +6,77 @@ from core.security import get_current_admin, get_current_user_or_none
 from models.product import ProductCreate, ReviewCreate, ReviewVote, AdminReviewReply
 from services.meilisearch_service import search_products, search_suggestions
 
+from core.cache import cache_get, cache_set, cache_invalidate_pattern
+
 router = APIRouter(prefix="/products", tags=["Products"])
 
 @router.get("")
-async def get_products(category: Optional[str] = None, q: Optional[str] = None, limit: int = 100):
-    return await search_products(query=q, category=category, limit=limit)
+async def get_products(
+    category: Optional[str] = None,
+    q: Optional[str] = None,
+    page: Optional[int] = None,
+    limit: int = 100,
+    sort_by: Optional[str] = None
+):
+    cache_key = f"api_products:{category}:{q}:{page}:{limit}:{sort_by}"
+    cached = await cache_get(cache_key)
+    if cached is not None:
+        return cached
+
+    all_items = await search_products(query=q, category=category, limit=1000)
+
+    if sort_by == "price_low":
+        all_items = sorted(all_items, key=lambda x: x.get("price", 0))
+    elif sort_by == "price_high":
+        all_items = sorted(all_items, key=lambda x: x.get("price", 0), reverse=True)
+    elif sort_by == "rating":
+        all_items = sorted(all_items, key=lambda x: x.get("rating", 0), reverse=True)
+    elif sort_by == "newest":
+        all_items = sorted(all_items, key=lambda x: x.get("created_at", ""), reverse=True)
+
+    total = len(all_items)
+
+    if page is not None and page > 0:
+        start = (page - 1) * limit
+        end = start + limit
+        paginated_items = all_items[start:end]
+        total_pages = max(1, (total + limit - 1) // limit) if total > 0 else 1
+        result = {
+            "items": paginated_items,
+            "total": total,
+            "page": page,
+            "limit": limit,
+            "pages": total_pages,
+            "has_more": page < total_pages
+        }
+    else:
+        result = all_items[:limit]
+
+    await cache_set(cache_key, result, ttl_seconds=300)
+    return result
 
 @router.get("/search-suggest")
 async def search_suggest(q: str, limit: int = 6):
-    return await search_suggestions(query=q, limit=limit)
+    cache_key = f"api_search_suggest:{q}:{limit}"
+    cached = await cache_get(cache_key)
+    if cached is not None:
+        return cached
+    res = await search_suggestions(query=q, limit=limit)
+    await cache_set(cache_key, res, ttl_seconds=300)
+    return res
 
 @router.get("/{product_id}")
 async def get_product(product_id: str):
+    cache_key = f"api_product:{product_id}"
+    cached = await cache_get(cache_key)
+    if cached is not None:
+        return cached
     product = await db.products.find_one({"_id": to_object_id(product_id)})
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
-    return serialize_doc(product)
+    res = serialize_doc(product)
+    await cache_set(cache_key, res, ttl_seconds=300)
+    return res
 
 @router.get("/{product_id}/reviews")
 async def get_product_reviews(
@@ -155,6 +210,10 @@ async def add_product_review(
         {"_id": to_object_id(product_id)},
         {"$set": {"rating": new_avg, "reviewsCount": len(all_reviews)}}
     )
+
+    # Invalidate catalog & product caches
+    await cache_invalidate_pattern("api_products:*")
+    await cache_invalidate_pattern(f"api_product:{product_id}")
 
     return doc
 

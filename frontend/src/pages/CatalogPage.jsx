@@ -39,6 +39,12 @@ export function CatalogPage({ products, selectedCategory, onCategorySelect, onQu
 
   const [filters, setFilters] = useState(getInitialFilters);
   const [showFilterDrawer, setShowFilterDrawer] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(8);
+
+  // Reset pagination when filters change
+  useEffect(() => {
+    setVisibleCount(8);
+  }, [filters]);
 
   // Sync prop changes to filters state (e.g. clicking Sarees or Kurtas in header)
   useEffect(() => {
@@ -551,11 +557,31 @@ export function CatalogPage({ products, selectedCategory, onCategorySelect, onQu
           );
         }
 
+        const displayedProducts = sortedProducts.slice(0, visibleCount);
+        const hasMore = visibleCount < sortedProducts.length;
+
         return (
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
-            {sortedProducts.map((product) => (
-              <ProductCard key={product.id} product={product} onQuickView={onQuickView} />
-            ))}
+          <div className="space-y-8">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
+              {displayedProducts.map((product) => (
+                <ProductCard key={product.id} product={product} onQuickView={onQuickView} />
+              ))}
+            </div>
+
+            {/* Pagination Controls */}
+            {hasMore && (
+              <div className="text-center pt-4 border-t border-[#E8DFC9]/60 space-y-2">
+                <p className="text-xs text-gray-500 font-medium">
+                  Showing <strong>{displayedProducts.length}</strong> of <strong>{sortedProducts.length}</strong> products
+                </p>
+                <button
+                  onClick={() => setVisibleCount((prev) => prev + 8)}
+                  className="bg-[#5C1E1E] hover:bg-[#4A1717] text-white px-8 py-3 rounded-2xl text-xs font-black shadow-lg shadow-[#5C1E1E]/20 transition active:scale-95"
+                >
+                  Load More Products ({sortedProducts.length - displayedProducts.length} remaining)
+                </button>
+              </div>
+            )}
           </div>
         );
       })()}

@@ -25,4 +25,5 @@ numpy>=1.26.0
 certifi>=2024.2.2
 gunicorn>=21.2.0
 firebase-admin>=6.5.0
+python-multipart==0.0.12
 

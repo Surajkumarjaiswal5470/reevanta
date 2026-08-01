@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { toast } from "sonner";
+import { ImageUploader } from "./ImageUploader";
 import {
   Package,
   ShoppingBag,
@@ -957,17 +957,12 @@ export const AdminPanel = () => {
                 </select>
               </div>
 
-              <div>
-                <label className="text-xs font-bold text-[#8B7355]">Image URL *</label>
-                <input
-                  type="url"
-                  required
-                  placeholder="https://images.unsplash.com/..."
-                  value={newProduct.image}
-                  onChange={(e) => setNewProduct({ ...newProduct, image: e.target.value })}
-                  className="w-full mt-1 bg-[#FAF5EC] border border-[#E8DFC9] rounded-xl p-3 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#5C1E1E]"
-                />
-              </div>
+              <ImageUploader
+                label="Product Photo *"
+                required={true}
+                value={newProduct.image}
+                onChange={(url) => setNewProduct({ ...newProduct, image: url })}
+              />
 
               <div>
                 <label className="text-xs font-bold text-[#8B7355]">Selling Price (₹) *</label>
@@ -1434,13 +1429,11 @@ export const AdminPanel = () => {
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="text-xs font-bold text-[#8B7355]">Image URL</label>
-                  <input
-                    type="url"
-                    required
+                  <ImageUploader
+                    label="Product Photo *"
+                    required={true}
                     value={editingProduct.image}
-                    onChange={(e) => setEditingProduct({ ...editingProduct, image: e.target.value })}
-                    className="w-full mt-1 bg-[#FAF5EC] border border-[#E8DFC9] rounded-xl p-2.5 text-xs font-semibold"
+                    onChange={(url) => setEditingProduct({ ...editingProduct, image: url })}
                   />
                 </div>
 

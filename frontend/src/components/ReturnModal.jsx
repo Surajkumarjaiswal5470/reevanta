@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { X, RotateCcw, Building2, Smartphone, ShieldCheck, CheckCircle2, ArrowRight, Upload, AlertCircle, MapPin, CreditCard } from "lucide-react";
+import { ImageUploader } from "./ImageUploader";
 import { apiFetch } from "../services/api";
 import { toast } from "sonner";
 
@@ -184,18 +185,11 @@ export function ReturnModal({ order, onClose, onSuccess }) {
                 />
               </div>
 
-              <div>
-                <label className="text-xs font-bold text-[#2D2118] block mb-1">
-                  Photo Proof Image URL (Required for Damaged Items)
-                </label>
-                <input
-                  type="text"
-                  placeholder="https://images.example.com/item-defect.jpg"
-                  value={proofImage}
-                  onChange={(e) => setProofImage(e.target.value)}
-                  className="w-full bg-[#FAF5EC] border border-[#E8DFC9] rounded-2xl p-3 text-xs font-semibold focus:outline-none focus:border-[#5C1E1E]"
-                />
-              </div>
+              <ImageUploader
+                label="Photo Proof (Required for Damaged Items)"
+                value={proofImage}
+                onChange={(url) => setProofImage(url)}
+              />
 
               <button
                 type="button"

@@ -39,3 +39,8 @@ MEILISEARCH_MASTER_KEY = os.environ.get('MEILISEARCH_MASTER_KEY', 'reevanta_meil
 
 # NepalOTP Configuration
 NEPALOTP_API_KEY = os.environ.get('NEPALOTP_API_KEY', '').strip()
+
+# ImageKit Configuration
+IMAGEKIT_PUBLIC_KEY = os.environ.get('IMAGEKIT_PUBLIC_KEY', 'public_0oD+msTktt3r1xWwdVrOqlBUyDA=').strip()
+IMAGEKIT_PRIVATE_KEY = os.environ.get('IMAGEKIT_PRIVATE_KEY', 'private_BqZaPX73d1p6Ma4xHTWIYqwZD4M=').strip()
+IMAGEKIT_URL_ENDPOINT = os.environ.get('IMAGEKIT_URL_ENDPOINT', 'https://ik.imagekit.io/h7oalyucx').strip()

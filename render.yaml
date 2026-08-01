@@ -24,6 +24,12 @@ services:
         value: production
       - key: NEPALOTP_API_KEY
         value: npot_live_At6UCnVKZC6JE4EQRppa1UWkYfavmBVwaFiSAPIa
+      - key: IMAGEKIT_PUBLIC_KEY
+        value: public_0oD+msTktt3r1xWwdVrOqlBUyDA=
+      - key: IMAGEKIT_PRIVATE_KEY
+        value: private_BqZaPX73d1p6Ma4xHTWIYqwZD4M=
+      - key: IMAGEKIT_URL_ENDPOINT
+        value: https://ik.imagekit.io/h7oalyucx
 
   - type: web
     name: reevanta-frontend

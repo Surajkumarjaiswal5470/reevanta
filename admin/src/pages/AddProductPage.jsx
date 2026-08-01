@@ -1,5 +1,7 @@
 import React, { useState } from "react";
-import { Plus, ArrowLeft, Sparkles, CheckCircle2 } from "lucide-react";
+import { PlusCircle, Sparkles, CheckCircle2, ArrowLeft } from "lucide-react";
+import { apiFetch } from "../services/api";
+import { ImageUploader } from "../components/ImageUploader";
 import { toast } from "sonner";
 
 export function AddProductPage({ onSaveProduct, onCancel }) {
@@ -120,23 +122,12 @@ export function AddProductPage({ onSaveProduct, onCancel }) {
           </div>
         </div>
 
-        <div>
-          <label className="font-extrabold text-gray-700 block mb-1">Image URL *</label>
-          <input
-            type="url"
-            required
-            placeholder="https://images.unsplash.com/photo-..."
-            value={formData.image}
-            onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-            className="w-full px-4 py-3 rounded-xl border border-[#E8DFC9] text-xs focus:outline-none focus:border-[#5C1E1E]"
-          />
-          {formData.image && (
-            <div className="mt-2 flex items-center gap-3 bg-[#FAF5EC] p-2 rounded-2xl border border-[#E8DFC9]">
-              <img src={formData.image} alt="Preview" className="w-12 h-12 object-cover rounded-xl" />
-              <span className="text-[10px] text-gray-500 font-bold">Live Image Preview Verified</span>
-            </div>
-          )}
-        </div>
+        <ImageUploader
+          label="Product Photo *"
+          required={true}
+          value={formData.image}
+          onChange={(url) => setFormData({ ...formData, image: url })}
+        />
 
         <div>
           <label className="font-extrabold text-gray-700 block mb-1">Description</label>

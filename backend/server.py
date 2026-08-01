@@ -34,6 +34,7 @@ from routers.personalization import router as personalization_router
 from routers.support import router as support_router
 from routers.admin import admin_router
 from routers.admin.cms import router as admin_cms_router
+from routers.upload import router as upload_router
 
 logging.basicConfig(
     level=logging.INFO,
@@ -103,6 +104,7 @@ api_router.include_router(personalization_router)
 api_router.include_router(support_router)
 api_router.include_router(admin_cms_router)
 api_router.include_router(admin_router)
+api_router.include_router(upload_router)
 
 app.include_router(api_router)
 

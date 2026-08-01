@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { SlidersHorizontal, Search, Sparkles, Share2, Check, RotateCcw, Filter, X } from "lucide-react";
 import { ProductCard } from "../components/ProductCard";
+import { CosmeticsSubCategorySlider } from "../components/CosmeticsSubCategorySlider";
 import { MOCK_CATEGORIES } from "../mock";
 import { toast } from "sonner";
 
@@ -22,6 +23,7 @@ export function CatalogPage({ products, selectedCategory, onCategorySelect, onQu
     const params = new URLSearchParams(window.location.search);
     return {
       category: params.get("category") || selectedCategory || "all",
+      subCategory: "all",
       searchQuery: params.get("q") || "",
       size: params.get("size") || "all",
       color: params.get("color") || "all",
@@ -110,6 +112,13 @@ export function CatalogPage({ products, selectedCategory, onCategorySelect, onQu
     return products.filter((p) => {
       // Category
       if (filters.category !== "all" && p.category !== filters.category) return false;
+      
+      // Sub-Category
+      if (filters.subCategory && filters.subCategory !== "all") {
+        const tagMatch = (p.tags || []).some((t) => t.toLowerCase().includes(filters.subCategory.toLowerCase()));
+        const nameMatch = (p.name || "").toLowerCase().includes(filters.subCategory.toLowerCase());
+        if (!tagMatch && !nameMatch) return false;
+      }
       
       // Search term
       if (filters.searchQuery.trim()) {
@@ -239,6 +248,18 @@ export function CatalogPage({ products, selectedCategory, onCategorySelect, onQu
             );
           })}
         </div>
+
+        {/* ── Cosmetics & Beauty Sub-Categories Carousel Bar ── */}
+        {(filters.category === "cosmetics" || filters.category === "beauty" || filters.category === "all") && (
+          <div className="pt-3 border-t border-[#E8DFC9]/60">
+            <CosmeticsSubCategorySlider
+              activeSubCategory={filters.subCategory}
+              onSelectSubCategory={(tag) => {
+                updateFilter("subCategory", filters.subCategory === tag ? "all" : tag);
+              }}
+            />
+          </div>
+        )}
 
         {/* Priority Cosmetics Launch Banner */}
         {(filters.category === "sarees" || filters.category === "kurtas" || filters.category === "lehenga") && (

@@ -69,7 +69,12 @@ export function HeroSlider({ onCategorySelect, onNavigate }) {
     apiFetch("/cms/homepage")
       .then((data) => {
         if (data?.banners && Array.isArray(data.banners) && data.banners.length > 0) {
-          setSlides(data.banners);
+          const cosmeticsOnlyBanners = data.banners.filter(
+            (b) => b.category === "cosmetics" || b.category === "beauty"
+          );
+          if (cosmeticsOnlyBanners.length > 0) {
+            setSlides(cosmeticsOnlyBanners);
+          }
         }
       })
       .catch(() => {});

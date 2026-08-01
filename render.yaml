@@ -5,9 +5,11 @@ services:
     plan: free
     region: singapore
     rootDir: backend
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    startCommand: gunicorn -w 2 -k uvicorn.workers.UvicornWorker server:app --bind 0.0.0.0:$PORT
     envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.8
       - key: MONGO_URL
         value: mongodb+srv://surajjaiswal1236_db_user:sbOryAXAZlXXk4kA@cluster0.uz8jzby.mongodb.net/reevanta_db?retryWrites=true&w=majority
       - key: DB_NAME
@@ -18,8 +20,8 @@ services:
         value: "*"
       - key: ENVIRONMENT
         value: production
-      - key: FIREBASE_SERVICE_ACCOUNT_PATH
-        value: firebase_credentials.json
+      - key: NEPALOTP_API_KEY
+        value: npot_live_At6UCnVKZC6JE4EQRppa1UWkYfavmBVwaFiSAPIa
 
   - type: web
     name: reevanta-frontend
@@ -34,12 +36,6 @@ services:
         value: https://reevanta-backend-pg3v.onrender.com/api
       - key: REACT_APP_BACKEND_URL
         value: https://reevanta-backend-pg3v.onrender.com
-      - key: REACT_APP_FIREBASE_API_KEY
-        value: AIzaSyAdoaOuGlTeQYfEk-K0UPnOJEyESmEZP2w
-      - key: REACT_APP_FIREBASE_AUTH_DOMAIN
-        value: reevanta.firebaseapp.com
-      - key: REACT_APP_FIREBASE_PROJECT_ID
-        value: reevanta
 
   - type: web
     name: reevanta-admin

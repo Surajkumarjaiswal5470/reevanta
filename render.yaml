@@ -30,6 +30,8 @@ services:
         value: private_BqZaPX73d1p6Ma4xHTWIYqwZD4M=
       - key: IMAGEKIT_URL_ENDPOINT
         value: https://ik.imagekit.io/h7oalyucx
+      - key: REDIS_URL
+        value: redis://default:i9lCAlQazLcNvXJPT0IktsZvCeaYSK2f@clover-mountain-waterlily-76342.db.redis.io:18455
 
   - type: web
     name: reevanta-frontend

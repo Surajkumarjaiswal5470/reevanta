@@ -1,5 +1,5 @@
 SEED_PRODUCTS = [
-    # ===== Cosmetics (PRIORITY LAUNCH) =====
+    # ===== Cosmetics (LIVE EXCLUSIVE LAUNCH) =====
     {
         "name": "Velvet Matte Lipstick",
         "category": "cosmetics",
@@ -14,7 +14,7 @@ SEED_PRODUCTS = [
         "description": "Luxuriously rich matte lipstick with intense color payoff and a comfortable, long-lasting wear.",
         "tags": ["lipstick", "matte", "velvet", "makeup", "cosmetics"],
         "shade": "Rose Nude",
-        "badge": "LAUNCH HIGHLIGHT"
+        "badge": "OFFICIAL LAUNCH"
     },
     {
         "name": "Vitamin C Face Serum",
@@ -87,178 +87,6 @@ SEED_PRODUCTS = [
         "description": "Alcohol-free rose water & 24K gold toner to soothe and hydrate all skin types.",
         "tags": ["toner", "mist", "skincare", "rose"]
     },
-    # ===== Sarees =====
-    # ===== Kurtas =====
-    {
-        "name": "Embroidered Organza Kurta Set",
-        "category": "kurtas",
-        "brand": "Rivaanta Signature",
-        "price": 3499, "originalPrice": 5999,
-        "rating": 4.7, "reviewsCount": 145,
-        "image": "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=900",
-        "sizes": ["XS", "S", "M", "L", "XL"],
-        "colors": ["#C4A5CB", "#E8D9CC", "#8B6F5C"],
-        "inStock": True, "isFlashSale": True,
-        "discountPercent": 42, "resellerMargin": 500,
-        "description": "Hand-embroidered organza kurta set paired with matching palazzo and dupatta.",
-        "tags": ["kurta", "organza", "embroidered", "set", "ethnic"],
-        "fabric": "Organza",
-        "work": "Hand Embroidery"
-    },
-    {
-        "name": "A-Line Cotton Kurta Set",
-        "category": "kurtas",
-        "brand": "Rivaanta Everyday",
-        "price": 1899, "originalPrice": 3499,
-        "rating": 4.7, "reviewsCount": 302,
-        "image": "https://images.unsplash.com/photo-1596785231165-7d43ca8c9d0e?auto=format&fit=crop&w=900",
-        "sizes": ["XS", "S", "M", "L", "XL", "XXL"],
-        "colors": ["#8FA37C", "#D4A574", "#B8A48F", "#7A6F5C"],
-        "inStock": True, "isFlashSale": True,
-        "discountPercent": 45, "resellerMargin": 350,
-        "description": "Breathable A-line cotton kurta with matching palazzo — perfect for everyday elegance.",
-        "tags": ["kurta", "cotton", "a-line", "casual", "set"],
-        "fabric": "Pure Cotton",
-        "work": "Block Print"
-    },
-    {
-        "name": "Anarkali Silk Suit",
-        "category": "kurtas",
-        "brand": "Rivaanta Signature",
-        "price": 4299, "originalPrice": 6999,
-        "rating": 4.8, "reviewsCount": 176,
-        "image": "https://images.unsplash.com/photo-1610030181087-540017dc9d61?auto=format&fit=crop&w=900",
-        "sizes": ["S", "M", "L", "XL"],
-        "colors": ["#7A1F2A", "#3E1F3E", "#2C4A3E"],
-        "inStock": True, "isFlashSale": False,
-        "discountPercent": 39, "resellerMargin": 600,
-        "description": "Floor-length Anarkali suit in luxurious silk with intricate zari yoke and sequined dupatta.",
-        "tags": ["anarkali", "suit", "silk", "ethnic", "festive"],
-        "fabric": "Art Silk",
-        "work": "Zari & Sequins"
-    },
-    # ===== Lehenga =====
-    {
-        "name": "Bridal Lehenga Choli",
-        "category": "lehenga",
-        "brand": "Rivaanta Bridal",
-        "price": 12999, "originalPrice": 22999,
-        "rating": 4.9, "reviewsCount": 92,
-        "image": "https://images.unsplash.com/photo-1610030469668-8e450b47a4a5?auto=format&fit=crop&w=900",
-        "sizes": ["S", "M", "L", "XL"],
-        "colors": ["#7A1F2A", "#3E1F3E", "#8B3A3A"],
-        "inStock": True, "isFlashSale": True,
-        "discountPercent": 43, "resellerMargin": 1500,
-        "description": "Heavily embellished bridal lehenga with hand-crafted zardozi work and matching net dupatta.",
-        "tags": ["lehenga", "bridal", "wedding", "zardozi", "heavy"],
-        "fabric": "Raw Silk",
-        "work": "Zardozi & Stones",
-        "badge": "BEST SELLER"
-    },
-    {
-        "name": "Sangeet Party Lehenga",
-        "category": "lehenga",
-        "brand": "Rivaanta Signature",
-        "price": 6499, "originalPrice": 10999,
-        "rating": 4.7, "reviewsCount": 65,
-        "image": "https://images.unsplash.com/photo-1594736797933-d0501ba2fe65?auto=format&fit=crop&w=900",
-        "sizes": ["S", "M", "L", "XL"],
-        "colors": ["#D4A574", "#B76E79", "#2C4A3E"],
-        "inStock": True, "isFlashSale": False,
-        "discountPercent": 41, "resellerMargin": 800,
-        "description": "Flared party lehenga in soft net with sequin embroidery — perfect for sangeet and mehendi.",
-        "tags": ["lehenga", "party", "sangeet", "sequin"],
-        "fabric": "Net",
-        "work": "Sequin Embroidery"
-    },
-    # ===== Cosmetics =====
-    {
-        "name": "Velvet Matte Lipstick",
-        "category": "cosmetics",
-        "brand": "Rivaanta Beauty",
-        "price": 799, "originalPrice": 1299,
-        "rating": 4.7, "reviewsCount": 98,
-        "image": "https://images.unsplash.com/photo-1586495777744-4413f21062fa?auto=format&fit=crop&w=900",
-        "sizes": ["Standard"],
-        "colors": ["#B76E79", "#8B3A3A", "#7A1F2A", "#C4838C", "#8B4547", "#5C1E1E"],
-        "inStock": True, "isFlashSale": True,
-        "discountPercent": 38, "resellerMargin": 220,
-        "description": "Luxuriously rich matte lipstick with intense color payoff and a comfortable, long-lasting wear.",
-        "tags": ["lipstick", "matte", "velvet", "makeup", "cosmetics"],
-        "shade": "Rose Nude",
-        "badge": "BEST SELLER"
-    },
-    {
-        "name": "Lip Liner — Rose Collection",
-        "category": "cosmetics",
-        "brand": "Rivaanta Beauty",
-        "price": 349, "originalPrice": 599,
-        "rating": 4.6, "reviewsCount": 78,
-        "image": "https://images.unsplash.com/photo-1591360236480-9c6a1cbf1f4a?auto=format&fit=crop&w=900",
-        "sizes": ["Standard"],
-        "colors": ["#B76E79", "#8B3A3A", "#7A1F2A"],
-        "inStock": True, "isFlashSale": False,
-        "discountPercent": 42, "resellerMargin": 100,
-        "description": "Creamy long-wear lip liner that glides on effortlessly. Pair with any Rivaanta lipstick.",
-        "tags": ["lip liner", "lip pencil", "makeup"]
-    },
-    {
-        "name": "Makeup Fixer Spray",
-        "category": "cosmetics",
-        "brand": "Rivaanta Beauty",
-        "price": 699, "originalPrice": 1199,
-        "rating": 4.5, "reviewsCount": 54,
-        "image": "https://images.unsplash.com/photo-1631214540242-3cd8c4b0b3b6?auto=format&fit=crop&w=900",
-        "sizes": ["100 ml"],
-        "colors": ["#F5F5F5"],
-        "inStock": True, "isFlashSale": False,
-        "discountPercent": 42, "resellerMargin": 180,
-        "description": "16-hour makeup fixing mist with hyaluronic acid — locks in your look without dryness.",
-        "tags": ["setting spray", "fixer", "makeup"]
-    },
-    {
-        "name": "Compact Powder — Silk Finish",
-        "category": "cosmetics",
-        "brand": "Rivaanta Beauty",
-        "price": 649, "originalPrice": 1099,
-        "rating": 4.6, "reviewsCount": 112,
-        "image": "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=900",
-        "sizes": ["Standard"],
-        "colors": ["#F1D3B2", "#E1B891", "#C69C74"],
-        "inStock": True, "isFlashSale": False,
-        "discountPercent": 41, "resellerMargin": 160,
-        "description": "Featherlight compact powder for a smooth, silky, all-day matte finish.",
-        "tags": ["compact", "powder", "matte", "makeup"]
-    },
-    # ===== Beauty Care =====
-    {
-        "name": "Vitamin C Face Serum",
-        "category": "beauty",
-        "brand": "Rivaanta Skin",
-        "price": 1299, "originalPrice": 2199,
-        "rating": 4.6, "reviewsCount": 224,
-        "image": "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=900",
-        "sizes": ["30 ml"],
-        "colors": ["#F3D5A6"],
-        "inStock": True, "isFlashSale": True,
-        "discountPercent": 41, "resellerMargin": 320,
-        "description": "Brightening Vitamin C 15% serum with hyaluronic acid — visibly evens tone and boosts radiance.",
-        "tags": ["serum", "vitamin c", "skincare", "brightening"]
-    },
-    {
-        "name": "Rose Gold Face Toner Mist",
-        "category": "beauty",
-        "brand": "Rivaanta Skin",
-        "price": 799, "originalPrice": 1399,
-        "rating": 4.5, "reviewsCount": 86,
-        "image": "https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b?auto=format&fit=crop&w=900",
-        "sizes": ["100 ml"],
-        "colors": ["#E8CFC5"],
-        "inStock": True, "isFlashSale": False,
-        "discountPercent": 43, "resellerMargin": 210,
-        "description": "Alcohol-free rose water & 24K gold toner to soothe and hydrate all skin types.",
-        "tags": ["toner", "mist", "skincare", "rose"]
-    },
     {
         "name": "Argan Oil Hair Serum",
         "category": "beauty",
@@ -272,5 +100,20 @@ SEED_PRODUCTS = [
         "discountPercent": 45, "resellerMargin": 150,
         "description": "Nourishing pure argan oil serum for frizz-free, glossy, salon-smooth hair.",
         "tags": ["hair serum", "argan", "hair care"]
+    },
+    {
+        "name": "Rose Gold Eyeshadow Palette",
+        "category": "cosmetics",
+        "brand": "Rivaanta Beauty",
+        "price": 1499, "originalPrice": 2499,
+        "rating": 4.9, "reviewsCount": 142,
+        "image": "https://images.unsplash.com/photo-1512496015851-a90fb38ba796?auto=format&fit=crop&w=900",
+        "sizes": ["Standard"],
+        "colors": ["#B76E79", "#B8956A", "#5C1E1E", "#D4A574"],
+        "inStock": True, "isFlashSale": True,
+        "discountPercent": 40, "resellerMargin": 380,
+        "description": "12 highly-pigmented matte & shimmer shades inspired by royal heritage rose gold tones.",
+        "tags": ["eyeshadow", "palette", "makeup", "cosmetics"],
+        "badge": "NEW ARRIVAL"
     }
 ]

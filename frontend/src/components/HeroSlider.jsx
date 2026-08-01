@@ -102,76 +102,91 @@ export function HeroSlider({ onCategorySelect, onNavigate }) {
 
   return (
     <section
-      className="relative rounded-xl sm:rounded-3xl overflow-hidden bg-[#FAF5EC] border border-[#E8DFC9] shadow-sm group transition-all duration-300"
+      className="relative my-1 group select-none"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
-      <div className="flex flex-col md:flex-row items-center justify-between p-2.5 sm:p-5 lg:p-8 gap-2.5 sm:gap-6 md:gap-8">
-        
-        {/* Left Text Content */}
-        <div className="w-full md:w-1/2 space-y-1.5 sm:space-y-3 text-left z-10">
-          {activeSlide.badge && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#5C1E1E]/10 text-[#5C1E1E] text-[8px] sm:text-[10px] font-black tracking-widest uppercase border border-[#5C1E1E]/20">
-              <Sparkles className="w-2.5 h-2.5 text-[#5C1E1E]" /> {activeSlide.badge}
-            </span>
-          )}
-          <h2 className="text-lg sm:text-2xl lg:text-4xl font-serif font-black text-[#2D2118] leading-tight tracking-tight transition-all duration-300">
-            {activeSlide.title}
-          </h2>
-          <p className="text-[10px] sm:text-xs md:text-sm text-[#8B7355] font-medium max-w-md leading-snug line-clamp-1 sm:line-clamp-none">
-            {activeSlide.subtitle}
-          </p>
-          <div className="pt-0.5 sm:pt-1">
-            <button
-              onClick={() => handleSlideClick(activeSlide)}
-              className="bg-[#2D2118] hover:bg-[#5C1E1E] text-white px-3.5 py-1.5 sm:px-5 sm:py-2.5 rounded-lg sm:rounded-xl text-[9px] sm:text-xs font-black tracking-wider uppercase shadow-sm hover:shadow-md transition-all duration-300 active:scale-95 flex items-center gap-1"
-            >
-              <span>{activeSlide.buttonText || "EXPLORE COSMETICS"}</span>
-            </button>
+      {/* ── Myntra-style Full-Bleed Banner Card ── */}
+      <div
+        onClick={() => handleSlideClick(activeSlide)}
+        className="relative w-full h-[190px] sm:h-[260px] md:h-[320px] lg:h-[360px] rounded-2xl sm:rounded-3xl overflow-hidden cursor-pointer border-2 border-amber-700/40 shadow-lg bg-[#2D2118]"
+      >
+        {/* Full Banner Image */}
+        <img
+          src={activeSlide.image}
+          alt={activeSlide.title}
+          className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
+        />
+
+        {/* Myntra-style Dark Gradient Overlay for Crisp Text Readability */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent flex flex-col justify-between p-4 sm:p-7 md:p-10 text-white">
+          
+          {/* Top Badge */}
+          <div className="flex items-center gap-2">
+            {activeSlide.badge && (
+              <span className="inline-flex items-center gap-1.5 bg-[#5C1E1E] text-amber-300 border border-amber-400/40 px-3 py-1 rounded-full text-[9px] sm:text-xs font-black tracking-widest uppercase shadow">
+                <Sparkles className="w-3 h-3 text-amber-400 animate-pulse" />
+                {activeSlide.badge}
+              </span>
+            )}
+          </div>
+
+          {/* Main Title & Offer */}
+          <div className="space-y-1.5 sm:space-y-2.5 max-w-lg">
+            <h2 className="text-xl sm:text-3xl md:text-4xl font-serif font-black text-white leading-tight tracking-wide drop-shadow-md">
+              {activeSlide.title}
+            </h2>
+            <p className="text-[11px] sm:text-xs md:text-sm text-gray-200 font-medium line-clamp-2 drop-shadow">
+              {activeSlide.subtitle}
+            </p>
+
+            {/* Myntra Green Action Pill */}
+            <div className="pt-1.5 sm:pt-3">
+              <span className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] sm:text-xs font-black px-4 py-2 rounded-xl shadow-md uppercase tracking-wider transition active:scale-95">
+                <span>{activeSlide.buttonText || "SHOP NOW"}</span>
+                <span className="text-xs">›</span>
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Right Image */}
-        <div
-          onClick={() => handleSlideClick(activeSlide)}
-          className="w-full md:w-1/2 h-[220px] sm:h-[280px] md:h-[320px] lg:h-[360px] rounded-xl sm:rounded-2xl overflow-hidden relative cursor-pointer group/img shrink-0 border border-[#E8DFC9] bg-white"
-        >
-          <img
-            src={activeSlide.image}
-            alt={activeSlide.title}
-            className="w-full h-full object-cover object-center transition-transform duration-700 group-hover/img:scale-105"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#2D2118]/20 via-transparent to-transparent opacity-0 group-hover/img:opacity-100 transition-opacity duration-300" />
-        </div>
+        {/* Decorative Inner Border Accent (Myntra style dotted frame) */}
+        <div className="absolute inset-2 border border-white/20 rounded-xl sm:rounded-2xl pointer-events-none" />
       </div>
 
-      {/* Prev / Next Controls */}
+      {/* Prev / Next Arrows */}
       <button
-        onClick={prevSlide}
-        className="absolute left-1.5 top-1/2 -translate-y-1/2 z-20 w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-white/90 border border-[#E8DFC9] shadow-md flex items-center justify-center text-[#2D2118] opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-[#FAF5EC]"
+        onClick={(e) => {
+          e.stopPropagation();
+          prevSlide();
+        }}
+        className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/90 border border-[#E8DFC9] shadow-lg flex items-center justify-center text-[#2D2118] opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-[#FAF5EC]"
         aria-label="Previous Slide"
       >
-        <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+        <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
       </button>
 
       <button
-        onClick={nextSlide}
-        className="absolute right-1.5 top-1/2 -translate-y-1/2 z-20 w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-white/90 border border-[#E8DFC9] shadow-md flex items-center justify-center text-[#2D2118] opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-[#FAF5EC]"
+        onClick={(e) => {
+          e.stopPropagation();
+          nextSlide();
+        }}
+        className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/90 border border-[#E8DFC9] shadow-lg flex items-center justify-center text-[#2D2118] opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-[#FAF5EC]"
         aria-label="Next Slide"
       >
-        <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+        <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
       </button>
 
-      {/* Pagination Dots */}
-      <div className="absolute bottom-1.5 sm:bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 sm:gap-1.5">
+      {/* ── Myntra Bottom Dots Indicator ── */}
+      <div className="flex items-center justify-center gap-1.5 pt-3">
         {slides.map((_, idx) => (
           <button
             key={idx}
             onClick={() => setCurrentIndex(idx)}
             className={`transition-all duration-300 rounded-full ${
               currentIndex === idx
-                ? "w-4 sm:w-5 h-1 sm:h-1.5 bg-[#2D2118]"
-                : "w-1 sm:w-1.5 h-1 sm:h-1.5 bg-[#8B7355]/40 hover:bg-[#8B7355]"
+                ? "w-6 h-2 bg-[#5C1E1E]"
+                : "w-2 h-2 bg-[#8B7355]/40 hover:bg-[#8B7355]"
             }`}
             aria-label={`Go to slide ${idx + 1}`}
           />

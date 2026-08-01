@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useGoogleMaps, reverseGeocode, parseGeocodeResult } from "../hooks/useGoogleMaps";
-import { MapPin, Locate, Loader2, Search } from "lucide-react";
+import { MapPin, Locate, Loader2, Search, Plus, Check, Trash2 } from "lucide-react";
 
 export const AddressAutocomplete = ({ value, onChange, onSelect, placeholder = "Search your street, apartment, area..." }) => {
   const { ready, error } = useGoogleMaps();

@@ -106,12 +106,12 @@ export function AuthModal() {
             <Sparkles className="w-5 h-5 text-amber-300" />
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-[#2D2118]">
-            {otpSent ? (isExistingUser ? "Enter Verification OTP" : "Welcome! Create Profile") : "Instant Phone Login"}
+            {otpSent ? (isExistingUser ? "Enter Verification Code" : "Welcome! Create Profile") : "Instant Phone Login"}
           </h2>
           <p className="text-xs text-[#8B7355]">
             {otpSent
-              ? (isExistingUser ? "Enter the 6-digit code sent to your phone." : "Fill details below to complete 1-click registration.")
-              : "Passwordless authentication via Twilio SMS"}
+              ? (isExistingUser ? "Enter the 6-digit code sent to your mobile phone." : "Fill details below to complete your profile.")
+              : "Passwordless 1-click authentication via SMS"}
           </p>
         </div>
 
@@ -151,17 +151,15 @@ export function AuthModal() {
               disabled={loading}
               className="w-full bg-[#5C1E1E] hover:bg-[#4A1717] text-white py-3.5 rounded-2xl text-xs font-bold shadow-lg shadow-[#5C1E1E]/30 transition active:scale-95 flex items-center justify-center gap-2"
             >
-              <span>{loading ? "Sending OTP..." : "Get Verification Code"}</span>
+              <span>{loading ? "Sending Code..." : "Get Verification Code"}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
 
-            <div className="p-3 bg-[#FAF5EC] border border-[#E8DFC9] rounded-2xl text-[11px] text-[#8B7355] space-y-0.5">
-              <div className="font-bold text-[#2D2118] flex items-center gap-1">
-                <ShieldCheck className="w-4 h-4 text-emerald-600" /> Twilio Verified Network
-              </div>
-              <p className="text-[10px] text-[#8B7355]">
-                Instant SMS delivery. <em>(Dev mode test code: <strong>123456</strong>)</em>
-              </p>
+            <div className="p-3 bg-[#FAF5EC] border border-[#E8DFC9] rounded-2xl text-[11px] text-[#8B7355] flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+              <span className="text-[10px] text-[#8B7355] font-semibold">
+                Protected by end-to-end SMS verification.
+              </span>
             </div>
           </form>
         ) : (

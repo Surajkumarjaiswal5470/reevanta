@@ -37,6 +37,30 @@ export function HomePage({ products, onCategorySelect, onQuickView, onNavigate }
   return (
     <div className="space-y-8 pb-12 pt-2">
 
+      {/* ── Top Instant Featured Items Showcase ── */}
+      <section className="space-y-6">
+        <div className="flex justify-between items-end">
+          <div>
+            <span className="text-xs font-bold uppercase tracking-widest text-[#8B7355] flex items-center gap-1.5">
+              <Sparkles className="w-4 h-4 text-amber-600" /> Handpicked Arrivals
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-black text-[#2D2118]">Trending Luxury Collection</h2>
+          </div>
+          <button
+            onClick={() => onNavigate("catalog")}
+            className="text-xs font-bold text-[#5C1E1E] hover:underline flex items-center gap-1"
+          >
+            Explore Full Catalog <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+          {featuredProducts.slice(0, 8).map((product) => (
+            <ProductCard key={product.id} product={product} onQuickView={onQuickView} />
+          ))}
+        </div>
+      </section>
+
       {/* ── 5-6 Slide Hero Banner Carousel ── */}
       <HeroSlider onCategorySelect={onCategorySelect} onNavigate={onNavigate} />
 
@@ -65,6 +89,7 @@ export function HomePage({ products, onCategorySelect, onQuickView, onNavigate }
           </div>
         </section>
       )}
+
 
       {/* Categories Grid */}
       <section className="space-y-6">

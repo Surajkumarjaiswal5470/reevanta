@@ -32,7 +32,10 @@ export async function apiFetch(endpoint, options = {}) {
 
     return data;
   } catch (error) {
-    console.error(`[API Error] ${options.method || 'GET'} ${endpoint}:`, error);
+    if (error.status !== 401) {
+      console.error(`[API Error] ${options.method || 'GET'} ${endpoint}:`, error);
+    }
     throw error;
   }
+
 }

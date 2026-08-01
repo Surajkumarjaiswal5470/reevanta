@@ -24,7 +24,7 @@ import {
   ArrowUpRight
 } from "lucide-react";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:8001";
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || (process.env.NODE_ENV === 'production' ? "https://reevanta-backend-pg3v.onrender.com" : "http://localhost:8001");
 const API = `${BACKEND_URL}/api`;
 
 const STATUS_OPTIONS = ["Order Placed", "Packed", "Shipped", "Out for Delivery", "Delivered", "Cancelled"];

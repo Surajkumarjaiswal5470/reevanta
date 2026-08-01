@@ -18,6 +18,8 @@ services:
         value: "*"
       - key: ENVIRONMENT
         value: production
+      - key: FIREBASE_SERVICE_ACCOUNT_PATH
+        value: firebase_credentials.json
 
   - type: web
     name: reevanta-frontend

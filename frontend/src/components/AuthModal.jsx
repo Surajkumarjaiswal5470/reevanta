@@ -32,7 +32,7 @@ export function AuthModal() {
       });
       setOtpSent(true);
       setIsExistingUser(res.is_existing_user);
-      toast.success(res.message || `OTP sent to ${fullPhone}`);
+      toast.success(`Verification code sent to ${fullPhone}`);
     } catch (err) {
       toast.error(err.message || "Failed to send OTP");
     } finally {

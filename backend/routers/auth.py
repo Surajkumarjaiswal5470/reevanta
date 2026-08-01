@@ -108,7 +108,7 @@ async def send_otp(inp: SendOTPRequest):
     
     sms_sent = send_twilio_sms(phone, f"Your RIVAANTA verification code is {otp}. Valid for 5 minutes.")
     
-    message = f"Verification code sent to {phone}." if sms_sent else f"OTP generated for {phone}. Use code: {otp}"
+    message = f"Verification code sent to {phone}."
     
     return {
         "message": message,

@@ -43,7 +43,7 @@ export function HomePage({ products, onCategorySelect, onQuickView, onNavigate }
   const featuredProducts = cosmeticsFirstProducts.slice(0, 8);
 
   return (
-    <div className="space-y-8 pb-12 pt-2">
+    <div className="space-y-4 sm:space-y-6 lg:space-y-8 pb-12 pt-1">
 
       {/* ── 6 Slide Cosmetics & Beauty Hero Carousel (TOP STARTING POSITION) ── */}
       <HeroSlider onCategorySelect={onCategorySelect} onNavigate={onNavigate} />

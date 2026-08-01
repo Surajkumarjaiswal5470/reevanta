@@ -432,26 +432,99 @@ export function CatalogPage({ products, selectedCategory, onCategorySelect, onQu
         </div>
       )}
 
-      {/* Products Grid Results */}
-      {sortedProducts.length === 0 ? (
-        <div className="text-center py-20 bg-white rounded-3xl border border-[#E8DFC9] space-y-3">
-          <div className="text-3xl">🛍️</div>
-          <h3 className="font-bold text-[#2D2118]">No matching products found</h3>
-          <p className="text-xs text-gray-500">Try adjusting or clearing your active attribute filters.</p>
-          <button
-            onClick={resetAllFilters}
-            className="bg-[#2D2118] text-white px-5 py-2.5 rounded-2xl text-xs font-bold shadow transition"
-          >
-            Reset All Filters
-          </button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {sortedProducts.map((product) => (
-            <ProductCard key={product.id} product={product} onQuickView={onQuickView} />
-          ))}
-        </div>
-      )}
+      {/* Products Grid Results OR Launching Soon Banner */}
+      {(() => {
+        const isComingSoonCategory = ["sarees", "kurtas", "lehenga", "footwear", "jewelry", "sherwanis", "kids-wear"].includes(filters.category);
+        const currentCategoryObj = MOCK_CATEGORIES.find(c => c.id === filters.category);
+        const catName = currentCategoryObj ? currentCategoryObj.name.replace(" (Soon)", "") : "Apparel";
+
+        if (isComingSoonCategory) {
+          return (
+            <div className="bg-gradient-to-br from-[#2D2118] via-[#4A1F1F] to-[#5C1E1E] text-white rounded-3xl p-8 sm:p-12 text-center space-y-6 shadow-2xl relative overflow-hidden border border-amber-500/30">
+              <div className="absolute top-0 right-0 translate-x-12 -translate-y-12 w-64 h-64 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
+              
+              <div className="inline-flex items-center gap-2 bg-amber-400/20 text-amber-300 border border-amber-400/40 px-4 py-1.5 rounded-full text-xs font-black tracking-widest uppercase shadow">
+                <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" /> Official Collection Launching Soon
+              </div>
+
+              <div className="max-w-2xl mx-auto space-y-3">
+                <h2 className="text-3xl sm:text-4xl font-black text-amber-100 font-serif tracking-wide">
+                  {catName} Collection
+                </h2>
+                <p className="text-sm text-amber-100/80 leading-relaxed font-light">
+                  Our master weavers and royal artisans are crafting hand-embroidered heritage <strong>{catName}</strong> pieces for our upcoming grand fashion showcase. Pre-orders & exclusive preview invites will open shortly.
+                </p>
+              </div>
+
+              {/* VIP Early Access Form */}
+              <div className="max-w-md mx-auto bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20 space-y-3">
+                <p className="text-xs font-bold text-amber-200">✨ Be the First to Know & Get 15% VIP Launch Discount:</p>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const input = e.target.elements.contact;
+                    if (input && input.value.trim()) {
+                      toast.success(`🎉 You're registered! We will notify ${input.value} as soon as ${catName} launches.`);
+                      input.value = "";
+                    } else {
+                      toast.error("Please enter your phone number or email.");
+                    }
+                  }}
+                  className="flex gap-2"
+                >
+                  <input
+                    name="contact"
+                    type="text"
+                    placeholder="Enter phone or email address..."
+                    className="flex-1 bg-white text-[#2D2118] px-3.5 py-2.5 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-amber-400 placeholder:text-gray-400"
+                  />
+                  <button
+                    type="submit"
+                    className="bg-amber-400 hover:bg-amber-300 text-[#2D2118] font-black text-xs px-4 py-2.5 rounded-xl transition shadow active:scale-95 whitespace-nowrap"
+                  >
+                    Get VIP Access
+                  </button>
+                </form>
+              </div>
+
+              {/* Primary Call to Action -> Browse Live Cosmetics Line */}
+              <div className="pt-4 border-t border-white/10 flex flex-col sm:flex-row items-center justify-center gap-4">
+                <span className="text-xs text-amber-200/80">Looking for ready-to-ship luxury items?</span>
+                <button
+                  onClick={() => updateFilter("category", "cosmetics")}
+                  className="bg-white text-[#5C1E1E] hover:bg-amber-100 font-black text-xs px-6 py-3 rounded-2xl shadow-lg transition duration-200 flex items-center gap-2 active:scale-95"
+                >
+                  <span>💄 Shop Cosmetics & Beauty Line (LIVE NOW)</span>
+                </button>
+              </div>
+            </div>
+          );
+        }
+
+        if (sortedProducts.length === 0) {
+          return (
+            <div className="text-center py-20 bg-white rounded-3xl border border-[#E8DFC9] space-y-3">
+              <div className="text-3xl">🛍️</div>
+              <h3 className="font-bold text-[#2D2118]">No matching products found</h3>
+              <p className="text-xs text-gray-500">Try adjusting or clearing your active attribute filters.</p>
+              <button
+                onClick={resetAllFilters}
+                className="bg-[#2D2118] text-white px-5 py-2.5 rounded-2xl text-xs font-bold shadow transition"
+              >
+                Reset All Filters
+              </button>
+            </div>
+          );
+        }
+
+        return (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {sortedProducts.map((product) => (
+              <ProductCard key={product.id} product={product} onQuickView={onQuickView} />
+            ))}
+          </div>
+        );
+      })()}
     </div>
   );
 }

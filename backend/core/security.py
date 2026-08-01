@@ -31,7 +31,7 @@ def create_access_token(user_id: str, email: str) -> str:
     payload = {
         "sub": user_id,
         "email": email,
-        "exp": datetime.now(timezone.utc) + timedelta(days=1),
+        "exp": datetime.now(timezone.utc) + timedelta(days=30),
         "type": "access"
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
@@ -39,19 +39,13 @@ def create_access_token(user_id: str, email: str) -> str:
 def create_refresh_token(user_id: str) -> str:
     payload = {
         "sub": user_id,
-        "exp": datetime.now(timezone.utc) + timedelta(days=7),
+        "exp": datetime.now(timezone.utc) + timedelta(days=90),
         "type": "refresh"
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
 def verify_token(token: str) -> dict:
-    """Validate a JWT and return its payload.
-
-    The test suite expects a ``verify_token`` function that raises an
-    ``HTTPException`` with status 401 for any invalid or expired token. This
-    mirrors the behaviour of ``get_current_user`` but operates on a raw token
-    string rather than extracting it from a request.
-    """
+    """Validate a JWT and return its payload."""
     try:
         payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
         return payload
@@ -63,8 +57,9 @@ def verify_token(token: str) -> dict:
 def set_auth_cookies(response: Response, user_id: str, email_or_phone: str):
     access_token = create_access_token(user_id, email_or_phone)
     refresh_token = create_refresh_token(user_id)
-    response.set_cookie(key="access_token", value=access_token, httponly=True, secure=True, samesite="none", max_age=86400, path="/")
-    response.set_cookie(key="refresh_token", value=refresh_token, httponly=True, secure=True, samesite="none", max_age=604800, path="/")
+    # 90 Days in seconds = 90 * 86400 = 7,776,000
+    response.set_cookie(key="access_token", value=access_token, httponly=True, secure=True, samesite="none", max_age=7776000, path="/")
+    response.set_cookie(key="refresh_token", value=refresh_token, httponly=True, secure=True, samesite="none", max_age=7776000, path="/")
 
 def format_phone(phone_str: str) -> str:
     cleaned = "".join(c for c in phone_str if c.isdigit())

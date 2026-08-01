@@ -5,7 +5,7 @@ import { toast } from "sonner";
 const AuthContext = createContext();
 const AUTH_STORAGE_KEY = "rivaanta_user";
 const AUTH_TIMESTAMP_KEY = "rivaanta_auth_ts";
-const SESSION_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+const SESSION_MAX_AGE_MS = 90 * 24 * 60 * 60 * 1000; // 90 days (3 months)
 const REVALIDATION_INTERVAL_MS = 5 * 60 * 1000; // 5 min
 
 // ─── Safe localStorage Helpers ───────────────────────────────────────────────

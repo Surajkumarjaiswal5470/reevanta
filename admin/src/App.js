@@ -4,7 +4,7 @@ import { toast, Toaster } from "sonner";
 import { LogOut, ShieldCheck, KeyRound, UserCheck, Eye, EyeOff } from "lucide-react";
 import { AdminPanel } from "./components/AdminPanel";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:8000";
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || (process.env.NODE_ENV === 'production' ? "https://reevanta-backend-pg3v.onrender.com" : "http://localhost:8001");
 const API = `${BACKEND_URL}/api`;
 
 axios.defaults.withCredentials = true;

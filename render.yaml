@@ -32,3 +32,17 @@ services:
         value: https://reevanta-backend-pg3v.onrender.com/api
       - key: REACT_APP_BACKEND_URL
         value: https://reevanta-backend-pg3v.onrender.com
+
+  - type: web
+    name: reevanta-admin
+    runtime: node
+    plan: free
+    region: singapore
+    rootDir: admin
+    buildCommand: npm install && npm run build
+    startCommand: npx serve -s build -l $PORT
+    envVars:
+      - key: REACT_APP_API_URL
+        value: https://reevanta-backend-pg3v.onrender.com/api
+      - key: REACT_APP_BACKEND_URL
+        value: https://reevanta-backend-pg3v.onrender.com

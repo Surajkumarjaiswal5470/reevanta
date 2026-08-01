@@ -49,6 +49,9 @@ const AboutPage = lazy(() =>
 const ContactPage = lazy(() =>
   import("./pages/ContactPage").then((m) => ({ default: m.ContactPage }))
 );
+const AdminPage = lazy(() =>
+  import("./pages/AdminPage").then((m) => ({ default: m.AdminPage }))
+);
 
 // ---------------------------------------------------------------------------
 // Route <-> legacy "activeTab" mapping.
@@ -458,7 +461,7 @@ function MainLayout() {
               <Route path="/reseller-faq" element={<ResellerPage onNavigate={setActiveTab} />} />
               <Route path="/about" element={<AboutPage onNavigate={setActiveTab} />} />
               <Route path="/contact" element={<ContactPage />} />
-              <Route path="/admin" element={<Navigate to="/" replace />} />
+              <Route path="/admin" element={<AdminPage onNavigate={setActiveTab} />} />
               {/* Legacy bookmarks / typos fall back gracefully instead of 404ing hard */}
               <Route path="/home" element={<Navigate to="/" replace />} />
               <Route path="*" element={<NotFoundPage onNavigate={setActiveTab} />} />

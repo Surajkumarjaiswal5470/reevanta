@@ -49,9 +49,6 @@ const AboutPage = lazy(() =>
 const ContactPage = lazy(() =>
   import("./pages/ContactPage").then((m) => ({ default: m.ContactPage }))
 );
-const AdminPage = lazy(() =>
-  import("./pages/AdminPage").then((m) => ({ default: m.AdminPage }))
-);
 
 // ---------------------------------------------------------------------------
 // Route <-> legacy "activeTab" mapping.
@@ -69,7 +66,6 @@ const TAB_TO_PATH = {
   "reseller-faq": "/reseller-faq",
   about: "/about",
   contact: "/contact",
-  admin: "/admin",
 };
 const PATH_TO_TAB = Object.fromEntries(
   Object.entries(TAB_TO_PATH).map(([tab, path]) => [path, tab])
@@ -461,7 +457,6 @@ function MainLayout() {
               <Route path="/reseller-faq" element={<ResellerPage onNavigate={setActiveTab} />} />
               <Route path="/about" element={<AboutPage onNavigate={setActiveTab} />} />
               <Route path="/contact" element={<ContactPage />} />
-              <Route path="/admin" element={<AdminPage onNavigate={setActiveTab} />} />
               {/* Legacy bookmarks / typos fall back gracefully instead of 404ing hard */}
               <Route path="/home" element={<Navigate to="/" replace />} />
               <Route path="*" element={<NotFoundPage onNavigate={setActiveTab} />} />
@@ -469,7 +464,7 @@ function MainLayout() {
           </Suspense>
         </ErrorBoundary>
 
-        {activeTab !== "home" && activeTab !== "admin" && <Footer onNavigate={setActiveTab} />}
+        {activeTab !== "home" && <Footer onNavigate={setActiveTab} />}
       </main>
 
       {quickViewProduct && (

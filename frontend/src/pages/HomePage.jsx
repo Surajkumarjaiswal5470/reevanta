@@ -82,7 +82,7 @@ export function HomePage({ products, onCategorySelect, onQuickView, onNavigate }
           </button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
           {featuredProducts.slice(0, 8).map((product) => (
             <ProductCard key={product.id} product={product} onQuickView={onQuickView} />
           ))}
@@ -107,7 +107,7 @@ export function HomePage({ products, onCategorySelect, onQuickView, onNavigate }
             </button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
             {personalizedData.recommendedForYou.map((product) => (
               <ProductCard key={product.id} product={product} onQuickView={onQuickView} />
             ))}
@@ -149,7 +149,7 @@ export function HomePage({ products, onCategorySelect, onQuickView, onNavigate }
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
             {flashSaleProducts.slice(0, 4).map((product) => (
               <ProductCard key={product.id} product={product} onQuickView={onQuickView} />
             ))}
@@ -164,7 +164,7 @@ export function HomePage({ products, onCategorySelect, onQuickView, onNavigate }
           <h2 className="text-2xl font-black text-[#2D2118]">Featured Luxury Wardrobe</h2>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
           {featuredProducts.map((product) => (
             <ProductCard key={product.id} product={product} onQuickView={onQuickView} />
           ))}

@@ -28,6 +28,7 @@ from routers.orders import router as orders_router
 from routers.vouchers import router as vouchers_router
 from routers.cart import router as cart_router
 from routers.personalization import router as personalization_router
+from routers.support import router as support_router
 from routers.admin import admin_router
 from routers.admin.cms import router as admin_cms_router
 
@@ -96,6 +97,7 @@ api_router.include_router(orders_router)
 api_router.include_router(vouchers_router)
 api_router.include_router(cart_router)
 api_router.include_router(personalization_router)
+api_router.include_router(support_router)
 api_router.include_router(admin_cms_router)
 api_router.include_router(admin_router)
 

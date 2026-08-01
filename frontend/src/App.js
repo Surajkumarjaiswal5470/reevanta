@@ -17,6 +17,7 @@ import { ProductCard } from "./components/ProductCard";
 import { QuickViewModal } from "./components/QuickViewModal";
 import { AuthModal } from "./components/AuthModal";
 import { CartDrawer } from "./components/CartDrawer";
+import { LiveChatWidget } from "./components/LiveChatWidget";
 import { Footer } from "./components/Footer";
 import { MOCK_PRODUCTS, MOCK_LOOKBOOKS } from "./mock";
 
@@ -473,6 +474,7 @@ function MainLayout() {
 
       <AuthModal />
       <CartDrawer onOrderPlaced={() => setActiveTab("orders")} />
+      <LiveChatWidget />
     </div>
   );
 }

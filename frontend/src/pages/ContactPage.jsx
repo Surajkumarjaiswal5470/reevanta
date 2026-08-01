@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { MapPin, Phone, Mail, Clock, Send, CheckCircle2, MessageSquare, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { apiFetch } from "../services/api";
 
 export function ContactPage() {
   const [formData, setFormData] = useState({
@@ -13,18 +14,25 @@ export function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name || !formData.message) {
       toast.error("Please fill in your name and message.");
       return;
     }
     setSubmitting(true);
-    setTimeout(() => {
-      setSubmitting(false);
+    try {
+      await apiFetch("/support/contact", {
+        method: "POST",
+        body: formData
+      });
       setSubmitted(true);
       toast.success("Message sent successfully! Our Kathmandu desk will contact you shortly.");
-    }, 600);
+    } catch (err) {
+      toast.error(err.message || "Failed to submit message.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (

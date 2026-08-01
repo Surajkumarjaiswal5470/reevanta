@@ -86,6 +86,7 @@ cors_origins = [
     "http://localhost:8000",
     "http://127.0.0.1:8001",
     "http://localhost:3001",
+    "https://reevanta.onrender.com",
 ]
 if CORS_ORIGINS.strip() != '*' and CORS_ORIGINS.strip():
     for o in CORS_ORIGINS.split(','):
@@ -95,7 +96,7 @@ if CORS_ORIGINS.strip() != '*' and CORS_ORIGINS.strip():
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
-    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?",
+    allow_origin_regex=r"https?://.*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

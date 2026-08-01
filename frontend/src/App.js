@@ -451,8 +451,8 @@ function MainLayout() {
                 }
               />
               <Route path="/wishlist" element={<WishlistPage onNavigate={setActiveTab} />} />
-              <Route path="/orders" element={<OrdersPage />} />
-              <Route path="/shipping" element={<ShippingPage onNavigate={setActiveTab} />} />
+              <Route path="/orders" element={currentUser ? <OrdersPage /> : <Navigate to="/" replace />} />
+              <Route path="/shipping" element={<ShippingPage onNavigate={setActiveTab} />} />}
               <Route path="/returns" element={<ReturnsPage onNavigate={setActiveTab} />} />
               <Route path="/reseller-faq" element={<ResellerPage onNavigate={setActiveTab} />} />
               <Route path="/about" element={<AboutPage onNavigate={setActiveTab} />} />

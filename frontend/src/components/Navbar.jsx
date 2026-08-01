@@ -146,7 +146,7 @@ export function Navbar({ activeTab, setActiveTab, onOpenProduct, onCategorySelec
 
             {/* Center: Nav Links */}
             <nav className="flex items-center space-x-1">
-              {NAV_TABS.map((tab) => (
+              {visibleNavTabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => goTo(tab.id)}
@@ -387,7 +387,7 @@ export function Navbar({ activeTab, setActiveTab, onOpenProduct, onCategorySelec
                 Browse Store
               </p>
               <div className="space-y-0.5">
-                {NAV_TABS.map((tab) => {
+                {visibleNavTabs.map((tab) => {
                   const Icon = tab.icon;
                   const isActive = activeTab === tab.id;
                   return (

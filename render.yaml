@@ -44,6 +44,8 @@ services:
         value: https://reevanta-backend-pg3v.onrender.com/api
       - key: REACT_APP_BACKEND_URL
         value: https://reevanta-backend-pg3v.onrender.com
+      - key: REACT_APP_MAPTILER_API_KEY
+        value: 84QN8CrIPHAnqkdL1Fus
 
   - type: web
     name: reevanta-admin

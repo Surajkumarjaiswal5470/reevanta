@@ -1,43 +1,69 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useGoogleMaps, reverseGeocode, parseGeocodeResult } from "../hooks/useGoogleMaps";
-import { MapPin, Locate, Loader2, Search, Plus, Check, Trash2 } from "lucide-react";
+import { searchPlacesMapTiler, reverseGeocodeMapTiler, getMapTilerStaticMapUrl } from "../hooks/useMapTiler";
+import { MapPin, Locate, Loader2, Search, Plus, Check, Trash2, Navigation } from "lucide-react";
 
-export const AddressAutocomplete = ({ value, onChange, onSelect, placeholder = "Search your street, apartment, area..." }) => {
-  const { ready, error } = useGoogleMaps();
-  const inputRef = useRef(null);
-  const autocompleteRef = useRef(null);
+export const AddressAutocomplete = ({ value, onChange, onSelect, placeholder = "Search location in Nepal (Kathmandu, Pokhara...)" }) => {
+  const [suggestions, setSuggestions] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
 
   useEffect(() => {
-    if (!ready || !inputRef.current || autocompleteRef.current) return;
-    const ac = new window.google.maps.places.Autocomplete(inputRef.current, {
-      fields: ["address_components", "formatted_address", "geometry"],
-      types: ["geocode"],
-    });
-    ac.addListener("place_changed", () => {
-      const place = ac.getPlace();
-      if (!place || !place.geometry) return;
-      const parsed = parseGeocodeResult(place);
-      onSelect && onSelect(parsed);
-    });
-    autocompleteRef.current = ac;
-  }, [ready, onSelect]);
+    if (!value || value.trim().length < 2) {
+      setSuggestions([]);
+      setShowDropdown(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setSearching(true);
+      const results = await searchPlacesMapTiler(value);
+      setSuggestions(results);
+      setShowDropdown(results.length > 0);
+      setSearching(false);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [value]);
+
+  const handlePick = (item) => {
+    onChange(item.formatted || item.line1);
+    setShowDropdown(false);
+    if (onSelect) onSelect(item);
+  };
 
   return (
     <div className="relative">
       <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-[#8B7355]">
-        <Search className="w-4 h-4" />
+        {searching ? <Loader2 className="w-4 h-4 animate-spin text-[#5C1E1E]" /> : <Search className="w-4 h-4" />}
       </span>
       <input
         data-testid="address-autocomplete-input"
-        ref={inputRef}
         type="text"
-        value={value}
+        value={value || ""}
         onChange={(e) => onChange(e.target.value)}
-        placeholder={ready ? placeholder : "Loading places..."}
-        disabled={!ready && !error}
+        placeholder={placeholder}
         className="w-full bg-[#FAF5EC] border border-[#E8DFC9] rounded-xl pl-10 pr-4 py-3 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#5C1E1E] shadow-inner"
       />
-      {error && <p className="text-xs text-red-500 mt-1">Places API unavailable. Enter address manually below.</p>}
+
+      {/* MapTiler Autocomplete Dropdown */}
+      {showDropdown && suggestions.length > 0 && (
+        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-[#E8DFC9] rounded-2xl shadow-xl overflow-hidden divide-y divide-gray-100 max-h-60 overflow-y-auto">
+          {suggestions.map((item, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => handlePick(item)}
+              className="w-full text-left px-3.5 py-2.5 hover:bg-[#FAF5EC] transition flex items-start gap-2.5"
+            >
+              <MapPin className="w-4 h-4 text-[#5C1E1E] shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs font-bold text-[#2D2118]">{item.line1}</p>
+                <p className="text-[10px] text-gray-500 line-clamp-1">{item.formatted}</p>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
@@ -55,7 +81,7 @@ export const UseCurrentLocationButton = ({ onLocated }) => {
       async (pos) => {
         try {
           const { latitude, longitude } = pos.coords;
-          const parsed = await reverseGeocode(latitude, longitude);
+          const parsed = await reverseGeocodeMapTiler(latitude, longitude);
           parsed.lat = latitude;
           parsed.lng = longitude;
           onLocated(parsed);
@@ -82,45 +108,31 @@ export const UseCurrentLocationButton = ({ onLocated }) => {
       className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#5C1E1E] to-[#B8956A] hover:opacity-95 text-white font-bold py-3 rounded-xl text-sm shadow-md shadow-[#5C1E1E]/30 transition disabled:opacity-70"
     >
       {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Locate className="w-4 h-4" />}
-      <span>{loading ? "Detecting your location..." : "Use my current location"}</span>
+      <span>{loading ? "Detecting location via MapTiler..." : "Use my current location"}</span>
     </button>
   );
 };
 
 export const LocationMapPreview = ({ lat, lng, height = 160 }) => {
-  const { ready } = useGoogleMaps();
-  const mapRef = useRef(null);
-  const mapInstance = useRef(null);
-  const markerRef = useRef(null);
-
-  useEffect(() => {
-    if (!ready || !mapRef.current || lat == null || lng == null) return;
-    if (!mapInstance.current) {
-      mapInstance.current = new window.google.maps.Map(mapRef.current, {
-        center: { lat, lng },
-        zoom: 15,
-        disableDefaultUI: true,
-        clickableIcons: false,
-        styles: [{ featureType: "poi", stylers: [{ visibility: "off" }] }],
-      });
-    } else {
-      mapInstance.current.setCenter({ lat, lng });
-    }
-    if (markerRef.current) markerRef.current.setMap(null);
-    markerRef.current = new window.google.maps.Marker({
-      position: { lat, lng },
-      map: mapInstance.current,
-    });
-  }, [ready, lat, lng]);
-
   if (lat == null || lng == null) return null;
+  const staticMapUrl = getMapTilerStaticMapUrl(lat, lng, 600, height, 15);
+
   return (
     <div
       data-testid="location-map-preview"
-      ref={mapRef}
-      className="w-full rounded-xl border border-[#E8DFC9] overflow-hidden shadow-inner"
+      className="w-full rounded-xl border border-[#E8DFC9] overflow-hidden shadow-inner relative bg-[#FAF5EC]"
       style={{ height }}
-    />
+    >
+      <img
+        src={staticMapUrl}
+        alt="MapTiler Location Preview"
+        className="w-full h-full object-cover"
+      />
+      <div className="absolute bottom-2 left-2 bg-[#2D2118]/80 text-white text-[10px] font-bold px-2 py-0.5 rounded-md backdrop-blur flex items-center gap-1">
+        <Navigation className="w-3 h-3 text-amber-300" />
+        <span>MapTiler Verified Location</span>
+      </div>
+    </div>
   );
 };
 

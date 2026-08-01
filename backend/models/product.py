@@ -7,8 +7,10 @@ class ProductCreate(BaseModel):
     brand: str
     price: float
     originalPrice: float
-    rating: float = 4.5
-    reviewsCount: int = 10
+    # New products start with no ratings or reviews. Real ratings will be
+    # accumulated via the review endpoints.
+    rating: float = 0.0
+    reviewsCount: int = 0
     image: str
     sizes: List[str]
     colors: List[str]

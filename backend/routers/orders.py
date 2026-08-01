@@ -60,7 +60,7 @@ async def get_optional_user(request: Request) -> Optional[dict]:
 from core.rate_limiter import rate_limiter
 
 @router.post("")
-async def create_order(inp: OrderCreate, request: Request):
+async def create_order(inp: OrderCreate, request: Request, user: dict = Depends(get_current_user)):
     client_ip = request.client.host if request.client else "127.0.0.1"
     forwarded_for = request.headers.get("x-forwarded-for")
     if forwarded_for:
@@ -79,18 +79,11 @@ async def create_order(inp: OrderCreate, request: Request):
     if inp.total <= 0 or inp.total > 150000:
         raise HTTPException(status_code=400, detail="Invalid order total amount detected.")
 
-    user = await get_optional_user(request)
+    # At this point ``user`` is guaranteed to be authenticated (or a 401 is raised).
     doc = inp.model_dump()
-    
-    if user:
-        doc["user_id"] = user["id"]
-        doc["userName"] = user.get("name") or inp.address.fullName
-        doc["userEmail"] = user.get("email") or "guest@reevanta.com"
-    else:
-        doc["user_id"] = f"guest_{inp.address.phone}"
-        doc["userName"] = inp.address.fullName
-        doc["userEmail"] = f"guest_{inp.address.phone}@reevanta.com"
-        doc["is_guest"] = True
+    doc["user_id"] = user["id"]
+    doc["userName"] = user.get("name") or inp.address.fullName
+    doc["userEmail"] = user.get("email") or "guest@reevanta.com"
 
     doc["status"] = "Order Placed"
     now_iso = datetime.now(timezone.utc).isoformat()

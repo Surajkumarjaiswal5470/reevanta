@@ -1,4 +1,5 @@
 import time
+import os
 from collections import defaultdict
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -18,6 +19,9 @@ class RateLimiter:
         self.checkout_attempts = defaultdict(list)
 
     def is_rate_limited(self, ip: str, path: str, method: str) -> tuple[bool, int]:
+        # Allow tests to bypass rate limiting
+        if os.getenv("DISABLE_RATE_LIMIT") == "1":
+            return False, 0
         now = time.time()
         window_sec = 60
         
@@ -80,7 +84,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         # Check login lockout
         if path == "/api/auth/login" and request.method == "POST":
-            if rate_limiter.is_login_locked_out(client_ip):
+            if os.getenv("DISABLE_RATE_LIMIT") != "1" and rate_limiter.is_login_locked_out(client_ip):
                 return JSONResponse(
                     status_code=429,
                     content={"detail": "Too many failed login attempts. Account temporarily locked for 10 minutes."}

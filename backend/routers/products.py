@@ -29,13 +29,14 @@ async def get_product_reviews(product_id: str):
     
     # Calculate breakdown
     total = len(reviews)
-    avg_rating = round(sum(r.get("rating", 5) for r in reviews) / total, 1) if total > 0 else 4.8
+    # Compute average rating; default to 0.0 when no reviews exist.
+    avg_rating = round((sum(r.get("rating", 5) for r in reviews) / total), 1) if total > 0 else 0.0
     rating_breakdown = {
-        "5": len([r for r in reviews if r.get("rating") == 5]),
-        "4": len([r for r in reviews if r.get("rating") == 4]),
-        "3": len([r for r in reviews if r.get("rating") == 3]),
-        "2": len([r for r in reviews if r.get("rating") == 2]),
-        "1": len([r for r in reviews if r.get("rating") == 1]),
+        "5": len([r for r in reviews if r.get("rating", 0) == 5]),
+        "4": len([r for r in reviews if r.get("rating", 0) == 4]),
+        "3": len([r for r in reviews if r.get("rating", 0) == 3]),
+        "2": len([r for r in reviews if r.get("rating", 0) == 2]),
+        "1": len([r for r in reviews if r.get("rating", 0) == 1]),
     }
     return {
         "reviews": [serialize_doc(r) for r in reviews],

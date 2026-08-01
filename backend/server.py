@@ -87,6 +87,8 @@ cors_origins = [
     "http://127.0.0.1:8001",
     "http://localhost:3001",
     "https://reevanta.onrender.com",
+    "https://therivaanta.com",
+    "https://www.therivaanta.com",
 ]
 if CORS_ORIGINS.strip() != '*' and CORS_ORIGINS.strip():
     for o in CORS_ORIGINS.split(','):

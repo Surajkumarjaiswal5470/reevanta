@@ -195,8 +195,9 @@ export function CatalogPage({ products, selectedCategory, onCategorySelect, onQu
           >
             All Products ({products.length})
           </button>
-          {MOCK_CATEGORIES.map((cat) => {
+          {MOCK_CATEGORIES.filter(c => c.id !== "all").map((cat) => {
             const count = products.filter((p) => p.category === cat.id).length;
+            const isLive = cat.id === "cosmetics" || cat.id === "beauty";
             return (
               <button
                 key={cat.id}
@@ -204,15 +205,50 @@ export function CatalogPage({ products, selectedCategory, onCategorySelect, onQu
                 className={`px-4 py-2 rounded-xl text-xs font-bold shrink-0 transition flex items-center gap-1.5 ${
                   filters.category === cat.id
                     ? "bg-[#5C1E1E] text-white shadow-sm font-black"
+                    : isLive
+                    ? "bg-amber-50 text-amber-900 border border-amber-300 font-bold hover:bg-amber-100"
                     : "bg-white text-gray-700 hover:bg-[#E8DFC9]/40 border border-[#E8DFC9]"
                 }`}
               >
                 <span>{cat.name}</span>
+                {isLive && (
+                  <span className="bg-emerald-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase">
+                    LIVE
+                  </span>
+                )}
+                {cat.comingSoon && (
+                  <span className="bg-amber-800 text-amber-100 text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase">
+                    SOON
+                  </span>
+                )}
                 <span className="text-[10px] opacity-75">({count})</span>
               </button>
             );
           })}
         </div>
+
+        {/* Priority Cosmetics Launch Banner */}
+        {(filters.category === "sarees" || filters.category === "kurtas" || filters.category === "lehenga") && (
+          <div className="bg-gradient-to-r from-amber-900/90 to-[#5C1E1E] text-white p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-md border border-amber-500/30 my-2">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">✨</span>
+              <div>
+                <h4 className="font-bold text-xs sm:text-sm text-amber-200 uppercase tracking-wider">
+                  {filters.category.toUpperCase()} COLLECTION — LAUNCHING SOON!
+                </h4>
+                <p className="text-xs text-gray-200">
+                  Our premier Cosmetics & Beauty line is <strong>NOW LIVE</strong>! Apparel pre-orders will open next month.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => updateFilter("category", "cosmetics")}
+              className="bg-amber-400 text-[#2D2118] text-xs font-black px-4 py-2 rounded-xl hover:bg-amber-300 transition whitespace-nowrap"
+            >
+              Shop Cosmetics Now →
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Filter Controls & Search Bar */}

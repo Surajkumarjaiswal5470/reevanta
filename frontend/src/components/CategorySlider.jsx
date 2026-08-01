@@ -17,58 +17,67 @@ const GENDER_TABS = [
  */
 const CATEGORIES = [
   {
-    id: "sarees",
-    label: "Sarees",
-    genders: ["all", "women"],
-    image: "/category-icons/sarees.png",
-  },
-  {
-    id: "kurtas",
-    label: "Kurtas & Suits",
-    genders: ["all", "women", "men"],
-    image: "/category-icons/kurtas.png",
-  },
-  {
-    id: "lehenga",
-    label: "Lehenga",
-    genders: ["all", "women"],
-    image: "/category-icons/lehenga.png",
-  },
-  {
     id: "cosmetics",
     label: "Cosmetics",
     genders: ["all", "women"],
     image: "/category-icons/cosmetics.png",
+    isPriority: true,
   },
   {
     id: "beauty",
     label: "Beauty Care",
     genders: ["all", "women", "men"],
     image: "/category-icons/beauty.png",
+    isPriority: true,
+  },
+  {
+    id: "sarees",
+    label: "Sarees",
+    genders: ["all", "women"],
+    image: "/category-icons/sarees.png",
+    comingSoon: true,
+  },
+  {
+    id: "kurtas",
+    label: "Kurtas & Suits",
+    genders: ["all", "women", "men"],
+    image: "/category-icons/kurtas.png",
+    comingSoon: true,
+  },
+  {
+    id: "lehenga",
+    label: "Lehenga",
+    genders: ["all", "women"],
+    image: "/category-icons/lehenga.png",
+    comingSoon: true,
   },
   {
     id: "footwear",
     label: "Footwear",
     genders: ["all", "women", "men", "kids"],
     image: "/category-icons/footwear.png",
+    comingSoon: true,
   },
   {
     id: "jewelry",
     label: "Jewelry",
     genders: ["all", "women"],
     image: "/category-icons/jewelry.png",
+    comingSoon: true,
   },
   {
     id: "sherwanis",
     label: "Sherwanis",
     genders: ["all", "men"],
     image: "/category-icons/sherwanis.png",
+    comingSoon: true,
   },
   {
     id: "kids-wear",
     label: "Kids Ethnic",
     genders: ["all", "kids"],
     image: "/category-icons/kids-wear.png",
+    comingSoon: true,
   },
 ];
 
@@ -139,6 +148,18 @@ export function CategorySlider({ onCategorySelect, onNavigate }) {
                   alt={cat.label}
                   className="w-full h-full object-cover group-hover/item:scale-110 transition-transform duration-300"
                 />
+                {cat.comingSoon && (
+                  <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px] flex items-center justify-center">
+                    <span className="bg-[#5C1E1E] text-white text-[8px] font-black tracking-widest px-1.5 py-0.5 rounded-full uppercase shadow">
+                      SOON
+                    </span>
+                  </div>
+                )}
+                {cat.isPriority && (
+                  <span className="absolute bottom-0 inset-x-0 bg-gradient-to-r from-amber-600 to-rose-700 text-white text-[8px] font-black tracking-wider text-center py-0.5 uppercase shadow-sm">
+                    LIVE
+                  </span>
+                )}
                 <div className="absolute inset-0 rounded-full bg-[#5C1E1E]/0 group-hover/item:bg-[#5C1E1E]/10 transition-all duration-300" />
               </div>
               {/* Label */}

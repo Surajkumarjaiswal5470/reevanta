@@ -59,10 +59,6 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Add Security Headers & Rate Limiting Middlewares
-app.add_middleware(SecurityHeadersMiddleware)
-app.add_middleware(RateLimitMiddleware)
-
 from routers.admin.cms import router as admin_cms_router
 
 api_router = APIRouter(prefix="/api")
@@ -79,7 +75,11 @@ api_router.include_router(admin_router)
 app.include_router(api_router)
 
 
-# Hardened CORS configuration
+# Middleware order matters: last-added runs first.
+# CORS must be outermost so it handles preflight and attaches headers even on 500s.
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(RateLimitMiddleware)
+
 if CORS_ORIGINS.strip() == '*':
     app.add_middleware(
         CORSMiddleware,

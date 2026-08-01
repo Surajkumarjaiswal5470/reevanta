@@ -32,7 +32,15 @@ export function HomePage({ products, onCategorySelect, onQuickView, onNavigate }
   }, []);
 
   const flashSaleProducts = products.filter((p) => p.isFlashSale);
-  const featuredProducts = products.slice(0, 8);
+  // Sort products so Cosmetics & Beauty appear first
+  const cosmeticsFirstProducts = [...products].sort((a, b) => {
+    const aIsLive = a.category === "cosmetics" || a.category === "beauty";
+    const bIsLive = b.category === "cosmetics" || b.category === "beauty";
+    if (aIsLive && !bIsLive) return -1;
+    if (!aIsLive && bIsLive) return 1;
+    return 0;
+  });
+  const featuredProducts = cosmeticsFirstProducts.slice(0, 8);
 
   return (
     <div className="space-y-8 pb-12 pt-2">
@@ -91,45 +99,7 @@ export function HomePage({ products, onCategorySelect, onQuickView, onNavigate }
       )}
 
 
-      {/* Categories Grid */}
-      <section className="space-y-6">
-        <div className="flex justify-between items-end">
-          <div>
-            <span className="text-xs font-bold uppercase tracking-widest text-[#8B7355]">Curated Selection</span>
-            <h2 className="text-2xl font-black text-[#2D2118]">Shop by Category</h2>
-          </div>
-          <button
-            onClick={() => onNavigate("catalog")}
-            className="text-xs font-bold text-[#5C1E1E] hover:underline flex items-center gap-1"
-          >
-            View All Categories <ArrowRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
-          {MOCK_CATEGORIES.map((cat) => (
-            <div
-              key={cat.id}
-              onClick={() => {
-                onCategorySelect(cat.id);
-                onNavigate("catalog");
-              }}
-              className="group cursor-pointer bg-white rounded-2xl overflow-hidden border border-[#E8DFC9] shadow-sm hover:shadow-md transition text-center p-3"
-            >
-              <div className="aspect-square rounded-xl bg-[#FAF5EC] overflow-hidden mb-3">
-                <img
-                  src={cat.image}
-                  alt={cat.name}
-                  className="w-full h-full object-cover group-hover:scale-110 transition duration-300"
-                />
-              </div>
-              <h3 className="font-bold text-xs text-[#2D2118] group-hover:text-[#5C1E1E] transition">
-                {cat.name}
-              </h3>
-            </div>
-          ))}
-        </div>
-      </section>
 
       {/* Flash Sale Banner */}
       {flashSaleProducts.length > 0 && (

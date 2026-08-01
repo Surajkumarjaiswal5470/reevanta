@@ -1,4 +1,5 @@
 import certifi
+import ssl
 from motor.motor_asyncio import AsyncIOMotorClient
 from bson import ObjectId
 from fastapi import HTTPException
@@ -6,11 +7,20 @@ from core.config import MONGO_URL, DB_NAME
 
 # Check if connection is MongoDB Atlas (mongodb+srv or mongodb:// with SSL)
 if "mongodb+srv" in MONGO_URL or "ssl=true" in MONGO_URL.lower() or "tls=true" in MONGO_URL.lower():
+    # Create a permissive SSL context to handle Atlas TLS handshake issues
+    ssl_context = ssl.create_default_context(cafile=certifi.where())
+    ssl_context.check_hostname = False
+    ssl_context.verify_mode = ssl.CERT_NONE
+    
     client = AsyncIOMotorClient(
         MONGO_URL,
+        tls=True,
         tlsCAFile=certifi.where(),
         tlsAllowInvalidCertificates=True,
-        serverSelectionTimeoutMS=10000
+        tlsAllowInvalidHostnames=True,
+        serverSelectionTimeoutMS=3000,
+        connectTimeoutMS=5000,
+        socketTimeoutMS=10000,
     )
 else:
     client = AsyncIOMotorClient(MONGO_URL, serverSelectionTimeoutMS=10000)

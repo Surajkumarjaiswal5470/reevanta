@@ -2,12 +2,12 @@ export const PRODUCTS_ENDPOINT = "/api/products";
 export const ORDERS_ENDPOINT = "/api/orders";
 
 export const MOCK_CATEGORIES = [
-  { id: "all", name: "All", icon: "Sparkles" },
-  { id: "sarees", name: "Sarees", icon: "Sparkles" },
-  { id: "kurtas", name: "Kurtas & Suits", icon: "Sparkles" },
-  { id: "lehenga", name: "Lehenga", icon: "Sparkles" },
-  { id: "cosmetics", name: "Cosmetics", icon: "Sparkles" },
-  { id: "beauty", name: "Beauty Care", icon: "Sparkles" }
+  { id: "all", name: "All Products", icon: "Sparkles" },
+  { id: "cosmetics", name: "Cosmetics (Live)", icon: "Sparkles", isPriority: true },
+  { id: "beauty", name: "Beauty Care (Live)", icon: "Sparkles", isPriority: true },
+  { id: "sarees", name: "Sarees (Soon)", icon: "Sparkles", comingSoon: true },
+  { id: "kurtas", name: "Kurtas & Suits (Soon)", icon: "Sparkles", comingSoon: true },
+  { id: "lehenga", name: "Lehenga (Soon)", icon: "Sparkles", comingSoon: true }
 ];
 
 export const MOCK_LOOKBOOKS = [

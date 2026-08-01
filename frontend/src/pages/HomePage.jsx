@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { Sparkles, ArrowRight } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { Sparkles, ArrowRight, Loader2 } from "lucide-react";
 import { ProductCard } from "../components/ProductCard";
 import { HeroSlider } from "../components/HeroSlider";
 import { CosmeticsSubCategorySlider } from "../components/CosmeticsSubCategorySlider";
@@ -7,10 +7,15 @@ import { Footer } from "../components/Footer";
 import { MOCK_CATEGORIES } from "../mock";
 import { apiFetch } from "../services/api";
 
+const BATCH_SIZE = 6;
+
 export function HomePage({ products, onCategorySelect, onQuickView, onNavigate }) {
   const [timeLeft, setTimeLeft] = useState({ hours: 4, minutes: 22, seconds: 45 });
   const [personalizedData, setPersonalizedData] = useState({ recommendedForYou: [], trendingLuxury: [] });
   const [activeSubCategory, setActiveSubCategory] = useState("all");
+  const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const observerRef = useRef(null);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -44,6 +49,37 @@ export function HomePage({ products, onCategorySelect, onQuickView, onNavigate }
   });
 
   const featuredProducts = filteredProductsBySubCat.length > 0 ? filteredProductsBySubCat : products;
+  const hasMore = visibleCount < featuredProducts.length;
+
+  // Reset pagination when category changes
+  useEffect(() => {
+    setVisibleCount(BATCH_SIZE);
+  }, [activeSubCategory]);
+
+  // Infinite Scroll Observer
+  useEffect(() => {
+    if (!hasMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !isLoadingMore) {
+          setIsLoadingMore(true);
+          setTimeout(() => {
+            setVisibleCount((prev) => Math.min(prev + BATCH_SIZE, featuredProducts.length));
+            setIsLoadingMore(false);
+          }, 400);
+        }
+      },
+      { threshold: 0.1, rootMargin: "150px" }
+    );
+
+    const currentElem = observerRef.current;
+    if (currentElem) observer.observe(currentElem);
+
+    return () => {
+      if (currentElem) observer.unobserve(currentElem);
+    };
+  }, [hasMore, isLoadingMore, featuredProducts.length]);
 
   return (
     <div className="space-y-3 sm:space-y-6 lg:space-y-8 pb-12 pt-0 -mt-6 sm:-mt-2">
@@ -83,7 +119,7 @@ export function HomePage({ products, onCategorySelect, onQuickView, onNavigate }
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
-          {featuredProducts.slice(0, 8).map((product) => (
+          {featuredProducts.slice(0, Math.min(8, visibleCount)).map((product) => (
             <ProductCard key={product.id} product={product} onQuickView={onQuickView} />
           ))}
         </div>
@@ -114,9 +150,6 @@ export function HomePage({ products, onCategorySelect, onQuickView, onNavigate }
           </div>
         </section>
       )}
-
-
-
 
       {/* Flash Sale Banner */}
       {flashSaleProducts.length > 0 && (
@@ -157,7 +190,7 @@ export function HomePage({ products, onCategorySelect, onQuickView, onNavigate }
         </section>
       )}
 
-      {/* Featured Products */}
+      {/* Main Catalog Feed with Infinite Scroll */}
       <section className="space-y-6">
         <div>
           <span className="text-xs font-bold uppercase tracking-widest text-[#8B7355]">Handpicked Arrivals</span>
@@ -165,14 +198,28 @@ export function HomePage({ products, onCategorySelect, onQuickView, onNavigate }
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
-          {featuredProducts.map((product) => (
+          {featuredProducts.slice(0, visibleCount).map((product) => (
             <ProductCard key={product.id} product={product} onQuickView={onQuickView} />
           ))}
         </div>
+
+        {/* Infinite Scroll Trigger & Spinner */}
+        {hasMore && (
+          <div ref={observerRef} className="py-8 text-center flex flex-col items-center justify-center gap-2">
+            <Loader2 className="w-6 h-6 animate-spin text-[#5C1E1E]" />
+            <span className="text-xs font-bold text-[#8B7355] tracking-wider uppercase">Loading more products...</span>
+          </div>
+        )}
+
+        {!hasMore && (
+          <div className="py-6 text-center text-xs font-bold text-[#8B7355] tracking-wider uppercase border-t border-[#E8DFC9]/60">
+            ✨ You've reached the end of the collection ✨
+          </div>
+        )}
       </section>
 
-      {/* Reusable Footer */}
-      <Footer onNavigate={onNavigate} />
+      {/* Show Footer ONLY when all items have finished loading */}
+      {!hasMore && <Footer onNavigate={onNavigate} />}
     </div>
   );
 }

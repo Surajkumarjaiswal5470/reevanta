@@ -27,3 +27,9 @@ class VerifyOTPRequest(BaseModel):
 
 class SendEmailOTPRequest(BaseModel):
     email: str
+
+class VerifyFirebaseOTPRequest(BaseModel):
+    idToken: str
+    phone: str
+    name: Optional[str] = ""
+    email: Optional[str] = ""

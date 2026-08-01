@@ -63,6 +63,8 @@ app = FastAPI(
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RateLimitMiddleware)
 
+from routers.admin.cms import router as admin_cms_router
+
 api_router = APIRouter(prefix="/api")
 api_router.include_router(auth_router)
 api_router.include_router(products_router)
@@ -71,9 +73,11 @@ api_router.include_router(orders_router)
 api_router.include_router(vouchers_router)
 api_router.include_router(cart_router)
 api_router.include_router(personalization_router)
+api_router.include_router(admin_cms_router)
 api_router.include_router(admin_router)
 
 app.include_router(api_router)
+
 
 # Hardened CORS configuration
 if CORS_ORIGINS.strip() == '*':

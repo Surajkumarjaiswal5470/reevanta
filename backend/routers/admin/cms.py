@@ -74,15 +74,19 @@ DEFAULT_CMS = {
 
 @router.get("/cms/homepage")
 async def get_homepage_cms():
-    """Fetch active homepage CMS banner content."""
-    cms = await db.cms.find_one({"key": "homepage"})
-    if not cms:
-        return DEFAULT_CMS
-    cms.pop("_id", None)
-    cms.pop("key", None)
-    if "banners" not in cms or not cms["banners"]:
-        cms["banners"] = DEFAULT_BANNERS
-    return cms
+    """Fetch active homepage CMS banner content with fallback."""
+    try:
+        cms = await db.cms.find_one({"key": "homepage"})
+        if cms:
+            cms.pop("_id", None)
+            cms.pop("key", None)
+            if "banners" not in cms or not cms["banners"]:
+                cms["banners"] = DEFAULT_BANNERS
+            return cms
+    except Exception:
+        pass
+    return DEFAULT_CMS
+
 
 @router.patch("/admin/cms/homepage")
 async def update_homepage_cms(inp: HomepageCMS, admin: dict = Depends(get_current_admin)):

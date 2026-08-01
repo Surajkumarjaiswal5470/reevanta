@@ -104,9 +104,11 @@ async def notify_restock_subscribers(product_id: str, product_name: str, product
 @router.get("/homepage/personalized")
 async def get_personalized_homepage_sections(category: Optional[str] = None):
     """Rule-based recommendation engine for personalized homepage showcase."""
-    all_products = await db.products.find({}).to_list(100)
-    
     pref_category = category if category and category != "all" else "clothes"
+    try:
+        all_products = await db.products.find({}).to_list(100)
+    except Exception:
+        all_products = []
     
     # 1. Recommended for You (matching preferred category)
     recommended = [serialize_doc(p) for p in all_products if p.get("category") == pref_category][:4]
@@ -121,3 +123,4 @@ async def get_personalized_homepage_sections(category: Optional[str] = None):
         "recommendedForYou": recommended,
         "trendingLuxury": trending
     }
+

@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: reevanta-backend
+    env: python
+    region: singapore
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: MONGO_URL
+        value: mongodb+srv://surajjaiswal1236_db_user:sbOryAXAZlXXk4kA@cluster0.uz8jzby.mongodb.net/reevanta_db?retryWrites=true&w=majority
+      - key: DB_NAME
+        value: reevanta_db
+      - key: JWT_SECRET
+        value: reevanta_secret_key_2026_super_secure
+      - key: CORS_ORIGINS
+        value: "*"
+      - key: ENVIRONMENT
+        value: production

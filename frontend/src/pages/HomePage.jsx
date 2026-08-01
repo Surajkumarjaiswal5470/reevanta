@@ -45,6 +45,9 @@ export function HomePage({ products, onCategorySelect, onQuickView, onNavigate }
   return (
     <div className="space-y-8 pb-12 pt-2">
 
+      {/* ── 6 Slide Cosmetics & Beauty Hero Carousel (TOP STARTING POSITION) ── */}
+      <HeroSlider onCategorySelect={onCategorySelect} onNavigate={onNavigate} />
+
       {/* ── Top Instant Featured Items Showcase ── */}
       <section className="space-y-6">
         <div className="flex justify-between items-end">
@@ -52,7 +55,7 @@ export function HomePage({ products, onCategorySelect, onQuickView, onNavigate }
             <span className="text-xs font-bold uppercase tracking-widest text-[#8B7355] flex items-center gap-1.5">
               <Sparkles className="w-4 h-4 text-amber-600" /> Handpicked Arrivals
             </span>
-            <h2 className="text-2xl sm:text-3xl font-black text-[#2D2118]">Trending Luxury Collection</h2>
+            <h2 className="text-2xl sm:text-3xl font-black text-[#2D2118]">Trending Luxury Cosmetics</h2>
           </div>
           <button
             onClick={() => onNavigate("catalog")}
@@ -68,9 +71,6 @@ export function HomePage({ products, onCategorySelect, onQuickView, onNavigate }
           ))}
         </div>
       </section>
-
-      {/* ── 5-6 Slide Hero Banner Carousel ── */}
-      <HeroSlider onCategorySelect={onCategorySelect} onNavigate={onNavigate} />
 
       {/* PERSONALIZED RECOMMENDATIONS SHOWCASE */}
       {personalizedData.recommendedForYou.length > 0 && (

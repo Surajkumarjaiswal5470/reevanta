@@ -10,43 +10,52 @@ const DEFAULT_SLIDES = [
     category: "cosmetics",
     buttonText: "EXPLORE COSMETICS",
     image: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=1000&q=80",
-    badge: "NOW LAUNCHED • OFFICIAL COLLECTION",
+    badge: "OFFICIAL LAUNCH 2026",
   },
   {
-    id: "slide-beauty",
-    title: "Rose & Vitamin C Beauty Care",
-    subtitle: "Pure organic skin toners, serums & salon-grade essentials.",
+    id: "slide-serum",
+    title: "Vitamin C 15% Face Serum",
+    subtitle: "Brightening & hydrating serum with pure hyaluronic acid for instant radiance.",
     category: "beauty",
-    buttonText: "SHOP BEAUTY CARE",
+    buttonText: "SHOP SKINCARE",
     image: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=1000&q=80",
-    badge: "SKINCARE LAUNCH 2026",
+    badge: "BEST SELLER • SKINCARE",
   },
   {
-    id: "slide-1",
-    title: "New Season Essentials",
-    subtitle: "Timeless styles for the modern woman.",
-    category: "sarees",
-    buttonText: "PREVIEW SAREES",
-    image: "https://images.unsplash.com/photo-1610030469668-8e450b47a4a5?auto=format&fit=crop&w=1000&q=80",
-    badge: "HERITAGE SAREES • LAUNCHING SOON",
+    id: "slide-palette",
+    title: "Rose Gold Eyeshadow Palette",
+    subtitle: "12 royal heritage matte & shimmer shades for day and evening glamour.",
+    category: "cosmetics",
+    buttonText: "SHOP PALETTES",
+    image: "https://images.unsplash.com/photo-1512496015851-a90fb38ba796?auto=format&fit=crop&w=1000&q=80",
+    badge: "NEW ARRIVAL • LUXURY MAKEUP",
   },
   {
-    id: "slide-2",
-    title: "Bridal Heritage Lehengas",
-    subtitle: "Handcrafted royal velvet & gold zari embroidery.",
-    category: "lehenga",
-    buttonText: "PREVIEW LEHENGAS",
-    image: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=1000&q=80",
-    badge: "BRIDAL WEAR • LAUNCHING SOON",
+    id: "slide-lipliner",
+    title: "Rose Lip Liner Collection",
+    subtitle: "Creamy, long-wear lip liners crafted for flawless contouring and definition.",
+    category: "cosmetics",
+    buttonText: "EXPLORE LIP CARE",
+    image: "https://images.unsplash.com/photo-1586495777744-4413f21062fa?auto=format&fit=crop&w=1000&q=80",
+    badge: "LIP CARE ESSENTIAL",
   },
   {
-    id: "slide-3",
-    title: "Royal Silk Kurtas & Suits",
-    subtitle: "Pure silk tailoring crafted for grand celebrations.",
-    category: "kurtas",
-    buttonText: "PREVIEW KURTAS",
-    image: "https://images.unsplash.com/photo-1614886137916-64e663c21459?auto=format&fit=crop&w=1000&q=80",
-    badge: "ROYAL SUITS • LAUNCHING SOON",
+    id: "slide-[#5C1E1E]",
+    title: "16-Hour Makeup Setting Mist",
+    subtitle: "Weightless 16-hour makeup fixing mist infused with hyaluronic acid.",
+    category: "cosmetics",
+    buttonText: "SHOP FIXER MIST",
+    image: "https://images.unsplash.com/photo-1631214540242-3cd8c4b0b3b6?auto=format&fit=crop&w=1000&q=80",
+    badge: "BEAUTY ESSENTIAL",
+  },
+  {
+    id: "slide-toner",
+    title: "Rose Gold Face Toner Mist",
+    subtitle: "Alcohol-free botanical rose water & 24K gold toner to soothe and hydrate.",
+    category: "beauty",
+    buttonText: "SHOP TONER MIST",
+    image: "https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b?auto=format&fit=crop&w=1000&q=80",
+    badge: "ORGANIC BEAUTY",
   },
 ];
 
@@ -93,31 +102,31 @@ export function HeroSlider({ onCategorySelect, onNavigate }) {
 
   return (
     <section
-      className="relative rounded-3xl overflow-hidden bg-[#FAF5EC] border border-[#E8DFC9] shadow-sm group"
+      className="relative rounded-3xl overflow-hidden bg-[#FAF5EC] border border-[#E8DFC9] shadow-sm group transition-all duration-300"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
-      <div className="flex flex-col md:flex-row items-center justify-between min-h-[340px] sm:min-h-[380px] p-6 sm:p-10 lg:p-12 gap-8">
+      <div className="flex flex-col md:flex-row items-center justify-between p-5 sm:p-8 lg:p-10 gap-6 md:gap-8">
         
         {/* Left Text Content */}
-        <div className="w-full md:w-1/2 space-y-4 text-left z-10">
+        <div className="w-full md:w-1/2 space-y-3 sm:space-y-4 text-left z-10">
           {activeSlide.badge && (
-            <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#5C1E1E]/10 text-[#5C1E1E] text-[11px] font-bold tracking-widest uppercase border border-[#5C1E1E]/20">
-              <Sparkles className="w-3.5 h-3.5 text-[#5C1E1E]" /> {activeSlide.badge}
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#5C1E1E]/10 text-[#5C1E1E] text-[10px] sm:text-[11px] font-black tracking-widest uppercase border border-[#5C1E1E]/20">
+              <Sparkles className="w-3 h-3 text-[#5C1E1E]" /> {activeSlide.badge}
             </span>
           )}
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-black text-[#2D2118] leading-[1.15] tracking-tight transition-all duration-300">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-black text-[#2D2118] leading-[1.2] tracking-tight transition-all duration-300">
             {activeSlide.title}
           </h2>
-          <p className="text-sm sm:text-base text-[#8B7355] font-normal max-w-md leading-relaxed">
+          <p className="text-xs sm:text-sm text-[#8B7355] font-medium max-w-md leading-relaxed">
             {activeSlide.subtitle}
           </p>
-          <div className="pt-2">
+          <div className="pt-1">
             <button
               onClick={() => handleSlideClick(activeSlide)}
-              className="bg-[#2D2118] hover:bg-[#5C1E1E] text-white px-7 py-3.5 rounded-2xl text-xs font-black tracking-wider uppercase shadow-md hover:shadow-lg transition-all duration-300 active:scale-95 flex items-center gap-2"
+              className="bg-[#2D2118] hover:bg-[#5C1E1E] text-white px-6 py-2.5 sm:px-7 sm:py-3 rounded-2xl text-[11px] sm:text-xs font-black tracking-wider uppercase shadow-md hover:shadow-lg transition-all duration-300 active:scale-95 flex items-center gap-2"
             >
-              <span>{activeSlide.buttonText || "SHOP NOW"}</span>
+              <span>{activeSlide.buttonText || "EXPLORE COSMETICS"}</span>
             </button>
           </div>
         </div>
@@ -125,14 +134,14 @@ export function HeroSlider({ onCategorySelect, onNavigate }) {
         {/* Right Image */}
         <div
           onClick={() => handleSlideClick(activeSlide)}
-          className="w-full md:w-1/2 h-[240px] sm:h-[300px] lg:h-[340px] rounded-2xl overflow-hidden relative cursor-pointer group/img shrink-0"
+          className="w-full md:w-1/2 h-[180px] sm:h-[240px] md:h-[280px] lg:h-[320px] rounded-2xl overflow-hidden relative cursor-pointer group/img shrink-0 border border-[#E8DFC9]/6-[#5C1E1E]"
         >
           <img
             src={activeSlide.image}
             alt={activeSlide.title}
-            className="w-full h-full object-cover object-top transition-transform duration-700 group-hover/img:scale-105"
+            className="w-full h-full object-cover object-center transition-transform duration-700 group-hover/img:scale-105"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#2D2118]/30 via-transparent to-transparent opacity-0 group-hover/img:opacity-100 transition-opacity duration-300" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#2D2118]/20 via-transparent to-transparent opacity-0 group-hover/img:opacity-100 transition-opacity duration-300" />
         </div>
       </div>
 

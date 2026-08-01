@@ -94,13 +94,18 @@ async def get_current_user(request: Request) -> dict:
         payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
         if payload.get("type") != "access":
             raise HTTPException(status_code=401, detail="Invalid token type")
-        user = await db.users.find_one({"_id": ObjectId(payload["sub"])})
+        try:
+          user = await db.users.find_one({"_id": ObjectId(payload["sub"])})
+        except Exception as err:
+          raise HTTPException(status_code=401, detail="Authentication server unavailable")
         if not user:
             raise HTTPException(status_code=401, detail="User not found")
         user["id"] = str(user["_id"])
         user.pop("_id", None)
         user.pop("password_hash", None)
         return user
+    except HTTPException:
+        raise
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired")
     except jwt.InvalidTokenError:

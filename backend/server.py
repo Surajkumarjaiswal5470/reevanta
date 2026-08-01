@@ -80,22 +80,26 @@ app.include_router(api_router)
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RateLimitMiddleware)
 
-if CORS_ORIGINS.strip() == '*':
-    app.add_middleware(
-        CORSMiddleware,
-        allow_credentials=True,
-        allow_origin_regex=".*",
-        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-        allow_headers=["*"],
-    )
-else:
-    app.add_middleware(
-        CORSMiddleware,
-        allow_credentials=True,
-        allow_origins=[origin.strip() for origin in CORS_ORIGINS.split(',')],
-        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-        allow_headers=["*"],
-    )
+cors_origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:8000",
+    "http://127.0.0.1:8001",
+    "http://localhost:3001",
+]
+if CORS_ORIGINS.strip() != '*' and CORS_ORIGINS.strip():
+    for o in CORS_ORIGINS.split(','):
+        if o.strip() and o.strip() not in cors_origins:
+            cors_origins.append(o.strip())
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_origins,
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?",
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 if __name__ == "__main__":
     import uvicorn

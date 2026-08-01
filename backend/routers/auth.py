@@ -5,7 +5,7 @@ from core.security import (
     hash_password, verify_password, set_auth_cookies, format_phone, get_current_user
 )
 from models.auth import (
-    UserRegister, UserLogin, AdminSecretLoginRequest, SendOTPRequest, VerifyOTPRequest, SendEmailOTPRequest
+    UserRegister, UserLogin, AdminSecretLoginRequest, SendOTPRequest, VerifyOTPRequest, SendEmailOTPRequest, VerifyFirebaseOTPRequest
 )
 from core.config import ADMIN_NAME, ADMIN_SECRET_KEY, ADMIN_EMAIL
 from services.email_service import send_email_brevo

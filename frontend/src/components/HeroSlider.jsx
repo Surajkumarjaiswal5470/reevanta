@@ -134,7 +134,7 @@ export function HeroSlider({ onCategorySelect, onNavigate }) {
         {/* Right Image */}
         <div
           onClick={() => handleSlideClick(activeSlide)}
-          className="w-full md:w-1/2 h-[110px] sm:h-[190px] md:h-[240px] lg:h-[280px] rounded-lg sm:rounded-2xl overflow-hidden relative cursor-pointer group/img shrink-0 border border-[#E8DFC9]"
+          className="w-full md:w-1/2 h-[220px] sm:h-[280px] md:h-[320px] lg:h-[360px] rounded-xl sm:rounded-2xl overflow-hidden relative cursor-pointer group/img shrink-0 border border-[#E8DFC9] bg-white"
         >
           <img
             src={activeSlide.image}

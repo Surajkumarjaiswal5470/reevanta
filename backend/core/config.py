@@ -35,5 +35,7 @@ CDN_BASE_URL = os.environ.get('CDN_BASE_URL', '').strip()
 
 # Meilisearch Configuration
 MEILISEARCH_URL = os.environ.get('MEILISEARCH_URL', 'http://127.0.0.1:7700').strip()
+MEILISEARCH_MASTER_KEY = os.environ.get('MEILISEARCH_MASTER_KEY', 'reevanta_meilisearch_master_key').strip()
+
 # NepalOTP Configuration
 NEPALOTP_API_KEY = os.environ.get('NEPALOTP_API_KEY', '').strip()

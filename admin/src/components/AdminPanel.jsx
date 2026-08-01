@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { ImageUploader } from "./ImageUploader";
+import { AdminChatDesk } from "./AdminChatDesk";
 import {
   Package,
   ShoppingBag,
@@ -21,7 +22,8 @@ import {
   AlertCircle,
   Tag,
   Layers,
-  ArrowUpRight
+  ArrowUpRight,
+  Headset
 } from "lucide-react";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || (process.env.NODE_ENV === 'production' ? "https://reevanta-backend-pg3v.onrender.com" : "http://localhost:8001");
@@ -433,6 +435,7 @@ export const AdminPanel = () => {
             { id: "orders", label: `Orders (${orders.length})`, icon: Truck },
             { id: "products", label: `Products (${products.length})`, icon: Package },
             { id: "vouchers", label: `Vouchers (${vouchers.length})`, icon: Tag },
+            { id: "support", label: "Live Support Chat", icon: Headset },
             { id: "add", label: "Add Product", icon: PlusCircle }
           ].map((item) => {
             const Icon = item.icon;
@@ -1341,6 +1344,13 @@ export const AdminPanel = () => {
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* LIVE SUPPORT CHAT TAB */}
+      {activeTab === "support" && (
+        <div className="space-y-4">
+          <AdminChatDesk />
         </div>
       )}
 

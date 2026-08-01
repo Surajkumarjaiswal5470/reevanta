@@ -36,6 +36,7 @@ from routers.admin import admin_router
 from routers.admin.cms import router as admin_cms_router
 from routers.upload import router as upload_router
 from routers.search import router as search_router
+from routers.chat_ws import router as chat_ws_router
 
 logging.basicConfig(
     level=logging.INFO,
@@ -109,6 +110,7 @@ api_router.include_router(upload_router)
 api_router.include_router(search_router)
 
 app.include_router(api_router)
+app.include_router(chat_ws_router)
 
 # Middleware order matters: last-added runs first.
 # CORS must be outermost so it handles preflight & headers even on 500s.

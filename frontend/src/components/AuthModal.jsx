@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { X, Sparkles, Phone, Mail, User, ArrowRight, ShieldCheck } from "lucide-react";
 import { apiFetch } from "../services/api";
+import { sendFirebasePhoneOtp } from "../config/firebase";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "sonner";
 
@@ -26,6 +27,14 @@ export function AuthModal() {
     setLoading(true);
     const fullPhone = `${countryCode}${authPhone.trim()}`;
     try {
+      // 1. Trigger Firebase real SMS dispatch
+      try {
+        await sendFirebasePhoneOtp(fullPhone);
+      } catch (fbErr) {
+        console.warn("Firebase SMS trigger fallback:", fbErr.message);
+      }
+
+      // 2. Fetch or create backend user session
       const res = await apiFetch("/auth/send-otp", {
         method: "POST",
         body: { phone: fullPhone }
@@ -59,15 +68,41 @@ export function AuthModal() {
     setLoading(true);
     const fullPhone = `${countryCode}${authPhone.trim()}`;
     try {
-      const user = await apiFetch("/auth/verify-otp", {
-        method: "POST",
-        body: {
-          phone: fullPhone,
-          otp: authOtp,
-          name: authName.trim(),
-          email: authEmail.trim()
+      // 1. Confirm Firebase OTP if confirmationResult exists
+      let firebaseToken = null;
+      if (window.confirmationResult) {
+        try {
+          const res = await window.confirmationResult.confirm(authOtp);
+          firebaseToken = await res.user.getIdToken();
+        } catch (fbVerErr) {
+          console.warn("Firebase OTP confirmation note:", fbVerErr.message);
         }
-      });
+      }
+
+      // 2. Verify with backend & set auth cookies
+      let user;
+      if (firebaseToken) {
+        user = await apiFetch("/auth/verify-firebase-token", {
+          method: "POST",
+          body: {
+            idToken: firebaseToken,
+            phone: fullPhone,
+            name: authName.trim(),
+            email: authEmail.trim()
+          }
+        });
+      } else {
+        user = await apiFetch("/auth/verify-otp", {
+          method: "POST",
+          body: {
+            phone: fullPhone,
+            otp: authOtp,
+            name: authName.trim(),
+            email: authEmail.trim()
+          }
+        });
+      }
+
       setCurrentUser(user);
       setShowAuthModal(false);
       setOtpSent(false);

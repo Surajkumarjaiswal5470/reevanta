@@ -5,11 +5,13 @@ services:
     plan: free
     region: singapore
     rootDir: backend
-    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
-    startCommand: gunicorn -w 2 -k uvicorn.workers.UvicornWorker server:app --bind 0.0.0.0:$PORT
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.8
+      - key: PYTHONPATH
+        value: .
       - key: MONGO_URL
         value: mongodb+srv://surajjaiswal1236_db_user:sbOryAXAZlXXk4kA@cluster0.uz8jzby.mongodb.net/reevanta_db?retryWrites=true&w=majority
       - key: DB_NAME

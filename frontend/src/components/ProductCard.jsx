@@ -1,14 +1,18 @@
 import React, { useState } from "react";
-import { Heart, Sparkles, ShoppingBag, Eye, Bell } from "lucide-react";
+import { Heart, Sparkles, ShoppingBag, Eye, Bell, Share2 } from "lucide-react";
 import { useCart } from "../context/CartContext";
+import { useWishlist } from "../context/WishlistContext";
 import { apiFetch } from "../services/api";
 import { OptimizedImage } from "./OptimizedImage";
+import { ShareModal } from "./ShareModal";
 import { toast } from "sonner";
 
 export const ProductCard = React.memo(function ProductCard({ product, onQuickView }) {
-  const { wishlist, toggleWishlist, addToCart } = useCart();
-  const isWishlisted = wishlist.some((item) => item.id === product.id);
+  const { addToCart } = useCart();
+  const { wishlist, toggleWishlist, isInWishlist } = useWishlist();
+  const isWishlisted = isInWishlist(product.id || product._id);
   const [subscribingRestock, setSubscribingRestock] = useState(false);
+  const [isShareOpen, setIsShareOpen] = useState(false);
 
   const isOutOfStock = product.inStock === false;
 
@@ -50,17 +54,32 @@ export const ProductCard = React.memo(function ProductCard({ product, onQuickVie
         )}
       </div>
 
-      {/* Wishlist Button */}
-      <button
-        data-testid={`wishlist-btn-${product.id}`}
-        onClick={(e) => {
-          e.stopPropagation();
-          toggleWishlist(product);
-        }}
-        className="absolute top-2 right-2 sm:top-3 sm:right-3 z-10 w-7 h-7 sm:w-9 sm:h-9 bg-white/80 backdrop-blur-md rounded-full flex items-center justify-center text-gray-700 hover:text-[#5C1E1E] shadow-sm hover:scale-110 transition active:scale-95"
-      >
-        <Heart className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isWishlisted ? "fill-[#5C1E1E] text-[#5C1E1E]" : ""}`} />
-      </button>
+      {/* Action Buttons: Wishlist & Share */}
+      <div className="absolute top-2 right-2 sm:top-3 sm:right-3 z-10 flex items-center gap-1.5">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsShareOpen(true);
+          }}
+          className="w-7 h-7 sm:w-9 sm:h-9 bg-white/80 backdrop-blur-md rounded-full flex items-center justify-center text-gray-700 hover:text-[#5C1E1E] shadow-sm hover:scale-110 transition active:scale-95"
+          title="Share Listing"
+        >
+          <Share2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+        </button>
+
+        <button
+          data-testid={`wishlist-btn-${product.id}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleWishlist(product);
+          }}
+          className="w-7 h-7 sm:w-9 sm:h-9 bg-white/80 backdrop-blur-md rounded-full flex items-center justify-center text-gray-700 hover:text-[#5C1E1E] shadow-sm hover:scale-110 transition active:scale-95"
+          title="Wishlist / Favorite"
+        >
+          <Heart className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isWishlisted ? "fill-[#5C1E1E] text-[#5C1E1E]" : ""}`} />
+        </button>
+      </div>
 
       {/* Product Image */}
       <div
@@ -142,6 +161,12 @@ export const ProductCard = React.memo(function ProductCard({ product, onQuickVie
           )}
         </div>
       </div>
+      {/* Share Modal */}
+      <ShareModal
+        isOpen={isShareOpen}
+        onClose={() => setIsShareOpen(false)}
+        product={product}
+      />
     </div>
   );
 });

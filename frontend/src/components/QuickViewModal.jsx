@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { X, Heart, ShoppingBag, Sparkles, Check, Package, AlertCircle, Ruler, Star, Camera, ShieldCheck, ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { X, Heart, ShoppingBag, Sparkles, Check, Package, AlertCircle, Ruler, Star, Camera, ShieldCheck, ChevronLeft, ChevronRight, Plus, Share2, Flag } from "lucide-react";
 import { useCart } from "../context/CartContext";
+import { useWishlist } from "../context/WishlistContext";
+import { useRecentlyViewed } from "../hooks/useRecentlyViewed";
 import { apiFetch } from "../services/api";
 import { SizeGuideModal } from "./SizeGuideModal";
 import { ShadeMatcherModal } from "./ShadeMatcherModal";
+import { ShareModal } from "./ShareModal";
+import { ReportModal } from "./ReportModal";
 import { ProductReviews } from "./ProductReviews";
 import { toast } from "sonner";
 
@@ -15,7 +19,9 @@ const COLOR_VARIANTS = [
 ];
 
 export function QuickViewModal({ product, onClose }) {
-  const { addToCart, wishlist, toggleWishlist } = useCart();
+  const { addToCart } = useCart();
+  const { wishlist, toggleWishlist, isInWishlist } = useWishlist();
+  const { addRecentlyViewed } = useRecentlyViewed();
 
   // Gallery Images State
   const [activeImgIdx, setActiveImgIdx] = useState(0);
@@ -24,6 +30,8 @@ export function QuickViewModal({ product, onClose }) {
   // Modals state
   const [showSizeGuide, setShowSizeGuide] = useState(false);
   const [showShadeMatcher, setShowShadeMatcher] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
 
   // Variant choices
   const sizes = product?.sizes && product.sizes.length > 0 ? product.sizes : ["S", "M", "L", "XL"];
@@ -44,21 +52,28 @@ export function QuickViewModal({ product, onClose }) {
   // Recommendations State
   const [recommendations, setRecommendations] = useState({ frequently_bought_together: [], related_products: [] });
 
-  // Fetch Reviews & Recommendations
+  // Similar Listings State
+  const [similarListings, setSimilarListings] = useState([]);
+
+  // Fetch Reviews, Recommendations, & Similar Listings, & Track Recently Viewed
   useEffect(() => {
-    if (product?.id) {
-      apiFetch(`/products/${product.id}/reviews`)
-        .then(setReviewsData)
-        .catch(() => {});
-      apiFetch(`/products/${product.id}/recommendations`)
-        .then(setRecommendations)
-        .catch(() => {});
+    if (product) {
+      addRecentlyViewed(product);
+      const pId = product._id || product.id;
+      if (pId) {
+        apiFetch(`/products/${pId}/reviews`)
+          .then(setReviewsData)
+          .catch(() => {});
+        apiFetch(`/marketplace/similar/${pId}`)
+          .then((data) => setSimilarListings(Array.isArray(data) ? data : []))
+          .catch(() => {});
+      }
     }
-  }, [product?.id]);
+  }, [product]);
 
   if (!product) return null;
 
-  const isWishlisted = wishlist.some((item) => item.id === product.id);
+  const isWishlisted = isInWishlist(product.id || product._id);
 
   const galleryImages = [
     product.image,
@@ -349,9 +364,64 @@ export function QuickViewModal({ product, onClose }) {
               </button>
             </div>
 
+            {/* Similar Listings Section */}
+          {similarListings.length > 0 && (
+            <div className="pt-6 border-t border-[#E8DFC9] space-y-4">
+              <h3 className="text-base font-black text-[#2D2118] flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-amber-500" />
+                <span>Similar Listings You Might Like</span>
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {similarListings.map((sim) => (
+                  <div
+                    key={sim._id || sim.id}
+                    className="p-3 bg-[#FAF5EC] rounded-2xl border border-[#E8DFC9] flex flex-col justify-between space-y-2 group hover:shadow-md transition"
+                  >
+                    <img src={sim.image} alt={sim.name} className="w-full h-24 object-cover rounded-xl" />
+                    <div>
+                      <h4 className="text-xs font-black text-[#2D2118] truncate">{sim.name}</h4>
+                      <span className="text-xs font-black text-[#5C1E1E]">NPR {sim.price?.toLocaleString()}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Action Bar for Share & Report Listing */}
+          <div className="pt-4 border-t border-[#E8DFC9] flex items-center justify-between text-xs">
+            <button
+              onClick={() => setShowShareModal(true)}
+              className="flex items-center gap-1.5 font-bold text-[#8B7355] hover:text-[#5C1E1E] transition"
+            >
+              <Share2 className="w-4 h-4" /> Share Listing
+            </button>
+
+            <button
+              onClick={() => setShowReportModal(true)}
+              className="flex items-center gap-1.5 font-bold text-red-600 hover:text-red-800 transition"
+            >
+              <Flag className="w-4 h-4" /> Report Listing
+            </button>
           </div>
+
         </div>
       </div>
+    </div>
+
+      {/* Share Modal */}
+      <ShareModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        product={product}
+      />
+
+      {/* Report Modal */}
+      <ReportModal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        product={product}
+      />
 
       {/* Size Guide Modal */}
       {showSizeGuide && <SizeGuideModal onClose={() => setShowSizeGuide(false)} />}

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
-import { Search, X, TrendingUp, Loader2 } from "lucide-react";
+import { Search, X, TrendingUp, Loader2, Bookmark } from "lucide-react";
+import { toast } from "sonner";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = BACKEND_URL ? `${BACKEND_URL}/api` : null;
@@ -202,18 +203,43 @@ export const SearchBar = ({ value: externalValue, onChange: externalOnChange, on
         </span>
       )}
       {value && (
-        <button
-          data-testid="search-clear-btn"
-          onClick={() => {
-            onChange("");
-            inputRef.current?.focus();
-          }}
-          aria-label="Clear search"
-          className="absolute inset-y-0 right-0 flex items-center pr-3 text-[#8B7355] hover:text-[#5C1E1E]"
-          type="button"
-        >
-          <X className="w-4 h-4" />
-        </button>
+        <div className="absolute inset-y-0 right-0 flex items-center pr-3 gap-1">
+          <button
+            type="button"
+            onClick={async (e) => {
+              e.stopPropagation();
+              try {
+                const uId = localStorage.getItem("reevanta_user_id") || "guest";
+                const targetUrl = API || "https://reevanta-backend-pg3v.onrender.com/api";
+                await axios.post(`${targetUrl}/marketplace/saved-searches`, {
+                  user_id: uId,
+                  query: value,
+                  filters: {}
+                });
+                toast.success(`Saved search "${value}"!`, { icon: "🔖" });
+              } catch (err) {
+                toast.error("Failed to save search");
+              }
+            }}
+            title="Save This Search"
+            className="text-[#8B7355] hover:text-[#5C1E1E] transition p-1"
+          >
+            <Bookmark className="w-3.5 h-3.5" />
+          </button>
+          
+          <button
+            data-testid="search-clear-btn"
+            onClick={() => {
+              onChange("");
+              inputRef.current?.focus();
+            }}
+            aria-label="Clear search"
+            className="text-[#8B7355] hover:text-[#5C1E1E] p-1"
+            type="button"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
       )}
 
       {open && (

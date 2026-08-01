@@ -248,6 +248,84 @@ async def vote_review_helpful(review_id: str, request: Request):
     )
     return {"helpfulVotes": new_count, "userVoted": voter_key in upvoted_by}
 
+@router.put("/reviews/{review_id}")
+async def edit_product_review(review_id: str, updates: dict, request: Request):
+    """Edit an existing review and recalculate product average rating."""
+    user = await get_current_user_or_none(request)
+    try:
+        review = await db.reviews.find_one({"_id": to_object_id(review_id)})
+    except Exception:
+        review = None
+
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found")
+
+    # Only author or admin can edit
+    if user and user.get("role") != "admin" and str(review.get("user_id")) != user["id"]:
+        raise HTTPException(status_code=403, detail="Not authorized to edit this review")
+
+    updates.pop("_id", None)
+    updates.pop("id", None)
+    updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+
+    try:
+        await db.reviews.update_one({"_id": to_object_id(review_id)}, {"$set": updates})
+        updated_review = await db.reviews.find_one({"_id": to_object_id(review_id)})
+    except Exception:
+        updated_review = review
+
+    # Recalculate average rating for product
+    product_id = review.get("product_id")
+    if product_id:
+        try:
+            all_reviews = await db.reviews.find({"product_id": product_id}).to_list(1000)
+            new_avg = round(sum(r.get("rating", 5) for r in all_reviews) / len(all_reviews), 1) if all_reviews else 0.0
+            await db.products.update_one(
+                {"_id": to_object_id(product_id)},
+                {"$set": {"rating": new_avg, "reviewsCount": len(all_reviews)}}
+            )
+        except Exception:
+            pass
+        await cache_invalidate_pattern("api_products:*")
+        await cache_invalidate_pattern(f"api_product:{product_id}")
+
+    return serialize_doc(updated_review)
+
+
+@router.delete("/reviews/{review_id}")
+async def delete_product_review(review_id: str, request: Request):
+    """Delete a review and update product average rating and count."""
+    user = await get_current_user_or_none(request)
+    try:
+        review = await db.reviews.find_one({"_id": to_object_id(review_id)})
+    except Exception:
+        review = None
+
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found")
+
+    if user and user.get("role") != "admin" and str(review.get("user_id")) != user["id"]:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this review")
+
+    product_id = review.get("product_id")
+    try:
+        await db.reviews.delete_one({"_id": to_object_id(review_id)})
+
+        # Recalculate product rating
+        if product_id:
+            all_reviews = await db.reviews.find({"product_id": product_id}).to_list(1000)
+            new_avg = round(sum(r.get("rating", 5) for r in all_reviews) / len(all_reviews), 1) if all_reviews else 0.0
+            await db.products.update_one(
+                {"_id": to_object_id(product_id)},
+                {"$set": {"rating": new_avg, "reviewsCount": len(all_reviews)}}
+            )
+            await cache_invalidate_pattern("api_products:*")
+            await cache_invalidate_pattern(f"api_product:{product_id}")
+    except Exception:
+        pass
+
+    return {"message": "Review deleted successfully", "product_id": product_id}
+
 @router.post("/reviews/{review_id}/reply")
 async def reply_to_review(review_id: str, inp: AdminReviewReply, admin: dict = Depends(get_current_admin)):
     review = await db.reviews.find_one({"_id": to_object_id(review_id)})

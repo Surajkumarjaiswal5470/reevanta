@@ -5,12 +5,13 @@ import { initializeApp } from "firebase/app";
 import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: process.env.REACT_APP_FIREBASE_API_KEY || "YOUR_FIREBASE_API_KEY",
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY || "AIzaSyAdoaOuGlTeQYfEk-K0UPnOJEyESmEZP2w",
   authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN || "reevanta.firebaseapp.com",
   projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID || "reevanta",
-  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET || "reevanta.appspot.com",
-  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID || "123456789",
-  appId: process.env.REACT_APP_FIREBASE_APP_ID || "1:123456789:web:abcdef"
+  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET || "reevanta.firebasestorage.app",
+  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID || "867140435902",
+  appId: process.env.REACT_APP_FIREBASE_APP_ID || "1:867140435902:web:546fdd89805a85dd6343ef",
+  measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID || "G-L54P0NPB4P"
 };
 
 // Initialize Firebase App

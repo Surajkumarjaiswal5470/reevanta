@@ -34,6 +34,12 @@ services:
         value: https://reevanta-backend-pg3v.onrender.com/api
       - key: REACT_APP_BACKEND_URL
         value: https://reevanta-backend-pg3v.onrender.com
+      - key: REACT_APP_FIREBASE_API_KEY
+        value: AIzaSyAdoaOuGlTeQYfEk-K0UPnOJEyESmEZP2w
+      - key: REACT_APP_FIREBASE_AUTH_DOMAIN
+        value: reevanta.firebaseapp.com
+      - key: REACT_APP_FIREBASE_PROJECT_ID
+        value: reevanta
 
   - type: web
     name: reevanta-admin

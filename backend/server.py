@@ -39,6 +39,9 @@ from routers.search import router as search_router
 from routers.chat_ws import router as chat_ws_router
 from routers.queues import router as queues_router
 from routers.marketplace import router as marketplace_router
+from routers.health_metrics import router as health_metrics_router
+from core.logger import JSONLogMiddleware
+from core.monitoring import init_sentry
 from services.otp_queue_service import start_otp_worker
 
 logging.basicConfig(
@@ -51,6 +54,7 @@ logger = logging.getLogger("reevanta.server")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Initializing Reevanta backend...")
+    init_sentry()
     worker_task = asyncio.create_task(start_otp_worker())
 
     async def init_db():
@@ -117,12 +121,14 @@ api_router.include_router(marketplace_router)
 
 app.include_router(api_router)
 app.include_router(chat_ws_router)
+app.include_router(health_metrics_router)
 
 # Middleware order matters: last-added runs first.
 # CORS must be outermost so it handles preflight & headers even on 500s.
 app.add_middleware(GZipMiddleware, minimum_size=500)
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RateLimitMiddleware)
+app.add_middleware(JSONLogMiddleware)
 
 cors_origins = [
     "http://localhost:3000",

@@ -29,6 +29,6 @@ services:
     startCommand: npx serve -s build -l $PORT
     envVars:
       - key: REACT_APP_API_URL
-        value: https://reevanta-backend.onrender.com/api
+        value: https://reevanta-backend-pg3v.onrender.com/api
       - key: REACT_APP_BACKEND_URL
-        value: https://reevanta-backend.onrender.com
+        value: https://reevanta-backend-pg3v.onrender.com

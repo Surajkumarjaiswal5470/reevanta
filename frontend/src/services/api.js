@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.REACT_APP_API_URL || (process.env.REACT_APP_BACKEND_URL ? `${process.env.REACT_APP_BACKEND_URL}/api` : 'http://localhost:8001/api');
+const API_BASE_URL = process.env.REACT_APP_API_URL || (process.env.REACT_APP_BACKEND_URL ? `${process.env.REACT_APP_BACKEND_URL}/api` : (process.env.NODE_ENV === 'production' ? 'https://reevanta-backend-pg3v.onrender.com/api' : 'http://localhost:8001/api'));
 
 
 export async function apiFetch(endpoint, options = {}) {

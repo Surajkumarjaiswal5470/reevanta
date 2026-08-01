@@ -8,7 +8,7 @@ const API = BACKEND_URL ? `${BACKEND_URL}/api` : null;
 const RECENT_KEY = "lb_recent_searches";
 const RECENT_LIMIT = 5;
 const SUGGESTION_LIMIT = 6;
-const DEBOUNCE_MS = 200;
+const DEBOUNCE_MS = 300;
 const TRENDING = ["Hoodie", "Sneakers", "Lipstick", "Handbag", "Jeans", "Watch"];
 
 function getRecent() {
@@ -85,13 +85,14 @@ export const SearchBar = ({ value: externalValue, onChange: externalOnChange, on
 
       setLoading(true);
       try {
-        const res = await axios.get(`${API}/products/search-suggest`, {
+        const res = await axios.get(`${API}/search`, {
           params: { q: trimmed, limit: SUGGESTION_LIMIT },
           signal: controller.signal,
         });
         // Ignore stale responses if a newer request has since started
         if (seq === requestSeq.current) {
-          setSuggestions(Array.isArray(res.data) ? res.data : []);
+          const items = res.data?.items || (Array.isArray(res.data) ? res.data : []);
+          setSuggestions(items);
           setActiveIndex(-1);
         }
       } catch (err) {

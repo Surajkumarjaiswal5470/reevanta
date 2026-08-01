@@ -1,0 +1,66 @@
+{
+  "mappings": {
+    "dynamic": false,
+    "fields": {
+      "title": [
+        {
+          "type": "autocomplete",
+          "analyzer": "lucene.standard",
+          "foldDiacritics": true,
+          "maxGrams": 15,
+          "minGrams": 2,
+          "tokenization": "edgeGram"
+        },
+        {
+          "type": "string",
+          "analyzer": "lucene.standard",
+          "multi": {
+            "keyword": {
+              "type": "string",
+              "analyzer": "lucene.keyword"
+            }
+          }
+        }
+      ],
+      "description": {
+        "type": "string",
+        "analyzer": "lucene.standard"
+      },
+      "category": {
+        "type": "string",
+        "analyzer": "lucene.keyword",
+        "multi": {
+          "text": {
+            "type": "string",
+            "analyzer": "lucene.standard"
+          }
+        }
+      },
+      "tags": {
+        "type": "string",
+        "analyzer": "lucene.standard"
+      },
+      "location": {
+        "type": "document",
+        "fields": {
+          "city": {
+            "type": "string",
+            "analyzer": "lucene.keyword",
+            "multi": {
+              "text": {
+                "type": "string",
+                "analyzer": "lucene.standard"
+              }
+            }
+          }
+        }
+      },
+      "price": {
+        "type": "number"
+      },
+      "created_at": {
+        "type": "date"
+      }
+    }
+  }
+}

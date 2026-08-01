@@ -221,3 +221,124 @@ async def cancel_order(order_id: str, user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=400, detail="Cannot cancel order that has already shipped")
     await db.orders.update_one({"_id": obj_id}, {"$set": {"status": "Cancelled"}})
     return {"message": "Order cancelled"}
+
+
+from fastapi.responses import HTMLResponse
+
+@router.get("/{order_id}/invoice", response_class=HTMLResponse)
+async def get_order_invoice(order_id: str, user: dict = Depends(get_current_user)):
+    """Generate enterprise printable/downloadable Tax Invoice for order."""
+    obj_id = to_object_id(order_id)
+    order = await db.orders.find_one({"_id": obj_id})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    if str(order.get("user_id")) != user["id"] and user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    addr = order.get("address", {})
+    items = order.get("items", [])
+    
+    items_rows_html = "".join([
+        f"""
+        <tr style="border-bottom: 1px solid #E8DFC9;">
+            <td style="padding: 12px; font-weight: 600;">{item.get('name', 'Product')}</td>
+            <td style="padding: 12px; text-align: center;">{item.get('selectedSize', 'N/A')} / {item.get('selectedColor', 'N/A')}</td>
+            <td style="padding: 12px; text-align: center;">{item.get('qty', 1)}</td>
+            <td style="padding: 12px; text-align: right;">₹{item.get('price', 0)}</td>
+            <td style="padding: 12px; text-align: right; font-weight: 700;">₹{item.get('price', 0) * item.get('qty', 1)}</td>
+        </tr>
+        """
+        for item in items
+    ])
+
+    html_content = f"""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Invoice #{order.get('order_number', 'RV-1001')}</title>
+        <style>
+            body {{ font-family: 'Helvetica Neue', Arial, sans-serif; color: #2D2118; margin: 40px; background: #fff; }}
+            .header {{ display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #5C1E1E; padding-bottom: 20px; }}
+            .brand {{ font-size: 24px; font-weight: 900; letter-spacing: 2px; color: #5C1E1E; }}
+            .invoice-title {{ font-size: 20px; font-weight: 700; color: #8B7355; text-transform: uppercase; }}
+            .meta-grid {{ display: flex; justify-content: space-between; margin: 30px 0; font-size: 13px; line-height: 1.6; }}
+            table {{ width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px; }}
+            th {{ background: #FAF5EC; color: #5C1E1E; padding: 12px; text-transform: uppercase; font-size: 11px; font-weight: 800; border-bottom: 2px solid #E8DFC9; }}
+            .totals {{ margin-top: 30px; float: right; width: 300px; font-size: 13px; }}
+            .totals-row {{ display: flex; justify-content: space-between; padding: 6px 0; }}
+            .grand-total {{ font-size: 16px; font-weight: 900; color: #5C1E1E; border-top: 2px solid #5C1E1E; padding-top: 10px; margin-top: 6px; }}
+            .footer {{ margin-top: 100px; text-align: center; font-size: 11px; color: #8B7355; border-top: 1px solid #E8DFC9; padding-top: 20px; }}
+            @media print {{ body {{ margin: 0; }} }}
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <div>
+                <div class="brand">RIVAANTA</div>
+                <div style="font-size: 11px; color: #8B7355;">LUXURY ETHNIC WEAR & COSMETICS</div>
+                <div style="font-size: 11px; color: #666; margin-top: 4px;">PAN/VAT Reg: 609847120 | Kathmandu, Nepal</div>
+            </div>
+            <div style="text-align: right;">
+                <div class="invoice-title">Tax Invoice</div>
+                <div style="font-size: 13px; font-weight: 700;">#{order.get('order_number', 'RV-1001')}</div>
+                <div style="font-size: 11px; color: #666;">Date: {order.get('placed_at', '')[:10]}</div>
+            </div>
+        </div>
+
+        <div class="meta-grid">
+            <div>
+                <strong style="color: #5C1E1E; text-transform: uppercase;">Billed To:</strong><br>
+                {addr.get('fullName', 'Customer')}<br>
+                {addr.get('line1', '')}<br>
+                {addr.get('city', '')}, {addr.get('pincode', '')}<br>
+                Phone: {addr.get('phone', 'N/A')}
+            </div>
+            <div style="text-align: right;">
+                <strong style="color: #5C1E1E; text-transform: uppercase;">Payment Details:</strong><br>
+                Method: {order.get('paymentMethod', 'Cash on Delivery')}<br>
+                Status: {order.get('status', 'Order Placed')}<br>
+                Voucher Code: {order.get('voucherCode') or 'None'}
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th style="text-align: left;">Item Description</th>
+                    <th style="text-align: center;">Variant (Size/Color)</th>
+                    <th style="text-align: center;">Qty</th>
+                    <th style="text-align: right;">Unit Price</th>
+                    <th style="text-align: right;">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {items_rows_html}
+            </tbody>
+        </table>
+
+        <div class="totals">
+            <div class="totals-row"><span>Subtotal:</span><strong>₹{order.get('subtotal', 0)}</strong></div>
+            <div class="totals-row"><span>Discount:</span><strong style="color: green;">-₹{order.get('discount', 0)}</strong></div>
+            <div class="totals-row"><span>Shipping Fee:</span><strong>₹{order.get('shipping', 0)}</strong></div>
+            <div class="totals-row grand-total"><span>Grand Total:</span><span>₹{order.get('total', 0)}</span></div>
+        </div>
+
+        <div style="clear: both;"></div>
+
+        <div class="footer">
+            Thank you for shopping with RIVAANTA Luxury Wear!<br>
+            For support or returns, visit https://therivaanta.com or contact support@therivaanta.com
+        </div>
+
+        <script>
+            // Auto trigger print dialog if requested
+            if (window.location.search.includes('print=true')) {{
+                window.print();
+            }}
+        </script>
+    </body>
+    </html>
+    """
+    return HTMLResponse(content=html_content)
+

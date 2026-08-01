@@ -18,25 +18,36 @@ from routers.admin import admin_router
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("reevanta.server")
 
+import asyncio
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("Initializing Reevanta database indexes & seeds...")
-    await db.users.create_index("email", unique=True)
-    await db.products.create_index([
-        ("name", "text"), ("brand", "text"), ("description", "text"),
-        ("category", "text"), ("tags", "text")
-    ])
-    await db.orders.create_index("user_id")
-    await db.addresses.create_index("user_id")
-    await db.carts.create_index("user_id", unique=True)
-    await db.vouchers.create_index("code", unique=True)
-    await db.restock_subscriptions.create_index([("product_id", 1), ("email", 1)])
-    await seed_admin()
-    await seed_products()
-    logger.info("Reevanta backend initialized successfully.")
+    logger.info("Initializing Reevanta backend...")
+    async def init_db():
+        try:
+            await db.users.create_index("email", unique=True)
+            await db.products.create_index([
+                ("name", "text"), ("brand", "text"), ("description", "text"),
+                ("category", "text"), ("tags", "text")
+            ])
+            await db.orders.create_index("user_id")
+            await db.addresses.create_index("user_id")
+            await db.carts.create_index("user_id", unique=True)
+            await db.vouchers.create_index("code", unique=True)
+            await db.restock_subscriptions.create_index([("product_id", 1), ("email", 1)])
+            await seed_admin()
+            await seed_products()
+            logger.info("Reevanta database initialized successfully.")
+        except Exception as e:
+            logger.error(f"MongoDB Atlas Connection Warning: {e}")
+            logger.warning("Ensure your current IP address is whitelisted in MongoDB Atlas Network Access.")
+    
+    asyncio.create_task(init_db())
     yield
     logger.info("Closing Reevanta database connections...")
     client.close()
+
+
 
 from core.rate_limiter import RateLimitMiddleware
 from core.security_middleware import SecurityHeadersMiddleware

@@ -450,7 +450,6 @@ function MainLayout() {
                   />
                 }
               />
-              <Route path="/lookbooks" element={<LookbooksPage onNavigate={setActiveTab} />} />
               <Route path="/wishlist" element={<WishlistPage onNavigate={setActiveTab} />} />
               <Route path="/orders" element={<OrdersPage />} />
               <Route path="/shipping" element={<ShippingPage onNavigate={setActiveTab} />} />

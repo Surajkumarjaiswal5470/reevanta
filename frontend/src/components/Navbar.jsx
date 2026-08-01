@@ -12,7 +12,6 @@ import { CategorySlider } from "./CategorySlider";
 const NAV_TABS = [
   { id: "home", label: "Home", icon: Home, desc: "Back to homepage" },
   { id: "catalog", label: "Catalog", icon: LayoutGrid, desc: "Browse all products" },
-  { id: "lookbooks", label: "Curated Sets", icon: Gem, desc: "Handpicked collections" },
   { id: "orders", label: "My Orders", icon: Package, desc: "Track your purchases" },
   { id: "about", label: "About Us", icon: Info, desc: "Our story & vision" },
   { id: "contact", label: "Contact Us", icon: Phone, desc: "Get in touch" },

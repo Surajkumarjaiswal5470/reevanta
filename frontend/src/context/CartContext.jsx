@@ -9,14 +9,21 @@ export function CartProvider({ children }) {
     const saved = localStorage.getItem("reevanta_cart");
     return saved ? JSON.parse(saved) : [];
   });
+
+  const [savedForLater, setSavedForLater] = useState(() => {
+    const saved = localStorage.getItem("reevanta_saved_for_later");
+    return saved ? JSON.parse(saved) : [];
+  });
+
   const [wishlist, setWishlist] = useState(() => {
     const saved = localStorage.getItem("reevanta_wishlist");
     return saved ? JSON.parse(saved) : [];
   });
+
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [resellerMode, setResellerMode] = useState(false);
 
-  // Sync with MongoDB Atlas Database on Mount
+  // Sync with MongoDB Atlas Database on Mount for authenticated users
   useEffect(() => {
     apiFetch("/cart")
       .then((res) => {
@@ -27,7 +34,7 @@ export function CartProvider({ children }) {
       .catch(() => {});
   }, []);
 
-  // Persist to localStorage and MongoDB Atlas Database
+  // Persist guest and user cart to localStorage and backend DB
   useEffect(() => {
     localStorage.setItem("reevanta_cart", JSON.stringify(cart));
     apiFetch("/cart", {
@@ -35,6 +42,10 @@ export function CartProvider({ children }) {
       body: { items: cart }
     }).catch(() => {});
   }, [cart]);
+
+  useEffect(() => {
+    localStorage.setItem("reevanta_saved_for_later", JSON.stringify(savedForLater));
+  }, [savedForLater]);
 
   useEffect(() => {
     localStorage.setItem("reevanta_wishlist", JSON.stringify(wishlist));
@@ -82,6 +93,27 @@ export function CartProvider({ children }) {
     });
   };
 
+  const saveForLater = (index) => {
+    const itemToSave = cart[index];
+    if (!itemToSave) return;
+    setCart((prev) => prev.filter((_, i) => i !== index));
+    setSavedForLater((prev) => [...prev, itemToSave]);
+    toast.success(`Saved "${itemToSave.name}" for later!`);
+  };
+
+  const moveSavedToCart = (index) => {
+    const itemToMove = savedForLater[index];
+    if (!itemToMove) return;
+    setSavedForLater((prev) => prev.filter((_, i) => i !== index));
+    setCart((prev) => [...prev, itemToMove]);
+    toast.success(`Moved "${itemToMove.name}" back to cart!`);
+  };
+
+  const removeSavedForLater = (index) => {
+    setSavedForLater((prev) => prev.filter((_, i) => i !== index));
+    toast.info("Item removed from saved list");
+  };
+
   const clearCart = () => {
     setCart([]);
     apiFetch("/cart", { method: "DELETE" }).catch(() => {});
@@ -112,6 +144,10 @@ export function CartProvider({ children }) {
         addToCart,
         removeFromCart,
         updateCartQty,
+        saveForLater,
+        savedForLater,
+        moveSavedToCart,
+        removeSavedForLater,
         clearCart,
         wishlist,
         toggleWishlist,

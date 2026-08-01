@@ -7,7 +7,7 @@ import { AddressPicker } from "./AddressPicker";
 import { toast } from "sonner";
 
 export function CartDrawer({ onOrderPlaced }) {
-  const { cart, removeFromCart, updateCartQty, clearCart, isCartOpen, setIsCartOpen, resellerMode, cartSubtotal, cartTotalResellerMargin } = useCart();
+  const { cart, removeFromCart, updateCartQty, saveForLater, savedForLater, moveSavedToCart, removeSavedForLater, clearCart, isCartOpen, setIsCartOpen, resellerMode, cartSubtotal, cartTotalResellerMargin } = useCart();
   const { currentUser, setShowAuthModal } = useAuth();
 
   const [checkoutStep, setCheckoutStep] = useState(1); // 1: Cart Items, 2: Address & Payment
@@ -274,17 +274,65 @@ export function CartDrawer({ onOrderPlaced }) {
                             </button>
                           </div>
 
-                          <button
-                            onClick={() => removeFromCart(idx)}
-                            className="text-red-500 hover:text-red-700 p-1"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => saveForLater(idx)}
+                              className="text-[10px] font-bold text-[#8B7355] hover:text-[#5C1E1E] underline"
+                            >
+                              Save for Later
+                            </button>
+                            <button
+                              onClick={() => removeFromCart(idx)}
+                              className="text-red-500 hover:text-red-700 p-1"
+                              title="Remove item"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
+
+                {/* SAVED FOR LATER SECTION */}
+                {savedForLater && savedForLater.length > 0 && (
+                  <div className="bg-[#FAF5EC] border border-[#E8DFC9] rounded-2xl p-4 space-y-3">
+                    <h4 className="text-xs font-black text-[#2D2118] uppercase tracking-wider">
+                      Saved for Later ({savedForLater.length})
+                    </h4>
+                    <div className="space-y-2">
+                      {savedForLater.map((sItem, sIdx) => (
+                        <div
+                          key={`saved-${sItem.id}-${sIdx}`}
+                          className="flex items-center justify-between bg-white p-2.5 rounded-xl border border-[#E8DFC9]/60 text-xs"
+                        >
+                          <div className="flex items-center gap-3">
+                            <img src={sItem.image} alt={sItem.name} className="w-10 h-12 object-cover rounded-lg" />
+                            <div>
+                              <div className="font-bold text-[#2D2118] line-clamp-1">{sItem.name}</div>
+                              <div className="font-extrabold text-[#5C1E1E]">₹{sItem.price}</div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => moveSavedToCart(sIdx)}
+                              className="bg-[#5C1E1E] text-white px-2.5 py-1 rounded-lg text-[10px] font-bold hover:bg-[#4A1717]"
+                            >
+                              Move to Cart
+                            </button>
+                            <button
+                              onClick={() => removeSavedForLater(sIdx)}
+                              className="text-red-500 hover:text-red-700 p-1"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* VOUCHER / COUPON SECTION */}
                 <div className="bg-[#FAF5EC] border border-[#E8DFC9] rounded-2xl p-4 space-y-3">

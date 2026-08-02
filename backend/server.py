@@ -40,6 +40,9 @@ from routers.chat_ws import router as chat_ws_router
 from routers.queues import router as queues_router
 from routers.marketplace import router as marketplace_router
 from routers.health_metrics import router as health_metrics_router
+from routers.audit import router as audit_router
+from routers.webhooks import router as webhooks_router
+from routers.feature_flags import router as feature_flags_router
 from core.logger import JSONLogMiddleware
 from core.monitoring import init_sentry
 from services.otp_queue_service import start_otp_worker
@@ -120,6 +123,9 @@ api_router.include_router(upload_router)
 api_router.include_router(search_router)
 api_router.include_router(queues_router)
 api_router.include_router(marketplace_router)
+api_router.include_router(audit_router)
+api_router.include_router(webhooks_router)
+api_router.include_router(feature_flags_router)
 
 app.include_router(api_router)
 app.include_router(chat_ws_router)

@@ -3,6 +3,7 @@ import axios from "axios";
 import { ImageUploader } from "./ImageUploader";
 import { AdminChatDesk } from "./AdminChatDesk";
 import { AdminQueueDashboard } from "./AdminQueueDashboard";
+import { AdminAuditConsole } from "./AdminAuditConsole";
 import {
   Package,
   ShoppingBag,
@@ -25,7 +26,8 @@ import {
   Layers,
   ArrowUpRight,
   Headset,
-  Cpu
+  Cpu,
+  Lock
 } from "lucide-react";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || (process.env.NODE_ENV === 'production' ? "https://reevanta-backend-pg3v.onrender.com" : "http://localhost:8001");
@@ -439,6 +441,7 @@ export const AdminPanel = () => {
             { id: "vouchers", label: `Vouchers (${vouchers.length})`, icon: Tag },
             { id: "support", label: "Live Support Chat", icon: Headset },
             { id: "queues", label: "BullMQ Dashboard", icon: Cpu },
+            { id: "enterprise", label: "Enterprise Security", icon: Lock },
             { id: "add", label: "Add Product", icon: PlusCircle }
           ].map((item) => {
             const Icon = item.icon;
@@ -1361,6 +1364,13 @@ export const AdminPanel = () => {
       {activeTab === "queues" && (
         <div className="space-y-4">
           <AdminQueueDashboard />
+        </div>
+      )}
+
+      {/* ENTERPRISE SECURITY & AUDIT TAB */}
+      {activeTab === "enterprise" && (
+        <div className="space-y-4">
+          <AdminAuditConsole />
         </div>
       )}
 

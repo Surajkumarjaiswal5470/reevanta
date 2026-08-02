@@ -106,7 +106,7 @@ export const UseCurrentLocationButton = ({ onLocated }) => {
     <button
       data-testid="use-current-location-btn"
       type="button"
-      onClick={handleClick}
+      onClick={handleDetectLocation}
       disabled={loading}
       className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#5C1E1E] to-[#B8956A] hover:opacity-95 text-white font-bold py-3 rounded-xl text-sm shadow-md shadow-[#5C1E1E]/30 transition disabled:opacity-70"
     >

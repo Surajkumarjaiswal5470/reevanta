@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { searchPlacesMapTiler, reverseGeocodeMapTiler, getMapTilerStaticMapUrl } from "../hooks/useMapTiler";
 import { MapPin, Locate, Loader2, Search, Plus, Check, Trash2, Navigation, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { apiFetch } from "../services/api";
 
 export const AddressAutocomplete = ({ value, onChange, onSelect, placeholder = "Search location in Nepal (Kathmandu, Pokhara...)" }) => {
   const [suggestions, setSuggestions] = useState([]);
@@ -268,6 +269,18 @@ export const AddressPicker = (props) => {
   const canSave = address.fullName && address.phone && address.line1 && address.city && address.pincode;
 
   const handleSaveAddress = async () => {
+    const missing = [];
+    if (!address.fullName?.trim()) missing.push("Full Name");
+    if (!address.phone?.trim()) missing.push("Phone");
+    if (!address.line1?.trim()) missing.push("Address Line");
+    if (!address.city?.trim()) missing.push("City");
+    if (!address.pincode?.trim()) missing.push("Pincode");
+
+    if (missing.length > 0) {
+      toast.error(`Please fill missing fields: ${missing.join(", ")}`, { icon: "⚠️" });
+      return;
+    }
+
     if (onSave) {
       onSave(address);
       return;
@@ -357,8 +370,9 @@ export const AddressPicker = (props) => {
           </label>
 
           <button
+            data-testid="addr-save-btn"
             type="button"
-            disabled={!canSave || saving}
+            disabled={saving}
             onClick={handleSaveAddress}
             className="w-full bg-[#5C1E1E] hover:bg-[#4A1717] disabled:opacity-60 text-white font-bold py-3 rounded-xl text-xs shadow-md transition flex items-center justify-center gap-2"
           >
@@ -501,7 +515,7 @@ export const AddressPicker = (props) => {
         <button
           data-testid="addr-save-btn"
           type="button"
-          disabled={!canSave || saving}
+          disabled={saving}
           onClick={handleSaveAddress}
           className="flex-1 bg-[#5C1E1E] hover:bg-[#4A1717] disabled:opacity-60 text-white font-bold py-3 rounded-xl text-sm shadow-lg shadow-[#5C1E1E]/30 transition"
         >

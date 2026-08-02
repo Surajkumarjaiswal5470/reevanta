@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { searchPlacesMapTiler, reverseGeocodeMapTiler, getMapTilerStaticMapUrl } from "../hooks/useMapTiler";
-import { MapPin, Locate, Loader2, Search, Plus, Check, Trash2, Navigation } from "lucide-react";
+import { MapPin, Locate, Loader2, Search, Plus, Check, Trash2, Navigation, Sparkles } from "lucide-react";
+import { toast } from "sonner";
 
 export const AddressAutocomplete = ({ value, onChange, onSelect, placeholder = "Search location in Nepal (Kathmandu, Pokhara...)" }) => {
   const [suggestions, setSuggestions] = useState([]);
@@ -71,9 +72,9 @@ export const AddressAutocomplete = ({ value, onChange, onSelect, placeholder = "
 export const UseCurrentLocationButton = ({ onLocated }) => {
   const [loading, setLoading] = useState(false);
 
-  const handleClick = () => {
+  const handleDetectLocation = () => {
     if (!navigator.geolocation) {
-      alert("Geolocation is not supported by your browser");
+      toast.error("Geolocation is not supported by your browser");
       return;
     }
     setLoading(true);
@@ -82,18 +83,20 @@ export const UseCurrentLocationButton = ({ onLocated }) => {
         try {
           const { latitude, longitude } = pos.coords;
           const parsed = await reverseGeocodeMapTiler(latitude, longitude);
-          parsed.lat = latitude;
-          parsed.lng = longitude;
-          onLocated(parsed);
+          onLocated({
+            ...parsed,
+            lat: latitude,
+            lng: longitude
+          });
         } catch (e) {
-          alert("Failed to detect address: " + e.message);
+          toast.error("Failed to detect address: " + e.message);
         } finally {
           setLoading(false);
         }
       },
       (err) => {
         setLoading(false);
-        alert("Location access denied: " + err.message);
+        toast.error("Location access denied: " + err.message);
       },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
     );

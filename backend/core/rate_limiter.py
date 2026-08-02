@@ -37,11 +37,15 @@ class RateLimiter:
         if len(self.ip_requests[ip]) >= 300:
             return True, 60
 
-        # Auth endpoint rate limit
+        # Exclude session check (/auth/me) and health checks from strict rate limits
+        if "/auth/me" in path or "/health" in path or "/metrics" in path:
+            return False, 0
+
+        # Auth endpoint rate limit (login, send-otp)
         if "/api/auth/" in path:
             key = f"{ip}:{path}"
             self.endpoint_requests[key] = [t for t in self.endpoint_requests[key] if now - t < window_sec]
-            if len(self.endpoint_requests[key]) >= 30:
+            if len(self.endpoint_requests[key]) >= 60:
                 return True, 30
             self.endpoint_requests[key].append(now)
 

@@ -43,6 +43,7 @@ from routers.health_metrics import router as health_metrics_router
 from core.logger import JSONLogMiddleware
 from core.monitoring import init_sentry
 from services.otp_queue_service import start_otp_worker
+from services.render_keep_alive import start_render_keep_alive
 
 logging.basicConfig(
     level=logging.INFO,
@@ -56,6 +57,7 @@ async def lifespan(app: FastAPI):
     logger.info("Initializing Reevanta backend...")
     init_sentry()
     worker_task = asyncio.create_task(start_otp_worker())
+    keep_alive_task = asyncio.create_task(start_render_keep_alive())
 
     async def init_db():
         try:

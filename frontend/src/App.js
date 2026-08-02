@@ -19,6 +19,7 @@ import { AuthModal } from "./components/AuthModal";
 import { CartDrawer } from "./components/CartDrawer";
 import { LiveChatWidget } from "./components/LiveChatWidget";
 import { Footer } from "./components/Footer";
+import { useRenderWakeup } from "./hooks/useRenderWakeup";
 import { MOCK_PRODUCTS, MOCK_LOOKBOOKS } from "./mock";
 
 // ---------------------------------------------------------------------------
@@ -370,6 +371,7 @@ function MainLayout() {
   const activeTab = PATH_TO_TAB[location.pathname] ?? "home";
   const selectedCategory = searchParams.get("category") ?? "all";
 
+  const { isWakingUp } = useRenderWakeup();
   const { products: productsList, status, error, retry } = useProducts();
 
   useDocumentMeta(activeTab);
@@ -404,13 +406,13 @@ function MainLayout() {
 
   return (
     <div className="min-h-screen bg-[#FAF5EC] text-[#2D2118] font-sans antialiased flex flex-col">
-      {/* Skip link: first focusable element, visually hidden until focused. */}
-      <a
-        href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-2 focus:left-2 focus:bg-[#2D2118] focus:text-white focus:px-4 focus:py-2 focus:rounded-xl focus:text-xs focus:font-bold"
-      >
-        Skip to main content
-      </a>
+      {/* Render Free Tier Pre-Warm Banner */}
+      {isWakingUp && (
+        <div className="bg-gradient-to-r from-[#2D2118] via-[#5C1E1E] to-[#2D2118] text-white py-2 px-4 text-center text-xs font-bold shadow-md flex items-center justify-center gap-2 z-50">
+          <span className="w-2 h-2 bg-amber-400 rounded-full animate-ping" />
+          <span>Connecting to RIVAANTA Luxury Cloud... (Waking up Render Free Tier server)</span>
+        </div>
+      )}
 
       <Navbar
         activeTab={activeTab}

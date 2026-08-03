@@ -27,8 +27,10 @@ async function _tryRefreshToken() {
 export async function apiFetch(endpoint, options = {}, _retried = false) {
   const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
   
+  const token = typeof localStorage !== 'undefined' ? localStorage.getItem("reevanta_token") : null;
   const headers = {
     'Content-Type': 'application/json',
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
     ...(options.headers || {}),
   };
 

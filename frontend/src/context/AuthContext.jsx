@@ -33,9 +33,13 @@ function storeUser(user) {
     if (user) {
       localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
       localStorage.setItem(AUTH_TIMESTAMP_KEY, String(Date.now()));
+      if (user.token) {
+        localStorage.setItem("reevanta_token", user.token);
+      }
     } else {
       localStorage.removeItem(AUTH_STORAGE_KEY);
       localStorage.removeItem(AUTH_TIMESTAMP_KEY);
+      localStorage.removeItem("reevanta_token");
     }
   } catch {
     // Quota exceeded or incognito — silently ignore

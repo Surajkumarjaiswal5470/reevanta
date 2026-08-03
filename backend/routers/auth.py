@@ -306,13 +306,15 @@ async def verify_otp(inp: VerifyOTPRequest, response: Response):
         name = inp.name.strip() if inp.name and inp.name.strip() else ("Admin Manager" if role == "admin" else f"User {phone[-4:]}")
         user = {"phone": phone, "email": f"{phone.replace('+', '')}@reevanta.local", "name": name, "role": role}
     
+    access_token = create_access_token(user_id, phone)
     set_auth_cookies(response, user_id, phone)
     return {
         "id": user_id,
         "phone": phone,
         "email": user.get("email", ""),
         "name": user.get("name", f"User {phone[-4:]}"),
-        "role": user.get("role", "user")
+        "role": user.get("role", "user"),
+        "token": access_token
     }
 
 

@@ -1,6 +1,6 @@
 """
-Order Pydantic Schemas
-Covers Order Creation, Editing, Split Shipments, Tracking Numbers, Gift Orders, Audit Timelines, and Returns.
+Order, Return & Refund Pydantic Schemas
+Covers Orders, Returns, Monetary Refunds, Exchanges, Proof Photos, and Refund Approvals.
 """
 
 from pydantic import BaseModel, Field
@@ -101,3 +101,16 @@ class ReturnItemRequest(BaseModel):
 class ReturnStatusUpdate(BaseModel):
     returnStatus: str
     notes: Optional[str] = ""
+
+
+class RefundApprovalRequest(BaseModel):
+    approval_status: str = Field("APPROVED", pattern="^(APPROVED|REJECTED)$")
+    payout_status: str = Field("PAID", pattern="^(UNPAID|PROCESSING|PAID)$")
+    refund_amount: float = Field(..., ge=0)
+    notes: Optional[str] = ""
+
+
+class ExchangeApproveRequest(BaseModel):
+    replacement_size: Optional[str] = ""
+    replacement_color: Optional[str] = ""
+    shipping_notes: Optional[str] = ""

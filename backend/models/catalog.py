@@ -42,22 +42,39 @@ class FitType(str, Enum):
 
 # ──────────────────── Brand & Collection Models ────────────────────
 
+class BrandSEO(BaseModel):
+    metaTitle: Optional[str] = Field(None, max_length=120)
+    metaDescription: Optional[str] = Field(None, max_length=300)
+    metaKeywords: List[str] = Field(default_factory=list)
+    canonicalUrl: Optional[str] = None
+
+
 class BrandCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=100, examples=["RIVAANTA Luxe"])
     slug: Optional[str] = Field(None, examples=["rivaanta-luxe"])
     logoUrl: Optional[str] = ""
+    bannerUrl: Optional[str] = ""
     description: Optional[str] = ""
     website: Optional[str] = ""
+    establishedYear: Optional[int] = Field(None, ge=1800, le=2100)
+    originCountry: Optional[str] = "Nepal"
     featured: bool = False
+    sort_order: int = Field(1, ge=0)
+    seo: Optional[BrandSEO] = Field(default_factory=BrandSEO)
 
 
 class BrandUpdate(BaseModel):
     name: Optional[str] = None
     slug: Optional[str] = None
     logoUrl: Optional[str] = None
+    bannerUrl: Optional[str] = None
     description: Optional[str] = None
     website: Optional[str] = None
+    establishedYear: Optional[int] = None
+    originCountry: Optional[str] = None
     featured: Optional[bool] = None
+    sort_order: Optional[int] = None
+    seo: Optional[BrandSEO] = None
 
 
 class CollectionCreate(BaseModel):

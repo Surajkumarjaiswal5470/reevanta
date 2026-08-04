@@ -14,13 +14,106 @@ from models.catalog import (
 )
 
 router = APIRouter(prefix="/catalog", tags=["Admin - Catalog"])
+public_brands_router = APIRouter(prefix="/brands", tags=["Brands"])
+
+
+# ──────────────────── Public Brand Endpoints ────────────────────
+
+@public_brands_router.get("")
+async def list_public_brands():
+    """Public endpoint to fetch all brands for storefront showcase."""
+    return await list_brands()
+
+
+@public_brands_router.get("/{slug}")
+async def get_brand_profile(slug: str):
+    """Fetch detailed brand profile and its associated catalog products."""
+    brand = await db.brands.find_one({"slug": slug.lower().strip()})
+    if not brand:
+        raise HTTPException(status_code=404, detail="Brand not found")
+
+    brand_data = serialize_doc(brand)
+
+    # Fetch products under this brand
+    products = await db.products.find({
+        "$or": [
+            {"brand": brand_data.get("name")},
+            {"brand_id": brand_data.get("id")},
+            {"brand": {"$regex": slug, "$options": "i"}}
+        ]
+    }).to_list(100)
+
+    brand_data["products"] = [serialize_doc(p) for p in products]
+    brand_data["products_count"] = len(products)
+    return brand_data
+
 
 # Default Pre-seeded Brands
 DEFAULT_BRANDS = [
-    {"name": "RIVAANTA Luxury", "slug": "rivaanta-luxury", "description": "Signature Royal Ethnic Wear", "logoUrl": "", "featured": True},
-    {"name": "Kanjivaram Heritage", "slug": "kanjivaram-heritage", "description": "Authentic Handwoven Silk Sarees", "logoUrl": "", "featured": True},
-    {"name": "Zardozi Atelier", "slug": "zardozi-atelier", "description": "Heavy Bridal & Event Lehengas", "logoUrl": "", "featured": True},
-    {"name": "Kundan Jewels", "slug": "kundan-jewels", "description": "Heritage Gold & Kundan Fine Jewelry", "logoUrl": "", "featured": True},
+    {
+        "name": "RIVAANTA Luxury",
+        "slug": "rivaanta-luxury",
+        "description": "Signature Royal Ethnic Wear & Handcrafted Fine Silk",
+        "logoUrl": "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=200",
+        "bannerUrl": "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=1600",
+        "website": "https://therivaanta.com",
+        "establishedYear": 2020,
+        "originCountry": "Nepal",
+        "featured": True,
+        "sort_order": 1,
+        "seo": {
+            "metaTitle": "RIVAANTA Luxury Ethnic Wear | Handcrafted Royal Weaves",
+            "metaDescription": "Discover signature luxury sarees, bridal lehengas, and royal kurtas from RIVAANTA Luxury."
+        }
+    },
+    {
+        "name": "Kanjivaram Heritage",
+        "slug": "kanjivaram-heritage",
+        "description": "Authentic Handwoven Kanjivaram & Banarasi Silk Sarees",
+        "logoUrl": "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=200",
+        "bannerUrl": "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=1600",
+        "website": "https://therivaanta.com/brands/kanjivaram-heritage",
+        "establishedYear": 2018,
+        "originCountry": "India",
+        "featured": True,
+        "sort_order": 2,
+        "seo": {
+            "metaTitle": "Kanjivaram Heritage | Pure Handwoven Silk Sarees",
+            "metaDescription": "Pure silk Kanjivaram sarees handcrafted by master weavers."
+        }
+    },
+    {
+        "name": "Zardozi Atelier",
+        "slug": "zardozi-atelier",
+        "description": "Heavy Zardozi Embroidered Bridal & Partywear Lehengas",
+        "logoUrl": "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=200",
+        "bannerUrl": "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=1600",
+        "website": "https://therivaanta.com/brands/zardozi-atelier",
+        "establishedYear": 2021,
+        "originCountry": "Nepal",
+        "featured": True,
+        "sort_order": 3,
+        "seo": {
+            "metaTitle": "Zardozi Atelier | Royal Bridal Lehengas",
+            "metaDescription": "Intricate hand-embroidered Zardozi lehengas and choli sets."
+        }
+    },
+    {
+        "name": "Kundan Jewels",
+        "slug": "kundan-jewels",
+        "description": "Heritage Gold & Kundan Fine Jewelry Collections",
+        "logoUrl": "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=200",
+        "bannerUrl": "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=1600",
+        "website": "https://therivaanta.com/brands/kundan-jewels",
+        "establishedYear": 2019,
+        "originCountry": "Nepal",
+        "featured": True,
+        "sort_order": 4,
+        "seo": {
+            "metaTitle": "Kundan Jewels | Heritage Fine Gold & Kundan Jewelry",
+            "metaDescription": "Royal Kundan chokers, Rani haars, and bridal jewelry."
+        }
+    }
 ]
 
 # Default Pre-seeded Collections

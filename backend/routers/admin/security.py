@@ -205,3 +205,43 @@ async def create_api_key(inp: APIKeyCreate, admin: dict = Depends(get_current_ad
     doc["secret_key_full"] = raw_secret
     doc.pop("_id", None)
     return doc
+
+
+@router.post("/reset-production-data")
+async def reset_production_data_endpoint(admin: dict = Depends(get_current_admin)):
+    """
+    Purge all test/demo data (non-admin users, products, reviews, orders, vouchers, carts, addresses).
+    Preserves Super Admin accounts.
+    """
+    user_del_res = await db.users.delete_many({"role": {"$ne": "admin"}})
+    prod_res = await db.products.delete_many({})
+    rev_res = await db.reviews.delete_many({})
+    ord_res = await db.orders.delete_many({})
+    vouch_res = await db.vouchers.delete_many({})
+    cart_res = await db.carts.delete_many({})
+    addr_res = await db.addresses.delete_many({})
+    notif_res = await db.notifications.delete_many({})
+    chat_res = await db.support_chats.delete_many({})
+
+    from core.cache import cache_invalidate_pattern
+    from services.meilisearch_service import clear_search_index
+    try:
+        await cache_invalidate_pattern("*")
+        clear_search_index()
+    except Exception:
+        pass
+
+    return {
+        "message": "Production data reset complete!",
+        "deleted": {
+            "customers": user_del_res.deleted_count,
+            "products": prod_res.deleted_count,
+            "reviews": rev_res.deleted_count,
+            "orders": ord_res.deleted_count,
+            "vouchers": vouch_res.deleted_count,
+            "carts": cart_res.deleted_count,
+            "addresses": addr_res.deleted_count,
+            "notifications": notif_res.deleted_count,
+            "chats": chat_res.deleted_count,
+        }
+    }

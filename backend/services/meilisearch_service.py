@@ -172,3 +172,14 @@ async def search_suggestions(query: str, limit: int = 6) -> List[Dict[str, Any]]
     cursor = db.products.find({"$or": [{"name": regex}, {"brand": regex}, {"tags": regex}]}).limit(limit)
     products = await cursor.to_list(limit)
     return [serialize_doc(p) for p in products]
+
+def clear_search_index() -> bool:
+    """Delete all documents in the Meilisearch index."""
+    if not is_meilisearch_available():
+        return False
+    try:
+        res = requests.delete(f"{MEILISEARCH_URL}/indexes/{INDEX_NAME}/documents", headers=HEADERS, timeout=3)
+        return res.status_code == 200
+    except Exception as err:
+        logger.warning("Failed to clear Meilisearch index: %s", err)
+        return False

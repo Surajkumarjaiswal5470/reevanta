@@ -122,6 +122,14 @@ async def get_current_user(request: Request) -> dict:
         user["id"] = str(user["_id"])
         user.pop("_id", None)
         user.pop("password_hash", None)
+
+        if user.get("is_blocked"):
+            reason = user.get("block_reason") or "Administrative policy enforcement"
+            raise HTTPException(
+                status_code=403,
+                detail=f"Account Suspended: Your account has been blocked by administration. Reason: {reason}"
+            )
+
         return user
     except HTTPException:
         raise

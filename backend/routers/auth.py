@@ -295,6 +295,9 @@ async def verify_otp(inp: VerifyOTPRequest, response: Response):
             user = doc
         else:
             user_id = str(user["_id"])
+            if user.get("is_blocked"):
+                reason = user.get("block_reason") or "Account suspended by administration"
+                raise HTTPException(status_code=403, detail=f"Account Suspended: {reason}")
             updates = {}
             inp_name = (inp.name or "").strip()
             if inp_name and user.get("name", "").startswith("User "):
@@ -380,12 +383,14 @@ async def login(inp: UserLogin, request: Request, response: Response):
         
     if not user or (inp.password and not verify_password(inp.password, user.get("password_hash", ""))):
         is_locked = rate_limiter.record_failed_login(client_ip)
+        msg = "Invalid phone/email or password"
         if is_locked:
-            raise HTTPException(
-                status_code=429,
-                detail="Too many failed login attempts. Account temporarily locked for 10 minutes."
-            )
-        raise HTTPException(status_code=400, detail="Invalid login credentials")
+            msg += ". Account locked for 10 minutes due to multiple failed attempts."
+        raise HTTPException(status_code=400, detail=msg)
+
+    if user.get("is_blocked"):
+        reason = user.get("block_reason") or "Account suspended by administration"
+        raise HTTPException(status_code=403, detail=f"Account Suspended: {reason}")
         
     rate_limiter.reset_failed_login(client_ip)
     user_id = str(user["_id"])

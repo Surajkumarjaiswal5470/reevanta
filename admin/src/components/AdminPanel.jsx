@@ -5,6 +5,7 @@ import { ImageUploader } from "./ImageUploader";
 import { AdminChatDesk } from "./AdminChatDesk";
 import { ReviewModerationPage } from "../pages/ReviewModerationPage";
 import { CategoriesPage } from "../pages/CategoriesPage";
+import { CustomersPage } from "../pages/CustomersPage";
 import { AdminQueueDashboard } from "./AdminQueueDashboard";
 import { AdminAuditConsole } from "./AdminAuditConsole";
 import {
@@ -32,7 +33,8 @@ import {
   Cpu,
   Lock,
   Menu,
-  Star
+  Star,
+  Users
 } from "lucide-react";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || (process.env.NODE_ENV === 'production' ? "https://reevanta-backend-pg3v.onrender.com" : "http://localhost:8001");
@@ -463,6 +465,7 @@ export const AdminPanel = () => {
             { id: "products", label: `Products (${products.length})`, icon: Package },
             { id: "vouchers", label: `Vouchers (${vouchers.length})`, icon: Tag },
             { id: "categories", label: `Categories (${dynamicCategories.length})`, icon: Layers },
+            { id: "customers", label: "Customers & Accounts", icon: Users },
             { id: "support", label: "Live Support Chat", icon: Headset },
             { id: "queues", label: "BullMQ Dashboard", icon: Cpu },
             { id: "reviews", label: "Reviews Moderation", icon: Star },
@@ -1520,6 +1523,13 @@ export const AdminPanel = () => {
       {activeTab === "categories" && (
         <div className="space-y-4">
           <CategoriesPage onCategoryChange={(cats) => setDynamicCategories(cats)} />
+        </div>
+      )}
+
+      {/* CUSTOMERS & ACCOUNTS TAB */}
+      {activeTab === "customers" && (
+        <div className="space-y-4">
+          <CustomersPage />
         </div>
       )}
 

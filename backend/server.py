@@ -34,7 +34,7 @@ from routers.personalization import router as personalization_router
 from routers.support import router as support_router
 from routers.admin import admin_router
 from routers.admin.cms import router as admin_cms_router
-from routers.admin.catalog import public_router as public_brands_router
+from routers.admin.catalog import public_brands_router
 from routers.admin.shipping import public_router as public_shipping_router
 from routers.upload import router as upload_router
 from routers.search import router as search_router

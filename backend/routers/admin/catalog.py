@@ -15,6 +15,7 @@ from models.catalog import (
 
 router = APIRouter(prefix="/catalog", tags=["Admin - Catalog"])
 public_brands_router = APIRouter(prefix="/brands", tags=["Brands"])
+public_router = public_brands_router
 
 
 # ──────────────────── Public Brand Endpoints ────────────────────

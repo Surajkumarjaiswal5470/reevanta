@@ -222,10 +222,10 @@ export function AdminChatDesk() {
   const isSelectedRoomTyping = selectedRoomId ? customerTyping[selectedRoomId] : false;
 
   return (
-    <div className="bg-white border border-[#E8DFC9] rounded-3xl overflow-hidden shadow-sm flex flex-col md:flex-row h-[620px]">
+    <div className="bg-white border border-[#E8DFC9] rounded-3xl overflow-hidden shadow-sm flex flex-col md:flex-row min-h-[520px] md:h-[620px]">
       
       {/* Left Sidebar: Active Rooms */}
-      <div className="w-full md:w-80 border-r border-[#E8DFC9] bg-[#FAF5EC]/40 flex flex-col justify-between">
+      <div className="w-full md:w-80 border-b md:border-b-0 md:border-r border-[#E8DFC9] bg-[#FAF5EC]/40 flex flex-col justify-between max-h-[200px] md:max-h-none shrink-0">
         <div>
           <div className="p-4 border-b border-[#E8DFC9] flex items-center justify-between">
             <h3 className="font-black text-sm text-[#2D2118] flex items-center gap-2">

@@ -75,24 +75,24 @@ export default function App() {
       <Toaster position="top-right" richColors />
 
       {/* Header Banner */}
-      <header className="bg-[#2D2118] text-[#F5EBDC] border-b border-[#B8956A]/30 px-6 py-4 sticky top-0 z-50 shadow-md">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+      <header className="bg-[#2D2118] text-[#F5EBDC] border-b border-[#B8956A]/30 px-3 sm:px-6 py-3 sm:py-4 sticky top-0 z-50 shadow-md">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#5C1E1E] to-[#B8956A] flex items-center justify-center text-white font-bold text-xl shadow">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-[#5C1E1E] to-[#B8956A] flex items-center justify-center text-white font-bold text-lg sm:text-xl shadow shrink-0">
               R
             </div>
             <div>
-              <h1 className="text-lg font-normal tracking-[0.35em] text-white rivaanta-mark">
+              <h1 className="text-base sm:text-lg font-normal tracking-[0.3em] sm:tracking-[0.35em] text-white rivaanta-mark">
                 RIVAANTA
               </h1>
-              <p className="text-[10px] text-[#B8956A] tracking-wider font-bold uppercase">
+              <p className="text-[9px] sm:text-[10px] text-[#B8956A] tracking-wider font-bold uppercase">
                 Admin Operations Portal
               </p>
             </div>
           </div>
 
           {currentUser && currentUser.role === "admin" && (
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3 sm:space-x-4">
               <span className="text-xs text-gray-300">
                 Logged in as <strong className="text-[#B8956A]">{currentUser.name || "spk"}</strong>
               </span>
@@ -109,7 +109,7 @@ export default function App() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
         {authLoading ? (
           <div className="text-center py-24 space-y-3">
             <div className="w-8 h-8 border-4 border-[#5C1E1E] border-t-transparent rounded-full animate-spin mx-auto" />

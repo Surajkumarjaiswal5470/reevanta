@@ -402,7 +402,7 @@ export const AdminPanel = () => {
   return (
     <div data-testid="admin-panel" className="space-y-6 animate-in fade-in duration-300">
       {/* Top Header Card */}
-      <div className="bg-gradient-to-r from-[#2D2118] via-[#3A2C21] to-[#1F1810] text-white p-6 sm:p-8 rounded-3xl shadow-xl relative overflow-hidden">
+      <div className="bg-gradient-to-r from-[#2D2118] via-[#3A2C21] to-[#1F1810] text-white p-4 sm:p-8 rounded-3xl shadow-xl relative overflow-hidden">
         <div className="absolute right-0 top-0 w-64 h-64 bg-[#B8956A]/10 rounded-full blur-3xl pointer-events-none" />
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative z-10">
           <div>
@@ -414,8 +414,8 @@ export const AdminPanel = () => {
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" /> System Live
               </span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-black tracking-tight mt-2 text-[#FAF5EC]">
-              RIVAANTA Store Manager
+            <h2 className="text-xl sm:text-3xl font-black tracking-tight mt-2 text-[#FAF5EC]">
+              Executive Operations Control
             </h2>
             <p className="text-xs text-gray-300 mt-1 max-w-lg">
               Manage inventory, monitor order fulfillment, toggle flash deals & track wholesale reseller margin earnings.
@@ -426,15 +426,16 @@ export const AdminPanel = () => {
             data-testid="admin-refresh-btn"
             onClick={loadData}
             disabled={loading}
-            className="flex items-center gap-2 bg-[#5C1E1E] hover:bg-[#4A1717] text-white px-5 py-2.5 rounded-2xl text-xs font-bold shadow-lg shadow-black/40 transition active:scale-95"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#5C1E1E] hover:bg-[#4A1717] text-white px-5 py-2.5 rounded-2xl text-xs font-bold shadow-lg shadow-black/40 transition active:scale-95"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
             <span>Refresh Workspace</span>
           </button>
         </div>
+      </div>
 
         {/* Tab Navigation Pill Bar */}
-        <div className="flex items-center space-x-2 mt-8 overflow-x-auto pb-1 scrollbar-none">
+        <div className="flex items-center space-x-2 mt-6 sm:mt-8 overflow-x-auto pb-2 scrollbar-none snap-x touch-pan-x">
           {[
             { id: "overview", label: "Overview & Analytics", icon: TrendingUp },
             { id: "orders", label: `Orders (${orders.length})`, icon: Truck },
@@ -452,7 +453,7 @@ export const AdminPanel = () => {
                 key={item.id}
                 data-testid={`admin-tab-${item.id}`}
                 onClick={() => setActiveTab(item.id)}
-                className={`flex items-center space-x-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition whitespace-nowrap ${
+                className={`flex items-center space-x-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl text-xs font-bold transition whitespace-nowrap shrink-0 ${
                   isActive
                     ? "bg-[#FAF5EC] text-[#2D2118] shadow-md font-black"
                     : "bg-white/10 text-gray-200 hover:bg-white/20 hover:text-white"
@@ -464,13 +465,12 @@ export const AdminPanel = () => {
             );
           })}
         </div>
-      </div>
 
       {/* OVERVIEW & ANALYTICS TAB */}
       {activeTab === "overview" && (
         <div className="space-y-6">
           {/* Key Metric Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <div className="bg-white p-5 rounded-3xl border border-[#E8DFC9] shadow-sm space-y-2 hover-lift">
               <div className="flex justify-between items-center text-[#8B7355]">
                 <span className="text-[10px] font-black uppercase tracking-wider">Total Sales Revenue</span>
@@ -1377,8 +1377,8 @@ export const AdminPanel = () => {
 
       {/* EDIT PRODUCT MODAL */}
       {editingProduct && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl relative space-y-4">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[92vh] overflow-y-auto p-4 sm:p-6 shadow-2xl relative space-y-4 my-auto">
             <div className="flex justify-between items-center border-b border-[#E8DFC9] pb-3">
               <h3 className="text-lg font-black text-[#2D2118]">Edit Product Details</h3>
               <button

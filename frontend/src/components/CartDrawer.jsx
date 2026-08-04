@@ -1,10 +1,16 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { X, Trash2, Plus, Minus, ArrowRight, CheckCircle2, ShieldCheck, MapPin, Ticket, Sparkles, ChevronDown, ChevronUp, Truck, User } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { apiFetch } from "../services/api";
 import { AddressPicker } from "./AddressPicker";
 import { toast } from "sonner";
+
+function formatCurrency(amount) {
+  const n = Number(amount);
+  if (!Number.isFinite(n)) return "₹0";
+  return `₹${n.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
+}
 
 export function CartDrawer({ onOrderPlaced }) {
   const { cart, removeFromCart, updateCartQty, saveForLater, savedForLater, moveSavedToCart, removeSavedForLater, clearCart, isCartOpen, setIsCartOpen, cartSubtotal } = useCart();
@@ -42,14 +48,73 @@ export function CartDrawer({ onOrderPlaced }) {
   const [showVoucherList, setShowVoucherList] = useState(false);
   const [applyingVoucher, setApplyingVoucher] = useState(false);
 
+  const drawerRef = useRef(null);
+  const isMountedRef = useRef(true);
+  const shippingSeqRef = useRef(0);
+  const autoApplyInFlightRef = useRef(false);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  // Close on Escape + lock body scroll while the drawer is open
+  useEffect(() => {
+    if (!isCartOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") setIsCartOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [isCartOpen, setIsCartOpen]);
+
+  // Trap Tab focus inside the drawer while open
+  useEffect(() => {
+    if (!isCartOpen) return;
+    const el = drawerRef.current;
+    if (!el) return;
+
+    const getFocusable = () =>
+      Array.from(
+        el.querySelectorAll(
+          'a[href], button:not([disabled]), textarea, input:not([disabled]), select, [tabindex]:not([tabindex="-1"])'
+        )
+      ).filter((n) => n.offsetParent !== null);
+
+    const onKeyDown = (e) => {
+      if (e.key !== "Tab") return;
+      const focusable = getFocusable();
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+
+    el.addEventListener("keydown", onKeyDown);
+    return () => el.removeEventListener("keydown", onKeyDown);
+  }, [isCartOpen, checkoutStep]);
+
   // Load Active Vouchers & Addresses
   useEffect(() => {
     if (isCartOpen) {
       apiFetch("/vouchers/active")
         .then((vouchers) => {
-          setActiveVouchers(vouchers || []);
+          if (isMountedRef.current) setActiveVouchers(vouchers || []);
         })
-        .catch(() => {});
+        .catch(() => { });
     }
   }, [isCartOpen]);
 
@@ -57,49 +122,67 @@ export function CartDrawer({ onOrderPlaced }) {
     if (currentUser) {
       apiFetch("/addresses")
         .then((addrs) => {
+          if (!isMountedRef.current) return;
           setAddresses(addrs || []);
-          const def = addrs.find((a) => a.isDefault) || addrs[0];
+          const def = (addrs || []).find((a) => a.isDefault) || (addrs || [])[0];
           if (def) setSelectedAddressId(def.id);
         })
-        .catch(() => {});
+        .catch(() => {
+          if (isMountedRef.current) toast.error("Couldn't load your saved addresses");
+        });
     }
   }, [currentUser]);
 
-  // Recalculate Shipping Estimate on City/Subtotal Change
+  // Recalculate Shipping Estimate on City/Subtotal Change.
+  // Guarded with a sequence number so a slow response for an earlier
+  // city/subtotal can't overwrite the result of a more recent request.
   useEffect(() => {
+    const seq = ++shippingSeqRef.current;
     const selectedAddr = addresses.find((a) => a.id === selectedAddressId) || guestAddress;
     const city = selectedAddr?.city || "Kathmandu";
     apiFetch("/shipping/estimate", {
       method: "POST",
       body: { city, cartSubtotal }
     })
-      .then(setShippingEstimate)
-      .catch(() => {});
+      .then((res) => {
+        if (seq === shippingSeqRef.current && isMountedRef.current) setShippingEstimate(res);
+      })
+      .catch(() => {
+        // keep the previous estimate on transient failure rather than clearing it
+      });
   }, [selectedAddressId, addresses, guestAddress.city, cartSubtotal]);
 
-  // Auto-apply eligible voucher
+  // Auto-apply eligible voucher. Guarded against overlapping calls (e.g. cart
+  // subtotal changing again before the previous auto-apply resolves) and
+  // against racing a manual apply the user just triggered.
   const evaluateAutoVoucher = useCallback(() => {
-    if (!appliedVoucher && activeVouchers.length > 0 && cartSubtotal > 0) {
-      const autoVoucher = activeVouchers.find(
-        (v) => v.autoApply && v.isActive && cartSubtotal >= (v.minOrderValue || 0)
-      );
-      if (autoVoucher) {
-        apiFetch("/vouchers/apply", {
-          method: "POST",
-          body: {
-            code: autoVoucher.code,
-            cartTotal: cartSubtotal,
-            customerEmail: currentUser?.email
-          }
-        })
-        .then((res) => {
-          setAppliedVoucher(res);
-          toast.success(`🎉 Auto-Applied Voucher '${res.code}'! Saved ₹${res.discountAmount}`);
-        })
-        .catch(() => {});
+    if (appliedVoucher || applyingVoucher || autoApplyInFlightRef.current) return;
+    if (activeVouchers.length === 0 || cartSubtotal <= 0) return;
+
+    const autoVoucher = activeVouchers.find(
+      (v) => v.autoApply && v.isActive && cartSubtotal >= (v.minOrderValue || 0)
+    );
+    if (!autoVoucher) return;
+
+    autoApplyInFlightRef.current = true;
+    apiFetch("/vouchers/apply", {
+      method: "POST",
+      body: {
+        code: autoVoucher.code,
+        cartTotal: cartSubtotal,
+        customerEmail: currentUser?.email
       }
-    }
-  }, [activeVouchers, cartSubtotal, appliedVoucher, currentUser]);
+    })
+      .then((res) => {
+        if (!isMountedRef.current) return;
+        setAppliedVoucher(res);
+        toast.success(`🎉 Auto-Applied Voucher '${res.code}'! Saved ${formatCurrency(res.discountAmount)}`);
+      })
+      .catch(() => { })
+      .finally(() => {
+        autoApplyInFlightRef.current = false;
+      });
+  }, [activeVouchers, cartSubtotal, appliedVoucher, applyingVoucher, currentUser]);
 
   useEffect(() => {
     evaluateAutoVoucher();
@@ -110,6 +193,7 @@ export function CartDrawer({ onOrderPlaced }) {
       toast.error("Please enter a voucher code");
       return;
     }
+    if (applyingVoucher) return;
     setApplyingVoucher(true);
     try {
       const res = await apiFetch("/vouchers/apply", {
@@ -120,14 +204,15 @@ export function CartDrawer({ onOrderPlaced }) {
           customerEmail: currentUser?.email
         }
       });
+      if (!isMountedRef.current) return;
       setAppliedVoucher(res);
       setVoucherCodeInput("");
       setShowVoucherList(false);
       toast.success(res.message || `Voucher '${res.code}' Applied!`);
     } catch (err) {
-      toast.error(err.message || "Invalid voucher code");
+      if (isMountedRef.current) toast.error(err.message || "Invalid voucher code");
     } finally {
-      setApplyingVoucher(false);
+      if (isMountedRef.current) setApplyingVoucher(false);
     }
   };
 
@@ -143,6 +228,8 @@ export function CartDrawer({ onOrderPlaced }) {
   const totalAmount = Math.max(0, cartSubtotal - discountAmount + shippingFee);
 
   const handlePlaceOrder = async () => {
+    if (placingOrder) return;
+
     let finalAddr = null;
     if (currentUser) {
       finalAddr = addresses.find((a) => a.id === selectedAddressId);
@@ -151,11 +238,12 @@ export function CartDrawer({ onOrderPlaced }) {
         return;
       }
     } else {
-      if (!guestAddress.fullName || !guestAddress.phone || !guestAddress.line1) {
+      const phoneDigits = guestAddress.phone.replace(/\D/g, "");
+      if (!guestAddress.fullName.trim() || phoneDigits.length < 7 || !guestAddress.line1.trim()) {
         toast.error("Please complete all guest delivery address fields");
         return;
       }
-      finalAddr = { ...guestAddress, label: "Guest Shipping Address" };
+      finalAddr = { ...guestAddress, phone: phoneDigits, label: "Guest Shipping Address" };
     }
 
     setPlacingOrder(true);
@@ -194,15 +282,26 @@ export function CartDrawer({ onOrderPlaced }) {
     } catch (err) {
       toast.error(err.message || "Failed to place order");
     } finally {
-      setPlacingOrder(false);
+      if (isMountedRef.current) setPlacingOrder(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+    <div
+      className="fixed inset-0 z-50 overflow-hidden bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) setIsCartOpen(false);
+      }}
+    >
       <div className="absolute inset-y-0 right-0 max-w-full flex pl-10">
-        <div className="w-screen max-w-md bg-white shadow-2xl flex flex-col justify-between border-l border-[#E8DFC9]">
-          
+        <div
+          ref={drawerRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label={checkoutStep === 1 ? "Shopping cart" : "Checkout details"}
+          className="w-screen max-w-md bg-white shadow-2xl flex flex-col justify-between border-l border-[#E8DFC9]"
+        >
+
           {/* Header */}
           <div className="p-6 bg-[#FAF5EC] border-b border-[#E8DFC9] flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -215,6 +314,7 @@ export function CartDrawer({ onOrderPlaced }) {
             </div>
             <button
               onClick={() => setIsCartOpen(false)}
+              aria-label="Close cart"
               className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-gray-500 hover:text-black shadow-sm transition"
             >
               <X className="w-4 h-4" />
@@ -239,7 +339,7 @@ export function CartDrawer({ onOrderPlaced }) {
                 <div className="space-y-4">
                   {cart.map((item, idx) => (
                     <div
-                      key={`${item.id}-${idx}`}
+                      key={item.cartItemId ?? `${item.id}-${item.selectedSize || "std"}-${item.selectedColor || "std"}-${idx}`}
                       className="flex gap-4 bg-[#FAF5EC]/50 p-3 rounded-2xl border border-[#E8DFC9]/60 relative group"
                     >
                       <img
@@ -254,20 +354,23 @@ export function CartDrawer({ onOrderPlaced }) {
                             {item.selectedSize && <span>Size: {item.selectedSize}</span>}
                             {item.selectedColor && <span>Color: {item.selectedColor}</span>}
                           </div>
-                          <div className="font-extrabold text-sm text-[#2D2118] mt-1">₹{item.price}</div>
+                          <div className="font-extrabold text-sm text-[#2D2118] mt-1">{formatCurrency(item.price)}</div>
                         </div>
 
                         <div className="flex items-center justify-between mt-2">
                           <div className="flex items-center border border-gray-300 rounded-lg bg-white">
                             <button
                               onClick={() => updateCartQty(idx, -1)}
-                              className="p-1 hover:bg-gray-100 text-gray-600"
+                              disabled={item.qty <= 1}
+                              aria-label={`Decrease quantity of ${item.name}`}
+                              className="p-1 hover:bg-gray-100 text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
                             >
                               <Minus className="w-3 h-3" />
                             </button>
                             <span className="px-2 text-xs font-bold">{item.qty}</span>
                             <button
                               onClick={() => updateCartQty(idx, 1)}
+                              aria-label={`Increase quantity of ${item.name}`}
                               className="p-1 hover:bg-gray-100 text-gray-600"
                             >
                               <Plus className="w-3 h-3" />
@@ -284,6 +387,7 @@ export function CartDrawer({ onOrderPlaced }) {
                             <button
                               onClick={() => removeFromCart(idx)}
                               className="text-red-500 hover:text-red-700 p-1"
+                              aria-label={`Remove ${item.name} from cart`}
                               title="Remove item"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -311,7 +415,7 @@ export function CartDrawer({ onOrderPlaced }) {
                             <img src={sItem.image} alt={sItem.name} className="w-10 h-12 object-cover rounded-lg" />
                             <div>
                               <div className="font-bold text-[#2D2118] line-clamp-1">{sItem.name}</div>
-                              <div className="font-extrabold text-[#5C1E1E]">₹{sItem.price}</div>
+                              <div className="font-extrabold text-[#5C1E1E]">{formatCurrency(sItem.price)}</div>
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
@@ -323,6 +427,7 @@ export function CartDrawer({ onOrderPlaced }) {
                             </button>
                             <button
                               onClick={() => removeSavedForLater(sIdx)}
+                              aria-label={`Remove ${sItem.name} from saved items`}
                               className="text-red-500 hover:text-red-700 p-1"
                             >
                               <X className="w-3.5 h-3.5" />
@@ -361,7 +466,7 @@ export function CartDrawer({ onOrderPlaced }) {
                             <span>Code: {appliedVoucher.code}</span>
                             <span className="bg-emerald-600 text-white text-[9px] px-1.5 py-0.5 rounded-full font-bold">APPLIED</span>
                           </div>
-                          <p className="text-[10px] text-emerald-700">Saved ₹{appliedVoucher.discountAmount} on your order!</p>
+                          <p className="text-[10px] text-emerald-700">Saved {formatCurrency(appliedVoucher.discountAmount)} on your order!</p>
                         </div>
                       </div>
                       <button
@@ -379,6 +484,12 @@ export function CartDrawer({ onOrderPlaced }) {
                         placeholder="ENTER VOUCHER CODE"
                         value={voucherCodeInput}
                         onChange={(e) => setVoucherCodeInput(e.target.value.toUpperCase())}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleApplyVoucherCode(voucherCodeInput);
+                          }
+                        }}
                         className="flex-1 bg-white border border-[#E8DFC9] rounded-xl px-3 py-2 text-xs font-bold tracking-wider text-[#2D2118] focus:outline-none focus:border-[#5C1E1E]"
                       />
                       <button
@@ -386,7 +497,7 @@ export function CartDrawer({ onOrderPlaced }) {
                         disabled={applyingVoucher || !voucherCodeInput.trim()}
                         className="bg-[#5C1E1E] hover:bg-[#4A1717] text-white px-4 py-2 rounded-xl text-xs font-bold shadow transition disabled:opacity-50"
                       >
-                        Apply
+                        {applyingVoucher ? "Applying..." : "Apply"}
                       </button>
                     </div>
                   )}
@@ -400,9 +511,8 @@ export function CartDrawer({ onOrderPlaced }) {
                         return (
                           <div
                             key={v.id}
-                            className={`p-2.5 rounded-xl border text-xs flex justify-between items-center transition ${
-                              isEligible ? "bg-white border-emerald-300" : "bg-gray-50 border-gray-200 text-gray-400"
-                            }`}
+                            className={`p-2.5 rounded-xl border text-xs flex justify-between items-center transition ${isEligible ? "bg-white border-emerald-300" : "bg-gray-50 border-gray-200 text-gray-400"
+                              }`}
                           >
                             <div>
                               <div className="font-black text-[#2D2118] flex items-center gap-1">
@@ -412,11 +522,10 @@ export function CartDrawer({ onOrderPlaced }) {
                               <p className="text-[10px] text-gray-600 line-clamp-1">{v.description}</p>
                             </div>
                             <button
-                              disabled={!isEligible}
+                              disabled={!isEligible || applyingVoucher}
                               onClick={() => handleApplyVoucherCode(v.code)}
-                              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition ${
-                                isEligible ? "bg-[#5C1E1E] text-white border-[#5C1E1E]" : "bg-gray-200 text-gray-400 border-gray-200"
-                              }`}
+                              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition ${isEligible ? "bg-[#5C1E1E] text-white border-[#5C1E1E]" : "bg-gray-200 text-gray-400 border-gray-200"
+                                }`}
                             >
                               Apply
                             </button>
@@ -467,7 +576,7 @@ export function CartDrawer({ onOrderPlaced }) {
                             required
                             placeholder="9715102007"
                             value={guestAddress.phone}
-                            onChange={(e) => setGuestAddress({ ...guestAddress, phone: e.target.value })}
+                            onChange={(e) => setGuestAddress({ ...guestAddress, phone: e.target.value.replace(/\D/g, "").slice(0, 10) })}
                             className="w-full bg-white border border-[#E8DFC9] rounded-xl p-2.5 font-semibold text-[#2D2118]"
                           />
                         </div>
@@ -501,6 +610,19 @@ export function CartDrawer({ onOrderPlaced }) {
                           className="w-full bg-white border border-[#E8DFC9] rounded-xl p-2.5 font-semibold text-[#2D2118]"
                         />
                       </div>
+
+                      <div>
+                        <label className="font-bold text-gray-600 block mb-0.5">Postal / Pin Code</label>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="44600"
+                          maxLength={6}
+                          value={guestAddress.pincode}
+                          onChange={(e) => setGuestAddress({ ...guestAddress, pincode: e.target.value.replace(/\D/g, "").slice(0, 6) })}
+                          className="w-full bg-white border border-[#E8DFC9] rounded-xl p-2.5 font-semibold text-[#2D2118]"
+                        />
+                      </div>
                     </div>
                   </div>
                 ) : (
@@ -513,7 +635,13 @@ export function CartDrawer({ onOrderPlaced }) {
                       selectedAddressId={selectedAddressId}
                       onSelectAddress={(addr) => setSelectedAddressId(addr.id)}
                       onRefreshAddresses={() => {
-                        apiFetch("/addresses").then(setAddresses).catch(() => {});
+                        apiFetch("/addresses")
+                          .then((addrs) => {
+                            if (isMountedRef.current) setAddresses(addrs || []);
+                          })
+                          .catch(() => {
+                            if (isMountedRef.current) toast.error("Couldn't refresh your addresses");
+                          });
                       }}
                       showAddressForm={showAddressForm}
                       setShowAddressForm={setShowAddressForm}
@@ -534,7 +662,7 @@ export function CartDrawer({ onOrderPlaced }) {
                       </div>
                     </div>
                     <span className="font-black text-[#5C1E1E]">
-                      {shippingEstimate.isFreeShipping ? "FREE" : `₹${shippingEstimate.shippingFee}`}
+                      {shippingEstimate.isFreeShipping ? "FREE" : formatCurrency(shippingEstimate.shippingFee)}
                     </span>
                   </div>
                 )}
@@ -581,27 +709,27 @@ export function CartDrawer({ onOrderPlaced }) {
               <div className="space-y-1.5 text-xs">
                 <div className="flex justify-between text-gray-600">
                   <span>Cart Subtotal</span>
-                  <span className="font-bold text-[#2D2118]">₹{cartSubtotal}</span>
+                  <span className="font-bold text-[#2D2118]">{formatCurrency(cartSubtotal)}</span>
                 </div>
-                
+
                 {appliedVoucher && (
                   <div className="flex justify-between text-emerald-700 font-bold">
                     <span>Voucher Discount ({appliedVoucher.code})</span>
-                    <span>-₹{discountAmount}</span>
+                    <span>-{formatCurrency(discountAmount)}</span>
                   </div>
                 )}
 
                 <div className="flex justify-between text-gray-600">
                   <span>Shipping Fee ({shippingEstimate?.method || "Standard"})</span>
                   <span className="font-bold text-emerald-700">
-                    {shippingEstimate?.isFreeShipping ? "FREE" : `₹${shippingFee}`}
+                    {shippingEstimate?.isFreeShipping ? "FREE" : formatCurrency(shippingFee)}
                   </span>
                 </div>
 
 
                 <div className="flex justify-between text-sm font-black text-[#2D2118] pt-2 border-t border-[#E8DFC9]">
                   <span>Total Payable Amount</span>
-                  <span>₹{totalAmount}</span>
+                  <span>{formatCurrency(totalAmount)}</span>
                 </div>
               </div>
 
@@ -624,7 +752,7 @@ export function CartDrawer({ onOrderPlaced }) {
                   <button
                     onClick={handlePlaceOrder}
                     disabled={placingOrder}
-                    className="flex-1 bg-[#5C1E1E] hover:bg-[#4A1717] text-white py-3.5 rounded-2xl text-xs font-bold shadow-lg transition flex items-center justify-center gap-2"
+                    className="flex-1 bg-[#5C1E1E] hover:bg-[#4A1717] text-white py-3.5 rounded-2xl text-xs font-bold shadow-lg transition flex items-center justify-center gap-2 disabled:opacity-60"
                   >
                     <ShieldCheck className="w-4 h-4" />
                     <span>{placingOrder ? "Placing Order..." : "Confirm & Place Order"}</span>

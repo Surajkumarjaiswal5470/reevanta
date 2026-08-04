@@ -28,7 +28,8 @@ import {
   ArrowUpRight,
   Headset,
   Cpu,
-  Lock
+  Lock,
+  Menu
 } from "lucide-react";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || (process.env.NODE_ENV === 'production' ? "https://reevanta-backend-pg3v.onrender.com" : "http://localhost:8001");
@@ -54,6 +55,7 @@ const emptyProduct = {
 
 export const AdminPanel = () => {
   const [activeTab, setActiveTab] = useState("overview"); // overview, orders, products, vouchers, add, reseller
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [orders, setOrders] = useState([]);
   const [products, setProducts] = useState([]);
   const [newProduct, setNewProduct] = useState(emptyProduct);
@@ -434,9 +436,9 @@ export const AdminPanel = () => {
         </div>
       </div>
 
-        {/* Tab Navigation Pill Bar */}
-        <div className="flex items-center space-x-2 mt-6 sm:mt-8 overflow-x-auto pb-2 scrollbar-none snap-x touch-pan-x">
-          {[
+        {/* Navigation Items List */}
+        {(() => {
+          const navItems = [
             { id: "overview", label: "Overview & Analytics", icon: TrendingUp },
             { id: "orders", label: `Orders (${orders.length})`, icon: Truck },
             { id: "products", label: `Products (${products.length})`, icon: Package },
@@ -445,26 +447,129 @@ export const AdminPanel = () => {
             { id: "queues", label: "BullMQ Dashboard", icon: Cpu },
             { id: "enterprise", label: "Enterprise Security", icon: Lock },
             { id: "add", label: "Add Product", icon: PlusCircle }
-          ].map((item) => {
-            const Icon = item.icon;
-            const isActive = activeTab === item.id;
-            return (
-              <button
-                key={item.id}
-                data-testid={`admin-tab-${item.id}`}
-                onClick={() => setActiveTab(item.id)}
-                className={`flex items-center space-x-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl text-xs font-bold transition whitespace-nowrap shrink-0 ${
-                  isActive
-                    ? "bg-[#FAF5EC] text-[#2D2118] shadow-md font-black"
-                    : "bg-white/10 text-gray-200 hover:bg-white/20 hover:text-white"
-                }`}
-              >
-                <Icon className={`w-4 h-4 ${isActive ? "text-[#5C1E1E]" : "text-gray-300"}`} />
-                <span>{item.label}</span>
-              </button>
-            );
-          })}
-        </div>
+          ];
+
+          const currentNav = navItems.find((n) => n.id === activeTab) || navItems[0];
+          const CurrentIcon = currentNav.icon;
+
+          return (
+            <>
+              {/* Mobile Navigation Header & Hamburger Trigger */}
+              <div className="flex md:hidden items-center justify-between bg-white border border-[#E8DFC9] p-3 rounded-2xl shadow-sm mt-4">
+                <div className="flex items-center space-x-2 min-w-0 flex-1 pr-2">
+                  <span className="text-[10px] font-black uppercase text-[#8B7355] tracking-wider shrink-0">View:</span>
+                  <span className="text-xs font-black text-[#5C1E1E] bg-[#FAF5EC] px-2.5 py-1 rounded-xl border border-[#E8DFC9] flex items-center gap-1.5 truncate">
+                    <CurrentIcon className="w-3.5 h-3.5 shrink-0 text-[#5C1E1E]" />
+                    <span className="truncate">{currentNav.label}</span>
+                  </span>
+                </div>
+                <button
+                  data-testid="admin-mobile-hamburger-btn"
+                  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                  className="flex items-center gap-1.5 bg-[#5C1E1E] hover:bg-[#4A1717] text-white px-3.5 py-2 rounded-xl text-xs font-bold shadow active:scale-95 transition shrink-0"
+                  aria-label="Toggle Admin Navigation Menu"
+                >
+                  {isMobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+                  <span>Menu</span>
+                </button>
+              </div>
+
+              {/* Mobile Hamburger Drawer Overlay & Sidebar */}
+              {isMobileMenuOpen && (
+                <div
+                  className="fixed inset-0 z-50 bg-black/65 backdrop-blur-sm flex justify-start md:hidden animate-in fade-in duration-200"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <div
+                    className="w-4/5 max-w-xs bg-[#FAF5EC] h-full shadow-2xl p-5 flex flex-col justify-between border-r border-[#E8DFC9] animate-in slide-in-from-left duration-300"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between border-b border-[#E8DFC9] pb-4 mb-4">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#5C1E1E] to-[#B8956A] text-white flex items-center justify-center font-bold text-base shadow">
+                            R
+                          </div>
+                          <div>
+                            <h3 className="text-sm font-black text-[#2D2118]">Admin Navigation</h3>
+                            <p className="text-[10px] text-[#8B7355]">Operations Control Center</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className="w-8 h-8 rounded-full bg-white border border-[#E8DFC9] flex items-center justify-center text-[#2D2118] hover:bg-[#5C1E1E] hover:text-white transition"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      <div className="space-y-1.5 overflow-y-auto max-h-[calc(100vh-170px)] pr-1">
+                        {navItems.map((item) => {
+                          const Icon = item.icon;
+                          const isActive = activeTab === item.id;
+                          return (
+                            <button
+                              key={item.id}
+                              data-testid={`admin-drawer-tab-${item.id}`}
+                              onClick={() => {
+                                setActiveTab(item.id);
+                                setIsMobileMenuOpen(false);
+                              }}
+                              className={`w-full flex items-center space-x-3 px-3.5 py-3 rounded-2xl text-xs font-bold transition text-left ${
+                                isActive
+                                  ? "bg-[#5C1E1E] text-white shadow-md font-black"
+                                  : "bg-white text-[#2D2118] hover:bg-[#FAF5EC] border border-[#E8DFC9]"
+                              }`}
+                            >
+                              <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-amber-300" : "text-[#5C1E1E]"}`} />
+                              <span className="flex-1 truncate">{item.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="pt-4 border-t border-[#E8DFC9]">
+                      <button
+                        onClick={() => {
+                          loadData();
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className="w-full py-2.5 bg-white border border-[#E8DFC9] rounded-xl text-xs font-bold text-[#5C1E1E] flex items-center justify-center gap-2 hover:bg-[#FAF5EC] transition active:scale-95"
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+                        <span>Refresh All Workspace Data</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Desktop Tab Navigation Pill Bar */}
+              <div className="hidden md:flex items-center space-x-2 mt-6 sm:mt-8 overflow-x-auto pb-2 scrollbar-none snap-x touch-pan-x">
+                {navItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = activeTab === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      data-testid={`admin-tab-${item.id}`}
+                      onClick={() => setActiveTab(item.id)}
+                      className={`flex items-center space-x-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl text-xs font-bold transition whitespace-nowrap shrink-0 ${
+                        isActive
+                          ? "bg-[#FAF5EC] text-[#2D2118] shadow-md font-black"
+                          : "bg-white/10 text-gray-200 hover:bg-white/20 hover:text-white"
+                      }`}
+                    >
+                      <Icon className={`w-4 h-4 ${isActive ? "text-[#5C1E1E]" : "text-gray-300"}`} />
+                      <span>{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          );
+        })()}
 
       {/* OVERVIEW & ANALYTICS TAB */}
       {activeTab === "overview" && (

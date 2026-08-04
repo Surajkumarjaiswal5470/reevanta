@@ -1,15 +1,55 @@
-import React, { useRef } from "react";
+import React, { useRef, useMemo } from "react";
 import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import { COSMETICS_SUB_CATEGORIES } from "../mock";
 
-export const CosmeticsSubCategorySlider = React.memo(function CosmeticsSubCategorySlider({ onSelectSubCategory, activeSubCategory }) {
+export const CosmeticsSubCategorySlider = React.memo(function CosmeticsSubCategorySlider({
+  onSelectSubCategory,
+  activeSubCategory,
+  products = []
+}) {
   const scrollRef = useRef(null);
 
   const scroll = (dir) => {
     if (!scrollRef.current) return;
-    const amount = 220;
+    const amount = 240;
     scrollRef.current.scrollBy({ left: dir === "left" ? -amount : amount, behavior: "smooth" });
   };
+
+  // Compute dynamic product count for each subcategory
+  const subCategoryCounts = useMemo(() => {
+    const counts = {};
+    COSMETICS_SUB_CATEGORIES.forEach((sub) => {
+      if (!products || products.length === 0) {
+        counts[sub.id] = 0;
+        return;
+      }
+      const tag = sub.tag.toLowerCase();
+      const subId = sub.id.toLowerCase();
+
+      const cnt = products.filter((p) => {
+        const pCat = (p.category || "").toLowerCase();
+        const pName = (p.name || "").toLowerCase();
+        const pDesc = (p.description || "").toLowerCase();
+        const pTags = Array.isArray(p.tags) ? p.tags.map((t) => t.toLowerCase()) : [];
+        const pSpecs = p.categorySpecs || {};
+
+        return (
+          pCat.includes(tag) ||
+          pCat.includes(subId) ||
+          pTags.some((t) => t.includes(tag) || tag.includes(t)) ||
+          pName.includes(tag) ||
+          pDesc.includes(tag) ||
+          (pSpecs.product_form || "").toLowerCase().includes(tag) ||
+          (pSpecs.jewelry_type || "").toLowerCase().includes(tag) ||
+          (pSpecs.bag_type || "").toLowerCase().includes(tag) ||
+          (pSpecs.shoe_type || "").toLowerCase().includes(tag)
+        );
+      }).length;
+
+      counts[sub.id] = cnt;
+    });
+    return counts;
+  }, [products]);
 
   return (
     <section className="space-y-3.5 my-4">
@@ -17,10 +57,10 @@ export const CosmeticsSubCategorySlider = React.memo(function CosmeticsSubCatego
       <div className="flex justify-between items-end">
         <div>
           <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-[#5C1E1E] flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-amber-600" /> Curated Beauty Collections
+            <Sparkles className="w-3.5 h-3.5 text-amber-600" /> Curated Beauty & Lifestyle Collections
           </span>
           <h2 className="text-xl sm:text-2xl font-black text-[#2D2118]">
-            Explore by Cosmetics Category
+            Explore Categories
           </h2>
         </div>
       </div>
@@ -44,6 +84,7 @@ export const CosmeticsSubCategorySlider = React.memo(function CosmeticsSubCatego
         >
           {COSMETICS_SUB_CATEGORIES.map((sub) => {
             const isSelected = activeSubCategory === sub.tag;
+            const count = subCategoryCounts[sub.id] ?? 0;
             return (
               <button
                 key={sub.id}
@@ -60,19 +101,20 @@ export const CosmeticsSubCategorySlider = React.memo(function CosmeticsSubCatego
                     src={sub.image}
                     alt={sub.name}
                     className="w-full h-full object-cover group-hover/card:scale-110 transition-transform duration-300"
+                    loading="lazy"
                   />
                   <span className="absolute top-0.5 right-0.5 text-[10px]">
                     {sub.icon}
                   </span>
                 </div>
 
-                {/* Sub-category Name & Item Count */}
+                {/* Sub-category Name & Dynamic Item Count */}
                 <div>
                   <h3 className={`text-xs font-extrabold leading-snug ${isSelected ? "text-amber-200" : "text-[#2D2118]"}`}>
                     {sub.name}
                   </h3>
                   <span className={`text-[10px] font-bold ${isSelected ? "text-gray-300" : "text-[#8B7355]"}`}>
-                    {sub.itemCount}
+                    {count} {count === 1 ? "Product" : "Products"}
                   </span>
                 </div>
               </button>

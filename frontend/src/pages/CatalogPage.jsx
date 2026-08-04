@@ -259,6 +259,7 @@ export function CatalogPage({ products, selectedCategory, onCategorySelect, onQu
         {(filters.category === "cosmetics" || filters.category === "beauty" || filters.category === "all") && (
           <div className="pt-3 border-t border-[#E8DFC9]/60">
             <CosmeticsSubCategorySlider
+              products={products}
               activeSubCategory={filters.subCategory}
               onSelectSubCategory={(tag) => {
                 updateFilter("subCategory", filters.subCategory === tag ? "all" : tag);

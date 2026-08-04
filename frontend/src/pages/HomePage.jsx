@@ -95,6 +95,7 @@ export function HomePage({ products, onCategorySelect, onQuickView, onNavigate }
 
       {/* ── Middle Cosmetics Sub-Category Slider ── */}
       <CosmeticsSubCategorySlider
+        products={products}
         activeSubCategory={activeSubCategory}
         onSelectSubCategory={(tag) => {
           setActiveSubCategory((prev) => (prev === tag ? "all" : tag));

@@ -47,3 +47,15 @@ def to_object_id(id_str: str) -> ObjectId:
         return ObjectId(id_str)
     except Exception:
         raise HTTPException(status_code=404, detail="Not found")
+
+def build_id_query(id_str: str) -> dict:
+    """Build a flexible MongoDB query matching by _id (as ObjectId or str) or id field."""
+    if not id_str:
+        return {"_id": None}
+    clauses = [{"_id": id_str}, {"id": id_str}]
+    try:
+        if isinstance(id_str, str) and ObjectId.is_valid(id_str):
+            clauses.append({"_id": ObjectId(id_str)})
+    except Exception:
+        pass
+    return {"$or": clauses}

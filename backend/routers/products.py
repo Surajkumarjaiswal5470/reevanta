@@ -117,7 +117,8 @@ async def get_product(product_id: str):
     cached = await cache_get(cache_key)
     if cached is not None:
         return cached
-    product = await db.products.find_one({"_id": to_object_id(product_id)})
+    from core.database import build_id_query
+    product = await db.products.find_one(build_id_query(product_id))
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
     res = serialize_doc(product)

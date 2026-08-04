@@ -13,6 +13,7 @@ import { ReturnsPage } from "../pages/ReturnsPage";
 import { ShippingManagerPage } from "../pages/ShippingManagerPage";
 import { ContentCMSPage } from "../pages/ContentCMSPage";
 import { NotificationCenterPage } from "../pages/NotificationCenterPage";
+import { SecurityManagerPage } from "../pages/SecurityManagerPage";
 import { AdminQueueDashboard } from "./AdminQueueDashboard";
 import { AdminAuditConsole } from "./AdminAuditConsole";
 import {
@@ -1432,10 +1433,10 @@ export const AdminPanel = () => {
         </div>
       )}
 
-      {/* ENTERPRISE SECURITY & AUDIT TAB */}
+      {/* ENTERPRISE SECURITY & AUDIT SUITE TAB */}
       {activeTab === "enterprise" && (
         <div className="space-y-4">
-          <AdminAuditConsole />
+          <SecurityManagerPage />
         </div>
       )}
 

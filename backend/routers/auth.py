@@ -22,7 +22,7 @@ from models.auth import (
     UserRegister, UserLogin, AdminSecretLoginRequest, SendOTPRequest,
     VerifyOTPRequest, SendEmailOTPRequest
 )
-from core.config import ADMIN_NAME, ADMIN_SECRET_KEY, ADMIN_EMAIL
+from core.config import ADMIN_NAME, ADMIN_SECRET_KEY, ADMIN_EMAIL, ADMIN_GATEWAY_KEY
 from services.email_service import send_email_brevo
 from services.sms_service import send_twilio_sms_fire_and_forget, send_twilio_sms
 from services.nepalotp_service import send_nepalotp_sms, verify_nepalotp_sms
@@ -54,15 +54,83 @@ def _generate_otp() -> str:
 
 # ─── Admin Secret Login ──────────────────────────────────────────────────────
 @router.post("/admin-secret-login")
-async def admin_secret_login(inp: AdminSecretLoginRequest, response: Response):
+async def admin_secret_login(inp: AdminSecretLoginRequest, request: Request, response: Response):
+    client_ip = request.headers.get("x-forwarded-for", "").split(",")[0].strip() or request.client.host or "127.0.0.1"
+    user_agent = request.headers.get("user-agent", "Unknown")
+    now_utc = datetime.now(timezone.utc)
+
+    # 1. IP Rate Limiter Check (Max 3 failed attempts in 5 minutes -> 15 min lockout)
+    cutoff_5m = now_utc - timedelta(minutes=5)
+    recent_failed_count = await db.admin_failed_logins.count_documents({
+        "ip_address": client_ip,
+        "timestamp": {"$gte": cutoff_5m}
+    })
+
+    if recent_failed_count >= 3:
+        # Check last failed timestamp for lockout duration
+        last_failed = await db.admin_failed_logins.find_one({"ip_address": client_ip}, sort=[("timestamp", -1)])
+        if last_failed and (now_utc - last_failed.get("timestamp", now_utc)).total_seconds() < 900: # 15 mins = 900s
+            # Record blocked attempt
+            await db.admin_login_logs.insert_one({
+                "email": inp.name or "unknown",
+                "ip_address": client_ip,
+                "user_agent": user_agent,
+                "status": "BLOCKED_IP",
+                "reason": "15-Minute IP Lockout active (Exceeded 3 failed attempts)",
+                "timestamp": now_utc.isoformat()
+            })
+            raise HTTPException(
+                status_code=429,
+                detail="Too many failed admin login attempts from your IP. Access locked for 15 minutes."
+            )
+
     name_clean = (inp.name or "").strip().lower()
     key_clean = (inp.secretKey or "").strip()
+    gateway_clean = (inp.gatewayKey or "").strip()
 
-    if name_clean != ADMIN_NAME.lower() or key_clean != ADMIN_SECRET_KEY:
+    # 2. Verify Secret Gateway Key (if provided or enforced)
+    if gateway_clean and gateway_clean != ADMIN_GATEWAY_KEY:
+        await db.admin_failed_logins.insert_one({"ip_address": client_ip, "timestamp": now_utc})
+        await db.admin_login_logs.insert_one({
+            "email": name_clean,
+            "ip_address": client_ip,
+            "user_agent": user_agent,
+            "status": "FAILED_GATEWAY_KEY",
+            "reason": "Invalid Secret Gateway Passcode Key",
+            "timestamp": now_utc.isoformat()
+        })
         raise HTTPException(
             status_code=401,
-            detail="Invalid Admin Name or Secret Key. Name must be 'spk' and Secret Key must be 'PHOENIX'."
+            detail="Invalid Secret Gateway Access Key. Access Denied."
         )
+
+    # 3. Verify Admin Name & Secret Key
+    if name_clean != ADMIN_NAME.lower() or key_clean != ADMIN_SECRET_KEY:
+        await db.admin_failed_logins.insert_one({"ip_address": client_ip, "timestamp": now_utc})
+        await db.admin_login_logs.insert_one({
+            "email": name_clean,
+            "ip_address": client_ip,
+            "user_agent": user_agent,
+            "status": "FAILED_CREDENTIALS",
+            "reason": "Invalid Admin Name or Secret Key",
+            "timestamp": now_utc.isoformat()
+        })
+        remaining_tries = max(0, 3 - (recent_failed_count + 1))
+        raise HTTPException(
+            status_code=401,
+            detail=f"Invalid Admin Credentials. {remaining_tries} attempt(s) remaining before 15-minute IP lockout."
+        )
+
+    # 4. Success: Clear failed attempts for this IP & log success
+    await db.admin_failed_logins.delete_many({"ip_address": client_ip})
+    await db.admin_login_logs.insert_one({
+        "email": ADMIN_EMAIL,
+        "ip_address": client_ip,
+        "user_agent": user_agent,
+        "status": "SUCCESS",
+        "reason": "Valid Gateway Key & Secret Credentials",
+        "timestamp": now_utc.isoformat()
+    })
 
     admin_user = await db.users.find_one({"role": "admin"})
     if not admin_user:
@@ -90,7 +158,7 @@ async def admin_secret_login(inp: AdminSecretLoginRequest, response: Response):
         "email": admin_email,
         "role": "admin",
         "token": access_token,
-        "message": "Admin authenticated successfully with Secret Key!"
+        "message": "Admin authenticated successfully with Gateway Key & Secret Credentials!"
     }
 
 

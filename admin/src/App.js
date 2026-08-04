@@ -27,6 +27,10 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(true);
   const [adminName, setAdminName] = useState("spk");
   const [secretKey, setSecretKey] = useState("");
+  const [gatewayKey, setGatewayKey] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("gateway") || params.get("key") || "vault-spk-9981";
+  });
   const [showPassword, setShowPassword] = useState(false);
   const [loggingIn, setLoggingIn] = useState(false);
   const [authError, setAuthError] = useState("");
@@ -104,7 +108,8 @@ export default function App() {
     try {
       const res = await axios.post(`${API}/auth/admin-secret-login`, {
         name: adminName.trim(),
-        secretKey: secretKey.trim()
+        secretKey: secretKey.trim(),
+        gatewayKey: gatewayKey.trim()
       });
 
       if (res.data.token) {
@@ -217,6 +222,25 @@ export default function App() {
                     value={adminName}
                     onChange={(e) => setAdminName(e.target.value)}
                     className="w-full bg-transparent p-3 text-xs font-bold text-[#2D2118] focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-[#8B7355] uppercase tracking-wider block mb-1">
+                  Secret Gateway Access Key
+                </label>
+                <div className="flex items-center bg-[#FAF5EC] border border-[#E8DFC9] rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-[#5C1E1E]">
+                  <span className="px-3 text-xs font-bold text-[#8B7355] bg-[#E8DFC9]/40 py-3 border-r border-[#E8DFC9]">
+                    <ShieldCheck className="w-4 h-4 text-[#5C1E1E]" />
+                  </span>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. vault-spk-9981"
+                    value={gatewayKey}
+                    onChange={(e) => setGatewayKey(e.target.value)}
+                    className="w-full bg-transparent p-3 text-xs font-bold font-mono text-[#2D2118] focus:outline-none"
                   />
                 </div>
               </div>

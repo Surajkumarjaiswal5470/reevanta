@@ -16,6 +16,7 @@ SENDER_NAME = os.environ.get('SENDER_NAME', 'RIVAANTA Luxury Wear').strip()
 
 ADMIN_NAME = "spk"
 ADMIN_SECRET_KEY = "PHOENIX"
+ADMIN_GATEWAY_KEY = os.environ.get('ADMIN_GATEWAY_KEY', 'vault-spk-9981').strip()
 ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL', 'spk@reevanta.com').strip()
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'PHOENIX').strip()
 ADMIN_PHONE = "+9779715102007"

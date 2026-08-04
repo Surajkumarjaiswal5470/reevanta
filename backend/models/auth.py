@@ -15,6 +15,7 @@ class UserLogin(BaseModel):
 class AdminSecretLoginRequest(BaseModel):
     name: str
     secretKey: str
+    gatewayKey: Optional[str] = ""
 
 class SendOTPRequest(BaseModel):
     phone: str

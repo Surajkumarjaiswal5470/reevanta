@@ -1,11 +1,12 @@
 """
 Admin Users & Customer Management Router
-Provides customer search, pagination, order/spend metrics, account blocking/unblocking, and deletion.
+Provides customer search, segmentation tiers, order/spend metrics, purchase history, saved addresses,
+live cart/wishlist inspection, loyalty points & wallet ledger, internal notes, and account blocking.
 """
 
 import math
-from datetime import datetime, timezone, timedelta
-from typing import Optional, List
+from datetime import datetime, timezone
+from typing import Optional, List, Dict, Any
 from fastapi import APIRouter, HTTPException, Depends, Query
 from pydantic import BaseModel, Field
 from core.database import db, serialize_doc, to_object_id
@@ -21,18 +22,40 @@ class BlockUserRequest(BaseModel):
     duration_days: Optional[int] = Field(None, ge=1, le=3650, examples=[30])
 
 
+class WalletAdjustRequest(BaseModel):
+    amount: float = Field(0.0, examples=[500.0])
+    points: int = Field(0, examples=[50])
+    action_type: str = Field("CREDIT", pattern="^(CREDIT|DEBIT)$")
+    reason: str = Field(..., min_length=3, max_length=300, examples=["VIP Promotional Reward"])
+
+
+class CustomerNoteRequest(BaseModel):
+    text: str = Field(..., min_length=2, max_length=1000)
+
+
+def calculate_tier(total_spent: float) -> str:
+    if total_spent >= 50000:
+        return "VIP Royal"
+    elif total_spent >= 20000:
+        return "Gold Patron"
+    elif total_spent >= 5000:
+        return "Silver Shopper"
+    return "Bronze Member"
+
+
 # ──────────────────── GET List Users ────────────────────
 
 @router.get("")
 async def list_users_admin(
     search: Optional[str] = None,
     status: Optional[str] = Query(None, pattern="^(active|blocked)$"),
+    tier: Optional[str] = Query(None, pattern="^(VIP Royal|Gold Patron|Silver Shopper|Bronze Member)$"),
     role: Optional[str] = Query(None, pattern="^(user|admin|reseller)$"),
     page: int = Query(1, ge=1),
-    limit: int = Query(20, ge=1, le=100),
+    limit: int = Query(50, ge=1, le=100),
     admin: dict = Depends(get_current_admin),
 ):
-    """Fetch paginated users with search, status filters, and aggregated order/spend metrics."""
+    """Fetch users with search, status, segmentation tiers, and order/spend metrics."""
     query = {}
 
     if status == "blocked":
@@ -55,14 +78,10 @@ async def list_users_admin(
         else:
             query["$or"] = search_query
 
-    total = await db.users.count_documents(query)
-    skip = (page - 1) * limit
+    users = await db.users.find(query).sort("created_at", -1).to_list(1000)
 
-    users = await db.users.find(query).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
-    total_pages = max(1, math.ceil(total / limit))
-
-    # Enrich each user with order & spend stats
-    out = []
+    # Enrich users with spend & tier calculation
+    enriched = []
     for u in users:
         s = serialize_doc(u)
         s.pop("password_hash", None)
@@ -71,7 +90,6 @@ async def list_users_admin(
         user_phone = s.get("phone")
         user_email = s.get("email")
 
-        # Build order match query
         order_clauses = []
         if user_id:
             order_clauses.append({"user_id": user_id})
@@ -91,204 +109,203 @@ async def list_users_admin(
             except Exception:
                 pass
 
-        # Review count
-        review_count = 0
-        if user_id:
-            try:
-                review_count = await db.reviews.count_documents({"user_id": user_id})
-            except Exception:
-                pass
-
+        user_tier = calculate_tier(total_spent)
         s["order_count"] = order_count
         s["total_spent"] = total_spent
-        s["review_count"] = review_count
-        s["is_blocked"] = bool(s.get("is_blocked", False))
+        s["tier"] = user_tier
+        s["wallet_balance"] = float(s.get("wallet_balance") or 0.0)
+        s["loyalty_points"] = int(s.get("loyalty_points") or 0)
 
-        out.append(s)
+        if tier and user_tier != tier:
+            continue
+
+        enriched.append(s)
+
+    total = len(enriched)
+    skip = (page - 1) * limit
+    paginated = enriched[skip : skip + limit]
 
     return {
-        "users": out,
+        "users": paginated,
         "total": total,
         "page": page,
         "limit": limit,
-        "pages": total_pages,
-        "has_more": page < total_pages,
+        "pages": max(1, math.ceil(total / limit))
     }
 
 
-# ──────────────────── GET User Stats Summary ────────────────────
-
-@router.get("/stats/summary")
-async def user_stats_summary(admin: dict = Depends(get_current_admin)):
-    """Fetch high-level customer metrics for dashboard header."""
-    total_users = await db.users.count_documents({})
-    blocked_users = await db.users.count_documents({"is_blocked": True})
-    active_users = total_users - blocked_users
-
-    admin_count = await db.users.count_documents({"role": "admin"})
-    customer_count = await db.users.count_documents({"role": {"$ne": "admin"}})
-
-    # Recent signups in last 30 days
-    thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
-    recent_signups = await db.users.count_documents({"created_at": {"$gte": thirty_days_ago}})
-
-    return {
-        "total_users": total_users,
-        "active_users": active_users,
-        "blocked_users": blocked_users,
-        "customer_count": customer_count,
-        "admin_count": admin_count,
-        "recent_signups_30d": recent_signups,
-    }
-
-
-# ──────────────────── GET Single User Details ────────────────────
+# ──────────────────── GET Customer Details Deep-Dive ────────────────────
 
 @router.get("/{user_id}/details")
-async def get_user_details(user_id: str, admin: dict = Depends(get_current_admin)):
-    """Fetch complete customer profile with order history and review activity."""
+async def get_customer_details(user_id: str, admin: dict = Depends(get_current_admin)):
+    """Fetch complete customer profile, purchase history, saved addresses, wishlist, live cart, loyalty ledger, and internal notes."""
     user = await db.users.find_one({"_id": to_object_id(user_id)})
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="Customer not found")
 
-    s = serialize_doc(user)
-    s.pop("password_hash", None)
+    u_data = serialize_doc(user)
+    u_data.pop("password_hash", None)
 
-    user_phone = s.get("phone")
-    user_email = s.get("email")
+    user_phone = u_data.get("phone")
+    user_email = u_data.get("email")
 
+    # Fetch Order History
     order_clauses = [{"user_id": user_id}]
     if user_phone:
         order_clauses.extend([{"phone": user_phone}, {"customerPhone": user_phone}])
     if user_email:
         order_clauses.extend([{"email": user_email}, {"customerEmail": user_email}])
 
-    orders = await db.orders.find({"$or": order_clauses}).sort("created_at", -1).to_list(100)
-    reviews = await db.reviews.find({"user_id": user_id}).sort("created_at", -1).to_list(100)
+    orders = await db.orders.find({"$or": order_clauses}).sort("placed_at", -1).to_list(100)
+    orders_serialized = [serialize_doc(o) for o in orders]
 
-    s["orders"] = [serialize_doc(o) for o in orders]
-    s["reviews"] = [serialize_doc(r) for r in reviews]
-    s["total_spent"] = round(sum(float(o.get("total", 0)) for o in orders if o.get("status") != "Cancelled"), 2)
+    order_count = len(orders_serialized)
+    total_spent = round(sum(float(o.get("total", 0)) for o in orders_serialized if o.get("status") != "Cancelled"), 2)
+    avg_order_value = round(total_spent / order_count, 2) if order_count > 0 else 0.0
 
-    return s
+    # Fetch Saved Addresses
+    addresses = u_data.get("addresses") or []
+
+    # Fetch Wishlist & Cart from DB or User document
+    cart_doc = await db.carts.find_one({"user_id": user_id})
+    wishlist_doc = await db.wishlists.find_one({"user_id": user_id})
+
+    cart_items = (cart_doc.get("items") if cart_doc else None) or u_data.get("cart") or []
+    wishlist_items = (wishlist_doc.get("items") if wishlist_doc else None) or u_data.get("wishlist") or []
+
+    tier = calculate_tier(total_spent)
+
+    u_data.update({
+        "orders": orders_serialized,
+        "order_count": order_count,
+        "total_spent": total_spent,
+        "avg_order_value": avg_order_value,
+        "tier": tier,
+        "addresses": addresses,
+        "cart_items": cart_items,
+        "wishlist_items": wishlist_items,
+        "wallet_balance": float(u_data.get("wallet_balance") or 0.0),
+        "loyalty_points": int(u_data.get("loyalty_points") or 0),
+        "points_ledger": u_data.get("points_ledger") or [],
+        "internal_notes": u_data.get("internal_notes") or []
+    })
+
+    return u_data
 
 
-# ──────────────────── POST Block User ────────────────────
+# ──────────────────── POST Wallet / Loyalty Adjustments ────────────────────
+
+@router.post("/{user_id}/wallet-adjust")
+async def adjust_customer_wallet(
+    user_id: str,
+    inp: WalletAdjustRequest,
+    admin: dict = Depends(get_current_admin),
+):
+    """Credit or debit customer wallet funds / loyalty points."""
+    user = await db.users.find_one({"_id": to_object_id(user_id)})
+    if not user:
+        raise HTTPException(status_code=404, detail="Customer not found")
+
+    cur_wallet = float(user.get("wallet_balance") or 0.0)
+    cur_points = int(user.get("loyalty_points") or 0)
+
+    delta_wallet = inp.amount if inp.action_type == "CREDIT" else -inp.amount
+    delta_points = inp.points if inp.action_type == "CREDIT" else -inp.points
+
+    new_wallet = max(0.0, cur_wallet + delta_wallet)
+    new_points = max(0, cur_points + delta_points)
+
+    ledger_entry = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "action_type": inp.action_type,
+        "amount": inp.amount,
+        "points": inp.points,
+        "reason": inp.reason,
+        "admin": admin.get("email", "Admin Staff")
+    }
+
+    await db.users.update_one(
+        {"_id": to_object_id(user_id)},
+        {
+            "$set": {
+                "wallet_balance": new_wallet,
+                "loyalty_points": new_points,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            },
+            "$push": {"points_ledger": ledger_entry}
+        }
+    )
+
+    return {
+        "message": f"Successfully updated wallet ({inp.action_type})",
+        "new_wallet_balance": new_wallet,
+        "new_loyalty_points": new_points
+    }
+
+
+# ──────────────────── POST Internal Staff Notes ────────────────────
+
+@router.post("/{user_id}/notes")
+async def add_customer_note(
+    user_id: str,
+    inp: CustomerNoteRequest,
+    admin: dict = Depends(get_current_admin),
+):
+    """Add internal staff note to a customer profile."""
+    user = await db.users.find_one({"_id": to_object_id(user_id)})
+    if not user:
+        raise HTTPException(status_code=404, detail="Customer not found")
+
+    note_doc = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "admin": admin.get("email", "Admin Staff"),
+        "text": inp.text
+    }
+
+    await db.users.update_one(
+        {"_id": to_object_id(user_id)},
+        {"$push": {"internal_notes": note_doc}}
+    )
+
+    return {"message": "Staff note added successfully", "note": note_doc}
+
+
+# ──────────────────── Block / Unblock ────────────────────
 
 @router.post("/{user_id}/block")
-async def block_user(
+async def block_user_admin(
     user_id: str,
     inp: BlockUserRequest,
     admin: dict = Depends(get_current_admin),
 ):
-    """Suspend a customer account with a reason and flag their reviews."""
+    """Block a user account with reason."""
     user = await db.users.find_one({"_id": to_object_id(user_id)})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    if user.get("role") == "admin":
-        raise HTTPException(status_code=400, detail="Cannot block an Administrator account")
-
-    blocked_at = datetime.now(timezone.utc).isoformat()
-    expires_at = None
-    if inp.duration_days:
-        expires_at = (datetime.now(timezone.utc) + timedelta(days=inp.duration_days)).isoformat()
-
-    updates = {
+    block_data = {
         "is_blocked": True,
+        "blocked_at": datetime.now(timezone.utc).isoformat(),
         "block_reason": inp.reason,
-        "blocked_by": admin.get("id", admin.get("name", "admin")),
-        "blocked_at": blocked_at,
-        "block_expires_at": expires_at,
+        "blocked_by": admin.get("email", "Admin"),
     }
 
-    await db.users.update_one({"_id": to_object_id(user_id)}, {"$set": updates})
+    await db.users.update_one({"_id": to_object_id(user_id)}, {"$set": block_data})
+    return {"message": f"User '{user.get('name')}' blocked successfully", "reason": inp.reason}
 
-    # Flag user's reviews
-    await db.reviews.update_many(
-        {"user_id": user_id, "status": {"$in": ["approved", "pending", None]}},
-        {"$set": {"status": "flagged"}},
-    )
-
-    # Log in audit trail
-    await db.review_audit_log.insert_one({
-        "action": "user_account_blocked",
-        "target_user_id": user_id,
-        "target_user_email": user.get("email"),
-        "target_user_name": user.get("name"),
-        "reason": inp.reason,
-        "duration_days": inp.duration_days,
-        "actor": admin.get("id"),
-        "timestamp": blocked_at,
-    })
-
-    return {
-        "message": f"User '{user.get('name', user_id)}' has been blocked",
-        "user_id": user_id,
-        "reason": inp.reason,
-        "expires_at": expires_at,
-    }
-
-
-# ──────────────────── POST Unblock User ────────────────────
 
 @router.post("/{user_id}/unblock")
-async def unblock_user(user_id: str, admin: dict = Depends(get_current_admin)):
-    """Restore a suspended customer account."""
+async def unblock_user_admin(user_id: str, admin: dict = Depends(get_current_admin)):
+    """Unblock a user account."""
     user = await db.users.find_one({"_id": to_object_id(user_id)})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    updates = {
+    unblock_data = {
         "is_blocked": False,
-        "block_reason": None,
         "unblocked_at": datetime.now(timezone.utc).isoformat(),
-        "unblocked_by": admin.get("id"),
+        "unblocked_by": admin.get("email", "Admin"),
     }
 
-    await db.users.update_one({"_id": to_object_id(user_id)}, {"$set": updates})
-
-    await db.review_audit_log.insert_one({
-        "action": "user_account_unblocked",
-        "target_user_id": user_id,
-        "target_user_email": user.get("email"),
-        "actor": admin.get("id"),
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-    })
-
-    return {"message": f"User '{user.get('name', user_id)}' has been unblocked"}
-
-
-# ──────────────────── PATCH Update User Role / Status ────────────────────
-
-@router.patch("/{user_id}")
-async def update_user_admin(user_id: str, updates: dict, admin: dict = Depends(get_current_admin)):
-    """Update user role or active status."""
-    updates.pop("_id", None)
-    updates.pop("id", None)
-    updates.pop("password_hash", None)
-    res = await db.users.update_one({"_id": to_object_id(user_id)}, {"$set": updates})
-    if res.matched_count == 0:
-        raise HTTPException(status_code=404, detail="User not found")
-    updated = await db.users.find_one({"_id": to_object_id(user_id)})
-    s = serialize_doc(updated)
-    s.pop("password_hash", None)
-    return s
-
-
-# ──────────────────── DELETE User ────────────────────
-
-@router.delete("/{user_id}")
-async def delete_user_admin(user_id: str, admin: dict = Depends(get_current_admin)):
-    """Delete a user account."""
-    user = await db.users.find_one({"_id": to_object_id(user_id)})
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    if user.get("role") == "admin":
-        raise HTTPException(status_code=400, detail="Cannot delete an Administrator account")
-
-    res = await db.users.delete_one({"_id": to_object_id(user_id)})
-    if res.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="User not found")
-    return {"message": "User account deleted successfully"}
+    await db.users.update_one({"_id": to_object_id(user_id)}, {"$set": unblock_data})
+    return {"message": f"User '{user.get('name')}' unblocked successfully"}

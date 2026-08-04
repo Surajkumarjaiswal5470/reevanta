@@ -2,10 +2,10 @@ import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { toast } from "sonner";
 import {
-  Users, ShieldCheck, ShieldAlert, Ban, CheckCircle2, Search,
-  RefreshCw, Trash2, Eye, UserX, UserCheck, ShoppingBag, Star,
-  Calendar, Phone, Mail, AlertTriangle, X, ChevronLeft, ChevronRight,
-  DollarSign, FileText, ArrowUpRight
+  Users, Search, ShieldAlert, ShieldCheck, ShoppingBag, DollarSign,
+  Crown, Star, Award, Mail, Phone, MapPin, Calendar, Clock, Lock, Unlock,
+  Plus, Check, X, RefreshCw, ChevronRight, Wallet, Heart, ShoppingCart,
+  FileText, MessageSquare, ArrowUpRight, AlertCircle, Sparkles
 } from "lucide-react";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || (process.env.NODE_ENV === 'production' ? "https://reevanta-backend-pg3v.onrender.com" : "http://localhost:8001");
@@ -13,616 +13,570 @@ const API = `${BACKEND_URL}/api`;
 
 axios.defaults.withCredentials = true;
 
+const TIER_BADGES = {
+  "VIP Royal": { label: "👑 VIP Royal", bg: "bg-amber-100 text-amber-900 border-amber-300" },
+  "Gold Patron": { label: "🥇 Gold Patron", bg: "bg-yellow-100 text-yellow-900 border-yellow-300" },
+  "Silver Shopper": { label: "🥈 Silver Shopper", bg: "bg-slate-100 text-slate-900 border-slate-300" },
+  "Bronze Member": { label: "🥉 Bronze Member", bg: "bg-orange-100 text-orange-900 border-orange-200" }
+};
+
 export function CustomersPage() {
-  // Stats
-  const [stats, setStats] = useState(null);
-  const [statsLoading, setStatsLoading] = useState(true);
-
-  // Customers list
   const [users, setUsers] = useState([]);
-  const [total, setTotal] = useState(0);
-  const [pages, setPages] = useState(1);
   const [loading, setLoading] = useState(true);
-
-  // Filters
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchInput, setSearchInput] = useState("");
-  const [statusFilter, setStatusFilter] = useState(""); // "" | "active" | "blocked"
-  const [roleFilter, setRoleFilter] = useState(""); // "" | "user" | "admin"
-  const [page, setPage] = useState(1);
-  const LIMIT = 15;
+  const [tierFilter, setTierFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+
+  // Customer Profile Drawer & Details
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [customerDetails, setCustomerDetails] = useState(null);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [drawerTab, setDrawerTab] = useState("profile"); // "profile" | "orders" | "assets" | "wallet" | "notes"
 
   // Modals
-  const [blockModalUser, setBlockModalUser] = useState(null);
+  const [showBlockModal, setShowBlockModal] = useState(false);
   const [blockReason, setBlockReason] = useState("");
-  const [blockDays, setBlockDays] = useState("");
-  const [blockSubmitting, setBlockSubmitting] = useState(false);
+  const [showWalletModal, setShowWalletModal] = useState(false);
+  const [walletForm, setWalletForm] = useState({ amount: 500, points: 50, action_type: "CREDIT", reason: "VIP Promotional Bonus" });
+  const [newNoteText, setNewNoteText] = useState("");
 
-  const [detailsModalUser, setDetailsModalUser] = useState(null);
-  const [detailsData, setDetailsData] = useState(null);
-  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  // ── Fetch Summary Stats ──
-  const fetchStats = useCallback(async () => {
-    setStatsLoading(true);
-    try {
-      const res = await axios.get(`${API}/admin/users/stats/summary`);
-      setStats(res.data);
-    } catch {
-      // ignore
-    } finally {
-      setStatsLoading(false);
-    }
-  }, []);
-
-  // ── Fetch Users ──
+  // ── Fetch Customers List ──
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams();
-      params.append("page", page);
-      params.append("limit", LIMIT);
-      if (searchQuery) params.append("search", searchQuery);
-      if (statusFilter) params.append("status", statusFilter);
-      if (roleFilter) params.append("role", roleFilter);
+      let url = `${API}/admin/users?limit=100`;
+      if (searchQuery) url += `&search=${encodeURIComponent(searchQuery)}`;
+      if (statusFilter !== "all") url += `&status=${statusFilter}`;
+      if (tierFilter !== "all") url += `&tier=${encodeURIComponent(tierFilter)}`;
 
-      const res = await axios.get(`${API}/admin/users?${params.toString()}`);
+      const res = await axios.get(url);
       setUsers(res.data.users || []);
-      setTotal(res.data.total || 0);
-      setPages(res.data.pages || 1);
     } catch {
-      toast.error("Failed to load customer accounts");
+      toast.error("Failed to load customers");
     } finally {
       setLoading(false);
     }
-  }, [page, searchQuery, statusFilter, roleFilter]);
+  }, [searchQuery, statusFilter, tierFilter]);
 
   useEffect(() => {
-    fetchStats();
     fetchUsers();
-  }, [fetchStats, fetchUsers]);
+  }, [fetchUsers]);
 
-  useEffect(() => {
-    setPage(1);
-  }, [searchQuery, statusFilter, roleFilter]);
-
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    setSearchQuery(searchInput.trim());
-  };
-
-  // ── Block Customer ──
-  const handleBlockCustomer = async (e) => {
-    e.preventDefault();
-    if (!blockReason.trim() || !blockModalUser) {
-      toast.error("Please enter a reason for suspending this account");
-      return;
-    }
-
-    setBlockSubmitting(true);
-    try {
-      const userId = blockModalUser.id || blockModalUser._id;
-      const res = await axios.post(`${API}/admin/users/${userId}/block`, {
-        reason: blockReason.trim(),
-        duration_days: blockDays ? parseInt(blockDays) : null,
-      });
-      toast.success(res.data.message || "Customer account blocked");
-      setBlockModalUser(null);
-      setBlockReason("");
-      setBlockDays("");
-      fetchUsers();
-      fetchStats();
-    } catch (err) {
-      const msg = err.response?.data?.detail || "Failed to block user";
-      toast.error(msg);
-    } finally {
-      setBlockSubmitting(false);
-    }
-  };
-
-  // ── Unblock Customer ──
-  const handleUnblockCustomer = async (user) => {
-    const userId = user.id || user._id;
-    if (!window.confirm(`Unblock account for customer "${user.name || user.email || userId}"?`)) return;
-
-    try {
-      const res = await axios.post(`${API}/admin/users/${userId}/unblock`);
-      toast.success(res.data.message || "Customer account unblocked! ✨");
-      fetchUsers();
-      fetchStats();
-    } catch {
-      toast.error("Failed to unblock customer");
-    }
-  };
-
-  // ── Delete Customer ──
-  const handleDeleteCustomer = async (user) => {
-    const userId = user.id || user._id;
-    if (!window.confirm(`Permanently delete account for "${user.name || user.email || userId}"? This action cannot be undone.`)) return;
-
-    try {
-      await axios.delete(`${API}/admin/users/${userId}`);
-      toast.success("Customer account deleted permanently");
-      fetchUsers();
-      fetchStats();
-    } catch (err) {
-      const msg = err.response?.data?.detail || "Failed to delete user account";
-      toast.error(msg);
-    }
-  };
-
-  // ── View Customer Details ──
-  const openCustomerDetails = async (user) => {
-    const userId = user.id || user._id;
-    setDetailsModalUser(user);
+  // Fetch Full Customer Details Deep-Dive
+  const openCustomerProfile = async (user) => {
+    setSelectedUser(user);
+    setDrawerTab("profile");
     setDetailsLoading(true);
     try {
-      const res = await axios.get(`${API}/admin/users/${userId}/details`);
-      setDetailsData(res.data);
+      const uId = user.id || user._id;
+      const res = await axios.get(`${API}/admin/users/${uId}/details`);
+      setCustomerDetails(res.data);
     } catch {
-      toast.error("Failed to load customer profile details");
+      toast.error("Failed to fetch customer deep-dive details");
     } finally {
       setDetailsLoading(false);
     }
   };
 
+  // Adjust Wallet Funds or Points
+  const handleAdjustWallet = async (e) => {
+    e.preventDefault();
+    if (!selectedUser) return;
+    setSubmitting(true);
+    try {
+      const uId = selectedUser.id || selectedUser._id;
+      await axios.post(`${API}/admin/users/${uId}/wallet-adjust`, walletForm);
+      toast.success(`Wallet / Points successfully ${walletForm.action_type.toLowerCase()}ed! ✨`);
+      setShowWalletModal(false);
+      openCustomerProfile(selectedUser);
+      fetchUsers();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Failed to adjust wallet");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Add Internal Staff Note
+  const handleAddNote = async (e) => {
+    e.preventDefault();
+    if (!selectedUser || !newNoteText.trim()) return;
+    setSubmitting(true);
+    try {
+      const uId = selectedUser.id || selectedUser._id;
+      await axios.post(`${API}/admin/users/${uId}/notes`, { text: newNoteText });
+      toast.success("Staff note added!");
+      setNewNoteText("");
+      openCustomerProfile(selectedUser);
+    } catch {
+      toast.error("Failed to add staff note");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Block User
+  const handleBlockUser = async (e) => {
+    e.preventDefault();
+    if (!selectedUser || !blockReason.trim()) return;
+    setSubmitting(true);
+    try {
+      const uId = selectedUser.id || selectedUser._id;
+      await axios.post(`${API}/admin/users/${uId}/block`, { reason: blockReason });
+      toast.success(`Account blocked successfully`);
+      setShowBlockModal(false);
+      setBlockReason("");
+      openCustomerProfile(selectedUser);
+      fetchUsers();
+    } catch {
+      toast.error("Failed to block user");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Unblock User
+  const handleUnblockUser = async () => {
+    if (!selectedUser) return;
+    setSubmitting(true);
+    try {
+      const uId = selectedUser.id || selectedUser._id;
+      await axios.post(`${API}/admin/users/${uId}/unblock`);
+      toast.success(`Account unblocked successfully! ✨`);
+      openCustomerProfile(selectedUser);
+      fetchUsers();
+    } catch {
+      toast.error("Failed to unblock user");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const totalVIPs = users.filter(u => u.tier === "VIP Royal").length;
+  const totalBlocked = users.filter(u => u.is_blocked).length;
+
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
 
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-[#2D2118] via-[#3A2C21] to-[#1F1810] text-white p-5 sm:p-8 rounded-3xl shadow-xl relative overflow-hidden">
+      <div className="bg-gradient-to-r from-[#2D2118] via-[#3A2C21] to-[#1F1810] text-[#FAF5EC] p-5 sm:p-8 rounded-3xl shadow-xl relative overflow-hidden">
         <div className="absolute right-0 top-0 w-64 h-64 bg-[#B8956A]/10 rounded-full blur-3xl pointer-events-none" />
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative z-10">
           <div>
             <div className="flex items-center gap-2">
               <span className="bg-[#B8956A] text-[#2D2118] text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full tracking-widest">
-                Customer Operations
+                Customer CRM
               </span>
-              {stats && stats.blocked_users > 0 && (
-                <span className="bg-red-500/20 text-red-300 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                  <Ban className="w-3 h-3 text-red-400" /> {stats.blocked_users} Suspended
-                </span>
-              )}
+              <span className="bg-amber-500/20 text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                👑 {totalVIPs} VIP Royals · 🚫 {totalBlocked} Blocked
+              </span>
             </div>
             <h2 className="text-xl sm:text-2xl font-black mt-2 text-[#FAF5EC]">
-              Active Customers & Account Control
+              Customer Management & Loyalty CRM
             </h2>
             <p className="text-xs text-gray-300 mt-1 max-w-lg">
-              Manage registered buyer profiles, audit lifetime purchase metrics, monitor active accounts, and enforce account suspensions.
+              Monitor customer profiles, purchase history, saved addresses, live carts, wishlist items, loyalty rewards, wallet balances, staff notes, and account suspension.
             </p>
           </div>
 
-          <button
-            onClick={() => { fetchUsers(); fetchStats(); }}
-            disabled={loading}
-            className="flex items-center gap-1.5 bg-[#5C1E1E] hover:bg-[#4A1717] text-white px-4 py-2 rounded-2xl text-xs font-bold shadow-lg transition active:scale-95 shrink-0"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> Refresh
+          <button onClick={fetchUsers} disabled={loading} className="p-2.5 bg-white/10 hover:bg-white/20 text-white rounded-2xl transition">
+            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
           </button>
         </div>
-      </div>
 
-      {/* Summary Metrics Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-white p-4 sm:p-5 rounded-3xl border border-[#E8DFC9] shadow-sm flex items-center justify-between">
-          <div>
-            <span className="text-[10px] font-black uppercase text-[#8B7355] tracking-wider block">Total Customers</span>
-            <span className="text-2xl font-black text-[#2D2118]">{stats?.customer_count ?? total}</span>
-          </div>
-          <div className="w-10 h-10 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold">
-            <Users className="w-5 h-5" />
-          </div>
-        </div>
-
-        <div className="bg-white p-4 sm:p-5 rounded-3xl border border-[#E8DFC9] shadow-sm flex items-center justify-between">
-          <div>
-            <span className="text-[10px] font-black uppercase text-[#8B7355] tracking-wider block">Active Accounts</span>
-            <span className="text-2xl font-black text-emerald-700">{stats?.active_users ?? "—"}</span>
-          </div>
-          <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
-            <UserCheck className="w-5 h-5" />
-          </div>
-        </div>
-
-        <div className="bg-white p-4 sm:p-5 rounded-3xl border border-[#E8DFC9] shadow-sm flex items-center justify-between">
-          <div>
-            <span className="text-[10px] font-black uppercase text-[#8B7355] tracking-wider block">Suspended / Blocked</span>
-            <span className="text-2xl font-black text-red-600">{stats?.blocked_users ?? 0}</span>
-          </div>
-          <div className="w-10 h-10 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center font-bold">
-            <UserX className="w-5 h-5" />
-          </div>
-        </div>
-
-        <div className="bg-white p-4 sm:p-5 rounded-3xl border border-[#E8DFC9] shadow-sm flex items-center justify-between">
-          <div>
-            <span className="text-[10px] font-black uppercase text-[#8B7355] tracking-wider block">New Signups (30d)</span>
-            <span className="text-2xl font-black text-[#5C1E1E]">{stats?.recent_signups_30d ?? "—"}</span>
-          </div>
-          <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold">
-            <Calendar className="w-5 h-5" />
-          </div>
-        </div>
-      </div>
-
-      {/* Filter & Search Controls */}
-      <div className="bg-white p-4 rounded-2xl border border-[#E8DFC9] shadow-sm space-y-3">
-        <form onSubmit={handleSearchSubmit} className="flex gap-2">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search customers by name, email, or phone number..."
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              className="w-full bg-[#FAF5EC] border border-[#E8DFC9] rounded-xl pl-9 pr-4 py-2 text-xs font-semibold text-[#2D2118] focus:outline-none focus:border-[#5C1E1E]"
-            />
-          </div>
-          <button type="submit" className="bg-[#5C1E1E] text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-[#4A1717] transition">
-            Search
-          </button>
-          {searchQuery && (
+        {/* Tier Filters */}
+        <div className="flex gap-2 mt-5 relative z-10 overflow-x-auto scrollbar-none">
+          {[
+            { id: "all", label: `All (${users.length})` },
+            { id: "VIP Royal", label: "👑 VIP Royal" },
+            { id: "Gold Patron", label: "🥇 Gold Patron" },
+            { id: "Silver Shopper", label: "🥈 Silver Shopper" },
+            { id: "Bronze Member", label: "🥉 Bronze Member" },
+          ].map((t) => (
             <button
-              type="button"
-              onClick={() => { setSearchQuery(""); setSearchInput(""); }}
-              className="bg-gray-100 text-gray-600 px-3 py-2 rounded-xl text-xs font-bold hover:bg-gray-200 transition"
+              key={t.id}
+              onClick={() => setTierFilter(t.id)}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition shrink-0 ${
+                tierFilter === t.id
+                  ? "bg-[#FAF5EC] text-[#2D2118] font-black shadow-md"
+                  : "bg-white/10 text-gray-200 hover:bg-white/20"
+              }`}
             >
-              Clear
+              {t.label}
             </button>
-          )}
-        </form>
-
-        {/* Filter Pills */}
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#E8DFC9] pt-3">
-          <div className="flex flex-wrap items-center gap-2">
-            {[
-              { value: "", label: `All Accounts (${total})` },
-              { value: "active", label: "Active Only" },
-              { value: "blocked", label: "Suspended / Blocked" },
-            ].map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => setStatusFilter(opt.value)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
-                  statusFilter === opt.value
-                    ? "bg-[#5C1E1E] text-white shadow-md"
-                    : "bg-[#FAF5EC] text-[#2D2118] border border-[#E8DFC9] hover:bg-gray-100"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <select
-              value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
-              className="bg-[#FAF5EC] border border-[#E8DFC9] rounded-xl px-3 py-1.5 text-xs font-bold text-[#2D2118] focus:outline-none focus:border-[#5C1E1E]"
-            >
-              <option value="">All Roles</option>
-              <option value="user">Customers</option>
-              <option value="admin">Administrators</option>
-            </select>
-          </div>
+          ))}
         </div>
       </div>
 
-      {/* Customer List Feed */}
+      {/* Search & Status Filter Controls */}
+      <div className="bg-white p-4 rounded-2xl border border-[#E8DFC9] shadow-sm flex flex-col sm:flex-row justify-between items-center gap-3">
+        <div className="flex-1 relative w-full">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search customers by name, email, or phone..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-[#FAF5EC] border border-[#E8DFC9] rounded-xl pl-9 pr-4 py-2 text-xs font-semibold text-[#2D2118] focus:outline-none focus:border-[#5C1E1E]"
+          />
+        </div>
+
+        <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+          <button
+            onClick={() => setStatusFilter("all")}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold ${statusFilter === "all" ? "bg-[#5C1E1E] text-white" : "bg-[#FAF5EC] text-[#2D2118]"}`}
+          >
+            All Accounts
+          </button>
+          <button
+            onClick={() => setStatusFilter("blocked")}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold ${statusFilter === "blocked" ? "bg-red-600 text-white" : "bg-red-50 text-red-700"}`}
+          >
+            Blocked Only ({totalBlocked})
+          </button>
+        </div>
+      </div>
+
+      {/* Customer Directory Table */}
       {loading ? (
         <div className="text-center py-16">
           <div className="w-8 h-8 border-4 border-[#5C1E1E] border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-xs font-bold text-[#8B7355] mt-3">Fetching customer directory...</p>
         </div>
       ) : users.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-3xl border border-[#E8DFC9] space-y-3 p-6">
+        <div className="text-center py-16 bg-white rounded-3xl border border-[#E8DFC9] p-6 space-y-2">
           <Users className="w-10 h-10 text-gray-300 mx-auto" />
-          <h4 className="font-bold text-[#2D2118]">No customer accounts match your criteria</h4>
-          <p className="text-xs text-gray-500 max-w-sm mx-auto">
-            Try resetting your search query or status filter.
-          </p>
+          <p className="font-bold text-[#2D2118]">No customers match current filters</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {users.map((u) => {
-            const userId = u.id || u._id;
-            const isBlocked = u.is_blocked;
-            const initials = (u.name || u.email || "C").split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+        <div className="bg-white rounded-3xl border border-[#E8DFC9] shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-[#FAF5EC] text-[#8B7355] uppercase tracking-wider font-extrabold border-b border-[#E8DFC9]">
+                <tr>
+                  <th className="p-4">Customer</th>
+                  <th className="p-4">Segmentation Tier</th>
+                  <th className="p-4">Total Spent</th>
+                  <th className="p-4">Orders</th>
+                  <th className="p-4">Status</th>
+                  <th className="p-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#E8DFC9]">
+                {users.map((user) => {
+                  const uId = user.id || user._id;
+                  const tierData = TIER_BADGES[user.tier] || TIER_BADGES["Bronze Member"];
 
-            return (
-              <div
-                key={userId}
-                className={`bg-white rounded-2xl p-4 sm:p-5 border shadow-sm transition space-y-3 ${
-                  isBlocked ? "border-red-300 bg-red-50/20" : "border-[#E8DFC9] hover:border-gray-300"
-                }`}
-              >
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                  
-                  {/* Left: User Avatar & Info */}
-                  <div className="flex items-start sm:items-center gap-3 min-w-0">
-                    <div className={`w-11 h-11 rounded-2xl text-white font-black text-xs flex items-center justify-center shadow shrink-0 ${
-                      isBlocked ? "bg-red-600" : u.role === "admin" ? "bg-[#2D2118]" : "bg-[#5C1E1E]"
-                    }`}>
-                      {initials}
-                    </div>
+                  return (
+                    <tr key={uId} className="hover:bg-[#FAF5EC]/40 transition">
+                      <td className="p-4 font-bold text-[#2D2118]">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-[#5C1E1E] text-white flex items-center justify-center font-black uppercase shrink-0">
+                            {(user.name || user.email || "C")[0]}
+                          </div>
+                          <div>
+                            <p className="font-black text-sm text-[#2D2118]">{user.name || "Guest Customer"}</p>
+                            <p className="text-[11px] text-gray-400 font-mono">{user.email || user.phone || "No contact"}</p>
+                          </div>
+                        </div>
+                      </td>
 
-                    <div className="min-w-0 space-y-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-extrabold text-sm text-[#2D2118] truncate">
-                          {u.name || "Unnamed Customer"}
+                      <td className="p-4">
+                        <span className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-full border ${tierData.bg}`}>
+                          {tierData.label}
                         </span>
-                        {u.role === "admin" && (
-                          <span className="bg-[#2D2118] text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-full">
-                            Admin
-                          </span>
-                        )}
-                        {isBlocked ? (
-                          <span className="bg-red-100 border border-red-300 text-red-800 text-[10px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                            <Ban className="w-3 h-3 text-red-600" /> BLOCKED
+                      </td>
+
+                      <td className="p-4 font-black text-sm text-[#5C1E1E]">
+                        ₹{user.total_spent?.toLocaleString() || 0}
+                      </td>
+
+                      <td className="p-4 font-bold text-[#2D2118]">
+                        {user.order_count || 0} orders
+                      </td>
+
+                      <td className="p-4">
+                        {user.is_blocked ? (
+                          <span className="bg-red-100 text-red-800 text-[10px] font-black uppercase px-2 py-0.5 rounded-full border border-red-300">
+                            Blocked
                           </span>
                         ) : (
-                          <span className="bg-emerald-100 border border-emerald-300 text-emerald-800 text-[10px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-600" /> ACTIVE
+                          <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase px-2 py-0.5 rounded-full border border-emerald-300">
+                            Active
                           </span>
                         )}
-                      </div>
+                      </td>
 
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#8B7355]">
-                        {u.email && (
-                          <span className="flex items-center gap-1">
-                            <Mail className="w-3 h-3 text-gray-400" /> {u.email}
-                          </span>
-                        )}
-                        {u.phone && (
-                          <span className="flex items-center gap-1">
-                            <Phone className="w-3 h-3 text-gray-400" /> {u.phone}
-                          </span>
-                        )}
-                        <span className="text-gray-400">
-                          Joined: {u.created_at ? new Date(u.created_at).toLocaleDateString() : "Recently"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Middle: Metrics Badges */}
-                  <div className="flex items-center gap-3 shrink-0 bg-[#FAF5EC] px-3.5 py-2 rounded-xl border border-[#E8DFC9]">
-                    <div className="text-center">
-                      <span className="text-[9px] font-black uppercase text-gray-400 block">Orders</span>
-                      <span className="text-xs font-black text-[#2D2118]">{u.order_count ?? 0}</span>
-                    </div>
-                    <div className="w-px h-6 bg-[#E8DFC9]" />
-                    <div className="text-center">
-                      <span className="text-[9px] font-black uppercase text-gray-400 block">Lifetime Spend</span>
-                      <span className="text-xs font-black text-emerald-700">₹{u.total_spent ?? 0}</span>
-                    </div>
-                    <div className="w-px h-6 bg-[#E8DFC9]" />
-                    <div className="text-center">
-                      <span className="text-[9px] font-black uppercase text-gray-400 block">Reviews</span>
-                      <span className="text-xs font-black text-amber-700">{u.review_count ?? 0}</span>
-                    </div>
-                  </div>
-
-                  {/* Right: Actions */}
-                  <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto justify-end">
-                    <button
-                      onClick={() => openCustomerDetails(u)}
-                      className="px-3 py-1.5 bg-white border border-[#E8DFC9] hover:bg-gray-50 text-[#2D2118] rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-sm"
-                    >
-                      <Eye className="w-3.5 h-3.5 text-[#5C1E1E]" /> Details
-                    </button>
-
-                    {isBlocked ? (
-                      <button
-                        onClick={() => handleUnblockCustomer(u)}
-                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1 shadow"
-                      >
-                        <UserCheck className="w-3.5 h-3.5" /> Unblock
-                      </button>
-                    ) : u.role !== "admin" ? (
-                      <button
-                        onClick={() => { setBlockModalUser(u); setBlockReason(""); setBlockDays(""); }}
-                        className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1 shadow"
-                      >
-                        <UserX className="w-3.5 h-3.5" /> Block
-                      </button>
-                    ) : null}
-
-                    {u.role !== "admin" && (
-                      <button
-                        onClick={() => handleDeleteCustomer(u)}
-                        className="p-1.5 bg-white border border-[#E8DFC9] hover:bg-red-50 text-red-600 rounded-xl transition"
-                        title="Delete Account"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Suspension Warning Box if Blocked */}
-                {isBlocked && u.block_reason && (
-                  <div className="p-3 bg-red-100/60 border-l-4 border-red-600 rounded-r-xl text-xs text-red-900 space-y-0.5">
-                    <p className="font-bold flex items-center gap-1">
-                      <AlertTriangle className="w-3.5 h-3.5 text-red-600" /> Suspension Reason:
-                    </p>
-                    <p className="italic">"{u.block_reason}"</p>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-
-          {/* Pagination */}
-          {pages > 1 && (
-            <div className="flex items-center justify-center gap-2 py-4">
-              <button
-                onClick={() => setPage(Math.max(1, page - 1))}
-                disabled={page === 1}
-                className="w-9 h-9 rounded-xl border border-[#E8DFC9] flex items-center justify-center hover:bg-[#FAF5EC] transition disabled:opacity-30"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <span className="text-xs font-bold text-[#2D2118]">
-                Page {page} of {pages}
-              </span>
-              <button
-                onClick={() => setPage(Math.min(pages, page + 1))}
-                disabled={page >= pages}
-                className="w-9 h-9 rounded-xl border border-[#E8DFC9] flex items-center justify-center hover:bg-[#FAF5EC] transition disabled:opacity-30"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          )}
+                      <td className="p-4 text-right">
+                        <button
+                          onClick={() => openCustomerProfile(user)}
+                          className="bg-[#FAF5EC] border border-[#E8DFC9] hover:bg-gray-100 text-[#2D2118] px-3.5 py-1.5 rounded-xl font-bold text-xs transition"
+                        >
+                          View Profile & CRM
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
-      {/* ─── BLOCK USER MODAL ─── */}
-      {blockModalUser && (
-        <div
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-200"
-          onClick={(e) => { if (e.target === e.currentTarget) setBlockModalUser(null); }}
-        >
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-[#E8DFC9] relative space-y-4 my-auto">
-            <button
-              onClick={() => setBlockModalUser(null)}
-              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-[#2D2118] hover:bg-[#5C1E1E] hover:text-white transition"
-            >
-              <X className="w-4 h-4" />
-            </button>
+      {/* ─── CUSTOMER DEEP-DIVE PROFILE DRAWER ─── */}
+      {selectedUser && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex justify-end animate-in fade-in duration-200">
+          <div className="bg-white max-w-xl w-full h-full p-6 space-y-4 shadow-2xl border-l border-[#E8DFC9] overflow-y-auto flex flex-col justify-between">
+            <div className="space-y-4">
+              <div className="flex justify-between items-center border-b border-[#E8DFC9] pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-[#5C1E1E] text-white flex items-center justify-center font-black text-lg uppercase shadow">
+                    {(selectedUser.name || selectedUser.email || "C")[0]}
+                  </div>
+                  <div>
+                    <h3 className="font-black text-lg text-[#2D2118]">{selectedUser.name || "Guest Customer"}</h3>
+                    <p className="text-xs text-gray-400 font-mono">{selectedUser.email} · {selectedUser.phone || "No Phone"}</p>
+                  </div>
+                </div>
+                <button onClick={() => setSelectedUser(null)} className="text-gray-400 hover:text-black">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
 
-            <div className="flex items-center gap-3 border-b border-[#E8DFC9] pb-3">
-              <div className="w-10 h-10 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center font-bold">
-                <Ban className="w-5 h-5" />
+              {/* Drawer Tabs */}
+              <div className="flex border-b border-[#E8DFC9] gap-4 text-xs font-bold overflow-x-auto scrollbar-none">
+                <button onClick={() => setDrawerTab("profile")} className={`pb-2 border-b-2 whitespace-nowrap ${drawerTab === "profile" ? "border-[#5C1E1E] text-[#5C1E1E]" : "border-transparent text-gray-500"}`}>1. Overview & Tier</button>
+                <button onClick={() => setDrawerTab("orders")} className={`pb-2 border-b-2 whitespace-nowrap ${drawerTab === "orders" ? "border-[#5C1E1E] text-[#5C1E1E]" : "border-transparent text-gray-500"}`}>2. Orders ({customerDetails?.order_count || 0})</button>
+                <button onClick={() => setDrawerTab("assets")} className={`pb-2 border-b-2 whitespace-nowrap ${drawerTab === "assets" ? "border-[#5C1E1E] text-[#5C1E1E]" : "border-transparent text-gray-500"}`}>3. Cart & Wishlist</button>
+                <button onClick={() => setDrawerTab("wallet")} className={`pb-2 border-b-2 whitespace-nowrap ${drawerTab === "wallet" ? "border-[#5C1E1E] text-[#5C1E1E]" : "border-transparent text-gray-500"}`}>4. Wallet & Rewards</button>
+                <button onClick={() => setDrawerTab("notes")} className={`pb-2 border-b-2 whitespace-nowrap ${drawerTab === "notes" ? "border-[#5C1E1E] text-[#5C1E1E]" : "border-transparent text-gray-500"}`}>5. Notes & Security</button>
               </div>
-              <div>
-                <h3 className="font-black text-base text-[#2D2118]">Block Customer Account</h3>
-                <p className="text-[11px] text-[#8B7355]">
-                  Target: <strong>{blockModalUser.name || blockModalUser.email || "Customer"}</strong>
-                </p>
-              </div>
+
+              {detailsLoading ? (
+                <div className="py-12 text-center">
+                  <div className="w-6 h-6 border-2 border-[#5C1E1E] border-t-transparent rounded-full animate-spin mx-auto" />
+                </div>
+              ) : customerDetails && (
+                <>
+                  {/* TAB 1: OVERVIEW & TIER */}
+                  {drawerTab === "profile" && (
+                    <div className="space-y-4 text-xs">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-[#FAF5EC] p-4 rounded-2xl border border-[#E8DFC9]">
+                          <span className="text-[10px] font-black uppercase text-[#8B7355]">Segmentation Tier</span>
+                          <p className="text-base font-black text-[#5C1E1E] mt-1">{customerDetails.tier}</p>
+                        </div>
+                        <div className="bg-[#FAF5EC] p-4 rounded-2xl border border-[#E8DFC9]">
+                          <span className="text-[10px] font-black uppercase text-[#8B7355]">Total Spend</span>
+                          <p className="text-base font-black text-[#2D2118] mt-1">₹{customerDetails.total_spent}</p>
+                        </div>
+                        <div className="bg-[#FAF5EC] p-4 rounded-2xl border border-[#E8DFC9]">
+                          <span className="text-[10px] font-black uppercase text-[#8B7355]">Wallet Funds</span>
+                          <p className="text-base font-black text-emerald-700 mt-1">₹{customerDetails.wallet_balance}</p>
+                        </div>
+                        <div className="bg-[#FAF5EC] p-4 rounded-2xl border border-[#E8DFC9]">
+                          <span className="text-[10px] font-black uppercase text-[#8B7355]">Loyalty Rewards</span>
+                          <p className="text-base font-black text-purple-700 mt-1">{customerDetails.loyalty_points} PTS</p>
+                        </div>
+                      </div>
+
+                      <div className="bg-gray-50 p-4 rounded-2xl border border-[#E8DFC9] space-y-2">
+                        <h4 className="font-bold text-[#2D2118]">Contact Info & Account Meta</h4>
+                        <p className="text-gray-600">Email: <span className="font-semibold text-gray-800">{customerDetails.email}</span></p>
+                        <p className="text-gray-600">Phone: <span className="font-semibold text-gray-800">{customerDetails.phone || "N/A"}</span></p>
+                        <p className="text-gray-600">Registered: <span className="font-semibold text-gray-800">{customerDetails.created_at ? new Date(customerDetails.created_at).toLocaleDateString() : "—"}</span></p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* TAB 2: PURCHASE HISTORY */}
+                  {drawerTab === "orders" && (
+                    <div className="space-y-3 text-xs">
+                      {customerDetails.orders.length === 0 ? (
+                        <p className="text-gray-400 italic text-center py-6">No order history for this customer</p>
+                      ) : (
+                        customerDetails.orders.map((o) => (
+                          <div key={o.id || o._id} className="p-3 bg-[#FAF5EC] rounded-2xl border border-[#E8DFC9] space-y-2">
+                            <div className="flex justify-between font-bold text-[#2D2118]">
+                              <span>#{o.order_number || o.id}</span>
+                              <span className="text-[#5C1E1E] font-black">₹{o.total}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-[10px] text-gray-500">
+                              <span>Status: <strong className="text-emerald-700">{o.status}</strong></span>
+                              <span>{o.placed_at ? new Date(o.placed_at).toLocaleDateString() : "—"}</span>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+
+                  {/* TAB 3: CART & WISHLIST */}
+                  {drawerTab === "assets" && (
+                    <div className="space-y-4 text-xs">
+                      <div className="bg-[#FAF5EC] p-4 rounded-2xl border border-[#E8DFC9] space-y-2">
+                        <h4 className="font-bold text-[#5C1E1E] flex items-center gap-1.5"><ShoppingCart className="w-4 h-4" /> Saved Active Cart ({customerDetails.cart_items?.length || 0})</h4>
+                        {(!customerDetails.cart_items || customerDetails.cart_items.length === 0) ? (
+                          <p className="text-gray-400 italic">Cart is empty</p>
+                        ) : (
+                          customerDetails.cart_items.map((ci, i) => (
+                            <div key={i} className="flex justify-between text-[11px] p-2 bg-white rounded-xl border border-[#E8DFC9]">
+                              <span>{ci.name || ci.product_id} (x{ci.qty || 1})</span>
+                              <span className="font-bold text-[#5C1E1E]">₹{ci.price || 0}</span>
+                            </div>
+                          ))
+                        )}
+                      </div>
+
+                      <div className="bg-[#FAF5EC] p-4 rounded-2xl border border-[#E8DFC9] space-y-2">
+                        <h4 className="font-bold text-[#5C1E1E] flex items-center gap-1.5"><Heart className="w-4 h-4" /> Active Wishlist ({customerDetails.wishlist_items?.length || 0})</h4>
+                        {(!customerDetails.wishlist_items || customerDetails.wishlist_items.length === 0) ? (
+                          <p className="text-gray-400 italic">Wishlist is empty</p>
+                        ) : (
+                          customerDetails.wishlist_items.map((wi, i) => (
+                            <div key={i} className="flex justify-between text-[11px] p-2 bg-white rounded-xl border border-[#E8DFC9]">
+                              <span>{wi.name || wi.product_id}</span>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* TAB 4: WALLET & REWARDS */}
+                  {drawerTab === "wallet" && (
+                    <div className="space-y-4 text-xs">
+                      <div className="flex justify-between items-center bg-[#FAF5EC] p-4 rounded-2xl border border-[#E8DFC9]">
+                        <div>
+                          <p className="font-bold text-[#2D2118]">Current Wallet Balance: <span className="text-[#5C1E1E] font-black text-base">₹{customerDetails.wallet_balance}</span></p>
+                          <p className="font-bold text-[#2D2118]">Loyalty Rewards: <span className="text-purple-700 font-black text-base">{customerDetails.loyalty_points} PTS</span></p>
+                        </div>
+                        <button onClick={() => setShowWalletModal(true)} className="bg-[#5C1E1E] text-white px-3.5 py-2 rounded-xl font-bold shadow">
+                          Adjust Balance / Points
+                        </button>
+                      </div>
+
+                      <div className="space-y-2">
+                        <h4 className="font-bold text-[#8B7355] uppercase text-[10px] tracking-wider">Rewards Ledger History</h4>
+                        {(!customerDetails.points_ledger || customerDetails.points_ledger.length === 0) ? (
+                          <p className="text-gray-400 italic text-center py-4">No wallet transactions recorded</p>
+                        ) : (
+                          customerDetails.points_ledger.map((l, i) => (
+                            <div key={i} className="p-3 bg-gray-50 rounded-xl border border-[#E8DFC9] flex justify-between items-center">
+                              <div>
+                                <p className="font-bold text-[#2D2118]">{l.reason}</p>
+                                <p className="text-[10px] text-gray-400">{new Date(l.timestamp).toLocaleString()}</p>
+                              </div>
+                              <span className={`font-black text-xs ${l.action_type === "CREDIT" ? "text-emerald-700" : "text-red-600"}`}>
+                                {l.action_type === "CREDIT" ? "+" : "-"}₹{l.amount} / {l.points} PTS
+                              </span>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* TAB 5: NOTES & SECURITY */}
+                  {drawerTab === "notes" && (
+                    <div className="space-y-4 text-xs">
+                      {/* Account Block Control */}
+                      <div className="p-4 bg-red-50 rounded-2xl border border-red-200 flex items-center justify-between">
+                        <div>
+                          <p className="font-bold text-red-900">Account Security Status</p>
+                          <p className="text-[11px] text-red-700">{customerDetails.is_blocked ? `Blocked: ${customerDetails.block_reason || "Suspended"}` : "Account is Active"}</p>
+                        </div>
+                        {customerDetails.is_blocked ? (
+                          <button onClick={handleUnblockUser} disabled={submitting} className="bg-emerald-700 text-white px-3.5 py-1.5 rounded-xl font-bold">
+                            Unblock Account
+                          </button>
+                        ) : (
+                          <button onClick={() => setShowBlockModal(true)} className="bg-red-700 text-white px-3.5 py-1.5 rounded-xl font-bold">
+                            Block Account
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Internal Notes Feed */}
+                      <form onSubmit={handleAddNote} className="space-y-2">
+                        <label className="font-bold text-[#8B7355] block">Add Staff Internal Note</label>
+                        <textarea
+                          rows={2}
+                          placeholder="Record customer preferences or service notes..."
+                          value={newNoteText}
+                          onChange={(e) => setNewNoteText(e.target.value)}
+                          className="w-full bg-[#FAF5EC] border border-[#E8DFC9] rounded-xl p-2.5 font-medium"
+                        />
+                        <button type="submit" disabled={submitting} className="bg-[#2D2118] text-white px-4 py-2 rounded-xl font-bold">
+                          Add Staff Note
+                        </button>
+                      </form>
+
+                      <div className="space-y-2 pt-2 border-t border-[#E8DFC9]">
+                        <h4 className="font-bold text-gray-700 uppercase text-[10px] tracking-wider">Internal Notes Feed</h4>
+                        {(!customerDetails.internal_notes || customerDetails.internal_notes.length === 0) ? (
+                          <p className="text-gray-400 italic">No staff notes recorded</p>
+                        ) : (
+                          customerDetails.internal_notes.map((n, i) => (
+                            <div key={i} className="p-3 bg-[#FAF5EC] rounded-xl border border-[#E8DFC9] space-y-1">
+                              <p className="font-semibold text-[#2D2118]">{n.text}</p>
+                              <p className="text-[10px] text-gray-400">By {n.admin} on {new Date(n.timestamp).toLocaleString()}</p>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
+          </div>
+        </div>
+      )}
 
-            <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-800 space-y-1">
-              <div className="font-bold flex items-center gap-1">
-                <AlertTriangle className="w-4 h-4 text-red-600" /> Account Suspension Consequences:
-              </div>
-              <ul className="list-disc list-inside text-[11px] space-y-0.5">
-                <li>Immediate revocation of active tokens & login sessions</li>
-                <li>API endpoints will return <code>403 Forbidden</code> for this user</li>
-                <li>Submitted product reviews will be automatically flagged</li>
-              </ul>
-            </div>
+      {/* ─── ADJUST WALLET MODAL ─── */}
+      {showWalletModal && selectedUser && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-[#E8DFC9] relative">
+            <button onClick={() => setShowWalletModal(false)} className="absolute top-4 right-4 text-gray-400"><X className="w-4 h-4" /></button>
+            <h3 className="font-black text-base text-[#2D2118]">Adjust Wallet Funds & Rewards</h3>
 
-            <form onSubmit={handleBlockCustomer} className="space-y-4">
-              <div>
-                <label className="text-xs font-bold text-[#8B7355] block mb-1">Reason for Block *</label>
-                <textarea
-                  rows={3}
-                  required
-                  placeholder="Describe why this account is being suspended (e.g. Fraudulent return activity, spam reviews)..."
-                  value={blockReason}
-                  onChange={(e) => setBlockReason(e.target.value)}
-                  className="w-full bg-[#FAF5EC] border border-[#E8DFC9] rounded-xl p-3 text-xs font-semibold text-[#2D2118] focus:outline-none focus:border-red-500"
-                />
+            <form onSubmit={handleAdjustWallet} className="space-y-3 text-xs">
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setWalletForm({ ...walletForm, action_type: "CREDIT" })} className={`flex-1 py-2 rounded-xl font-bold ${walletForm.action_type === "CREDIT" ? "bg-emerald-700 text-white" : "bg-gray-100"}`}>Credit (+)</button>
+                <button type="button" onClick={() => setWalletForm({ ...walletForm, action_type: "DEBIT" })} className={`flex-1 py-2 rounded-xl font-bold ${walletForm.action_type === "DEBIT" ? "bg-red-600 text-white" : "bg-gray-100"}`}>Debit (-)</button>
               </div>
 
-              <div>
-                <label className="text-xs font-bold text-[#8B7355] block mb-1">Duration (Days, Leave empty for permanent)</label>
-                <input
-                  type="number"
-                  min="1"
-                  max="3650"
-                  placeholder="e.g. 30"
-                  value={blockDays}
-                  onChange={(e) => setBlockDays(e.target.value)}
-                  className="w-full bg-[#FAF5EC] border border-[#E8DFC9] rounded-xl px-3 py-2 text-xs font-semibold text-[#2D2118] focus:outline-none focus:border-red-500"
-                />
-              </div>
+              <input type="number" placeholder="Wallet Amount (₹)" value={walletForm.amount} onChange={(e) => setWalletForm({ ...walletForm, amount: parseFloat(e.target.value) || 0 })} className="w-full bg-[#FAF5EC] border p-2.5 rounded-xl font-bold" />
+              <input type="number" placeholder="Loyalty Points (PTS)" value={walletForm.points} onChange={(e) => setWalletForm({ ...walletForm, points: parseInt(e.target.value) || 0 })} className="w-full bg-[#FAF5EC] border p-2.5 rounded-xl font-bold" />
+              <input type="text" required placeholder="Reason for adjustment *" value={walletForm.reason} onChange={(e) => setWalletForm({ ...walletForm, reason: e.target.value })} className="w-full bg-[#FAF5EC] border p-2.5 rounded-xl font-semibold" />
 
-              <button
-                type="submit"
-                disabled={blockSubmitting}
-                className="w-full bg-red-600 hover:bg-red-700 text-white py-3.5 rounded-2xl text-xs font-bold shadow-lg transition disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {blockSubmitting ? "Suspending Account..." : "Confirm & Block Customer"}
-              </button>
+              <button type="submit" disabled={submitting} className="w-full bg-[#5C1E1E] text-white py-3 rounded-xl font-bold">Apply Adjustment</button>
             </form>
           </div>
         </div>
       )}
 
-      {/* ─── CUSTOMER DETAILS MODAL ─── */}
-      {detailsModalUser && (
-        <div
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-200"
-          onClick={(e) => { if (e.target === e.currentTarget) setDetailsModalUser(null); }}
-        >
-          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-[#E8DFC9] relative space-y-4 my-auto max-h-[90vh] overflow-y-auto">
-            <button
-              onClick={() => setDetailsModalUser(null)}
-              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-[#2D2118] hover:bg-[#5C1E1E] hover:text-white transition"
-            >
-              <X className="w-4 h-4" />
-            </button>
+      {/* ─── BLOCK USER REASON MODAL ─── */}
+      {showBlockModal && selectedUser && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-red-200 relative">
+            <button onClick={() => setShowBlockModal(false)} className="absolute top-4 right-4 text-gray-400"><X className="w-4 h-4" /></button>
+            <h3 className="font-black text-base text-red-900">Block Customer Account</h3>
 
-            <div className="flex items-center gap-3 border-b border-[#E8DFC9] pb-3">
-              <div className="w-11 h-11 rounded-2xl bg-[#5C1E1E] text-white flex items-center justify-center font-black text-sm">
-                {(detailsModalUser.name || "C").slice(0, 2).toUpperCase()}
-              </div>
-              <div>
-                <h3 className="font-black text-lg text-[#2D2118]">{detailsModalUser.name || "Customer Profile"}</h3>
-                <p className="text-xs text-[#8B7355]">{detailsModalUser.email || detailsModalUser.phone}</p>
-              </div>
-            </div>
-
-            {detailsLoading ? (
-              <div className="text-center py-12">
-                <div className="w-7 h-7 border-4 border-[#5C1E1E] border-t-transparent rounded-full animate-spin mx-auto" />
-              </div>
-            ) : detailsData && (
-              <div className="space-y-4 text-xs">
-                {/* Stats */}
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="bg-[#FAF5EC] p-3 rounded-2xl border border-[#E8DFC9] text-center">
-                    <span className="text-[10px] font-black uppercase text-[#8B7355]">Total Orders</span>
-                    <p className="text-base font-black text-[#2D2118] mt-0.5">{detailsData.orders?.length || 0}</p>
-                  </div>
-                  <div className="bg-[#FAF5EC] p-3 rounded-2xl border border-[#E8DFC9] text-center">
-                    <span className="text-[10px] font-black uppercase text-[#8B7355]">Total Spend</span>
-                    <p className="text-base font-black text-emerald-700 mt-0.5">₹{detailsData.total_spent || 0}</p>
-                  </div>
-                  <div className="bg-[#FAF5EC] p-3 rounded-2xl border border-[#E8DFC9] text-center">
-                    <span className="text-[10px] font-black uppercase text-[#8B7355]">Reviews</span>
-                    <p className="text-base font-black text-amber-700 mt-0.5">{detailsData.reviews?.length || 0}</p>
-                  </div>
-                </div>
-
-                {/* Orders History */}
-                <div className="space-y-2">
-                  <h4 className="font-extrabold text-[#2D2118] uppercase text-[11px] tracking-wider">Recent Orders History</h4>
-                  {detailsData.orders?.length === 0 ? (
-                    <p className="text-gray-400 italic py-2">No past orders found for this customer.</p>
-                  ) : (
-                    <div className="space-y-2 max-h-48 overflow-y-auto">
-                      {detailsData.orders?.map((o) => (
-                        <div key={o.id} className="p-3 bg-[#FAF5EC] rounded-xl border border-[#E8DFC9] flex justify-between items-center">
-                          <div>
-                            <span className="font-bold text-[#5C1E1E]">Order #{o.order_number || o.id?.slice(-6)}</span>
-                            <p className="text-[10px] text-gray-500">{o.items?.length || 0} items · {o.created_at ? new Date(o.created_at).toLocaleDateString() : "—"}</p>
-                          </div>
-                          <div className="text-right">
-                            <span className="font-black text-[#2D2118]">₹{o.total}</span>
-                            <span className="block text-[10px] font-bold text-emerald-700">{o.status}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
+            <form onSubmit={handleBlockUser} className="space-y-3 text-xs">
+              <textarea
+                required
+                rows={3}
+                placeholder="Reason for blocking customer account..."
+                value={blockReason}
+                onChange={(e) => setBlockReason(e.target.value)}
+                className="w-full bg-red-50 border border-red-200 rounded-xl p-3 font-medium text-red-900"
+              />
+              <button type="submit" disabled={submitting} className="w-full bg-red-700 text-white py-3 rounded-xl font-bold">Confirm Account Suspension</button>
+            </form>
           </div>
         </div>
       )}

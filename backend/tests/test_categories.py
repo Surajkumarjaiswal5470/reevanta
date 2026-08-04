@@ -1,5 +1,5 @@
 """
-Backend Test Suite for Categories & Subcategories API
+Backend Test Suite for Categories, Subcategories, SEO, Icons, Banners & Reordering
 """
 
 import pytest
@@ -8,7 +8,7 @@ from server import app
 
 
 @pytest.mark.anyio
-async def test_categories_workflow():
+async def test_categories_extended_workflow():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         # 1. Fetch public categories
         res = await ac.get("/api/categories")
@@ -16,6 +16,11 @@ async def test_categories_workflow():
         cats = res.json()
         assert isinstance(cats, list)
         assert len(cats) >= 1
+
+        # Check fields
+        first = cats[0]
+        assert "sort_order" in first
+        assert "subcategories" in first
 
         # 2. Fetch admin categories
         admin_res = await ac.get("/api/admin/categories")

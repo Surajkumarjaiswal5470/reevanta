@@ -1,6 +1,6 @@
 """
 Admin Categories & Subcategories Router
-Provides CRUD operations for main categories and nested subcategories.
+Provides CRUD operations for categories, subcategories, collection mappings, banners, icons, SEO, and sort order.
 """
 
 from datetime import datetime, timezone
@@ -18,18 +18,28 @@ public_router = APIRouter(prefix="/categories", tags=["Categories"])
 
 @public_router.get("")
 async def list_public_categories():
-    """Public endpoint to fetch all categories and subcategories for storefront."""
+    """Public endpoint to fetch all categories sorted by sort_order for storefront."""
     return await list_categories()
 
 
 # ──────────────────── Pydantic Models ────────────────────
+
+class CategorySEO(BaseModel):
+    metaTitle: Optional[str] = Field(None, max_length=120)
+    metaDescription: Optional[str] = Field(None, max_length=300)
+    metaKeywords: List[str] = Field(default_factory=list)
+    canonicalUrl: Optional[str] = None
+
 
 class SubCategoryCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=100, examples=["Silk Sarees"])
     slug: Optional[str] = Field(None, examples=["silk-sarees"])
     description: Optional[str] = ""
     imageUrl: Optional[str] = ""
+    bannerUrl: Optional[str] = ""
+    iconUrl: Optional[str] = ""
     display_order: Optional[int] = 0
+    seo: Optional[CategorySEO] = Field(default_factory=CategorySEO)
 
 
 class CategoryCreate(BaseModel):
@@ -37,8 +47,14 @@ class CategoryCreate(BaseModel):
     slug: Optional[str] = Field(None, examples=["sarees"])
     description: Optional[str] = ""
     imageUrl: Optional[str] = ""
+    bannerUrl: Optional[str] = ""
+    iconName: Optional[str] = "Sparkles"
+    iconUrl: Optional[str] = ""
     featured: bool = False
+    sort_order: int = Field(1, ge=0)
+    collections: List[str] = Field(default_factory=list)
     subcategories: List[SubCategoryCreate] = Field(default_factory=list)
+    seo: Optional[CategorySEO] = Field(default_factory=CategorySEO)
 
 
 class CategoryUpdate(BaseModel):
@@ -46,8 +62,19 @@ class CategoryUpdate(BaseModel):
     slug: Optional[str] = None
     description: Optional[str] = None
     imageUrl: Optional[str] = None
+    bannerUrl: Optional[str] = None
+    iconName: Optional[str] = None
+    iconUrl: Optional[str] = None
     featured: Optional[bool] = None
+    sort_order: Optional[int] = None
+    collections: Optional[List[str]] = None
     subcategories: Optional[List[SubCategoryCreate]] = None
+    seo: Optional[CategorySEO] = None
+
+
+class CategoryReorderItem(BaseModel):
+    id: str
+    sort_order: int
 
 
 # ──────────────────── Default Pre-seeded Categories ────────────────────
@@ -58,7 +85,15 @@ DEFAULT_LUXURY_CATEGORIES = [
         "slug": "sarees",
         "description": "Handcrafted Silk & Organza Sarees",
         "imageUrl": "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800",
+        "bannerUrl": "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=1600",
+        "iconName": "Sparkles",
         "featured": True,
+        "sort_order": 1,
+        "collections": ["summer-silk-2026", "new-arrivals"],
+        "seo": {
+            "metaTitle": "Handcrafted Luxury Silk & Organza Sarees | RIVAANTA",
+            "metaDescription": "Explore pure Kanjivaram and Banarasi silk sarees. Express Kathmandu delivery."
+        },
         "subcategories": [
             {"name": "Silk Sarees", "slug": "silk-sarees", "description": "Pure Kanjivaram & Banarasi Silk", "imageUrl": ""},
             {"name": "Organza Sarees", "slug": "organza-sarees", "description": "Lightweight Sheer Organza", "imageUrl": ""},
@@ -70,7 +105,15 @@ DEFAULT_LUXURY_CATEGORIES = [
         "slug": "lehengas",
         "description": "Designer Bridal & Event Lehengas",
         "imageUrl": "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=800",
+        "bannerUrl": "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=1600",
+        "iconName": "Crown",
         "featured": True,
+        "sort_order": 2,
+        "collections": ["festive-bridal"],
+        "seo": {
+            "metaTitle": "Designer Bridal & Partywear Lehengas | RIVAANTA",
+            "metaDescription": "Royal Zardozi embroidered wedding lehengas and choli sets."
+        },
         "subcategories": [
             {"name": "Bridal Lehengas", "slug": "bridal-lehengas", "description": "Heavy Zardozi Bridal Sets", "imageUrl": ""},
             {"name": "Partywear Lehengas", "slug": "partywear-lehengas", "description": "Modern Crop Top Sets", "imageUrl": ""}
@@ -81,7 +124,11 @@ DEFAULT_LUXURY_CATEGORIES = [
         "slug": "kurtas",
         "description": "Royal Silk & Velvet Kurtas",
         "imageUrl": "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=800",
+        "bannerUrl": "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=1600",
+        "iconName": "Shirt",
         "featured": True,
+        "sort_order": 3,
+        "collections": ["velvet-winter-royale"],
         "subcategories": [
             {"name": "Kurta Sets", "slug": "kurta-sets", "description": "Kurta with Dupatta & Pants", "imageUrl": ""},
             {"name": "Anarkalis", "slug": "anarkalis", "description": "Floor Length Anarkalis", "imageUrl": ""}
@@ -92,7 +139,11 @@ DEFAULT_LUXURY_CATEGORIES = [
         "slug": "jewelry",
         "description": "Heritage Kundan & Gold Fine Jewelry",
         "imageUrl": "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=800",
+        "bannerUrl": "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=1600",
+        "iconName": "Gem",
         "featured": True,
+        "sort_order": 4,
+        "collections": ["festive-bridal"],
         "subcategories": [
             {"name": "Necklaces", "slug": "necklaces", "description": "Royal Chokers & Rani Haars", "imageUrl": ""},
             {"name": "Earrings", "slug": "earrings", "description": "Jhumkas & Chandbalis", "imageUrl": ""}
@@ -103,7 +154,11 @@ DEFAULT_LUXURY_CATEGORIES = [
         "slug": "cosmetics",
         "description": "Artisanal Velvet Lipsticks & Palettes",
         "imageUrl": "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800",
+        "bannerUrl": "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=1600",
+        "iconName": "Palette",
         "featured": True,
+        "sort_order": 5,
+        "collections": ["new-arrivals"],
         "subcategories": [
             {"name": "Lipsticks", "slug": "lipsticks", "description": "Matte & Satin Lip Colors", "imageUrl": ""},
             {"name": "Palettes", "slug": "palettes", "description": "Eyeshadow & Blush Sets", "imageUrl": ""}
@@ -116,14 +171,13 @@ DEFAULT_LUXURY_CATEGORIES = [
 
 @router.get("")
 async def list_categories():
-    """Fetch all categories with subcategories."""
+    """Fetch all categories sorted by sort_order ascending."""
     try:
-        categories = await db.categories.find({}).sort("name", 1).to_list(200)
+        categories = await db.categories.find({}).sort("sort_order", 1).to_list(200)
     except Exception:
         categories = []
 
     if not categories:
-        # Seed default luxury categories if empty
         seeded = []
         try:
             for cat in DEFAULT_LUXURY_CATEGORIES:
@@ -142,7 +196,7 @@ async def list_categories():
 
 @router.post("")
 async def create_category(inp: CategoryCreate, admin: dict = Depends(get_current_admin)):
-    """Create a new category with optional subcategories."""
+    """Create a new category with banners, icons, SEO, collections, and sort_order."""
     slug_clean = (inp.slug or inp.name).strip().lower().replace(" ", "-")
     existing = await db.categories.find_one({"slug": slug_clean})
     if existing:
@@ -166,9 +220,23 @@ async def create_category(inp: CategoryCreate, admin: dict = Depends(get_current
     return doc
 
 
+@router.put("/reorder")
+async def reorder_categories(items: List[CategoryReorderItem], admin: dict = Depends(get_current_admin)):
+    """Bulk update sort_order for categories."""
+    for item in items:
+        try:
+            await db.categories.update_one(
+                {"_id": to_object_id(item.id)},
+                {"$set": {"sort_order": item.sort_order, "updated_at": datetime.now(timezone.utc).isoformat()}}
+            )
+        except Exception:
+            pass
+    return {"message": "Category sort order updated successfully"}
+
+
 @router.put("/{category_id}")
 async def update_category(category_id: str, updates: CategoryUpdate, admin: dict = Depends(get_current_admin)):
-    """Update category metadata or subcategories."""
+    """Update category details, banners, icons, SEO, and collections."""
     update_dict = updates.model_dump(exclude_unset=True, exclude_none=True)
     if not update_dict:
         raise HTTPException(status_code=400, detail="No update fields provided")
@@ -209,7 +277,7 @@ async def add_subcategory(
     inp: SubCategoryCreate,
     admin: dict = Depends(get_current_admin),
 ):
-    """Add a new subcategory under a parent category."""
+    """Add a new subcategory with optional banner and SEO."""
     category = await db.categories.find_one({"_id": to_object_id(category_id)})
     if not category:
         raise HTTPException(status_code=404, detail="Category not found")
@@ -217,9 +285,8 @@ async def add_subcategory(
     sub_slug = (inp.slug or inp.name).strip().lower().replace(" ", "-")
     existing_subs = category.get("subcategories", [])
 
-    # Check for duplicate subcategory slug
     if any(s.get("slug") == sub_slug for s in existing_subs):
-        raise HTTPException(status_code=400, detail=f"Subcategory with slug '{sub_slug}' already exists in this category")
+        raise HTTPException(status_code=400, detail=f"Subcategory with slug '{sub_slug}' already exists")
 
     new_sub = inp.model_dump()
     new_sub["slug"] = sub_slug

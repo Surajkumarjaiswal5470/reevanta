@@ -159,6 +159,8 @@ export function AuthModal() {
 
   const phoneInputRef = useRef(null);
   const nameInputRef = useRef(null);
+  const modalRef = useRef(null);
+  const previousFocusRef = useRef(null);
   const countdown = useCountdown(60);
   const isMountedRef = useRef(true);
   const titleId = useId();
@@ -233,6 +235,50 @@ export function AuthModal() {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [showAuthModal, closeModal]);
+
+  // Remember what had focus before opening, and restore it once the modal
+  // closes, so keyboard/screen-reader users land back where they started.
+  useEffect(() => {
+    if (showAuthModal) {
+      previousFocusRef.current = document.activeElement;
+    } else if (previousFocusRef.current instanceof HTMLElement) {
+      previousFocusRef.current.focus();
+      previousFocusRef.current = null;
+    }
+  }, [showAuthModal]);
+
+  // Trap Tab/Shift+Tab focus inside the modal while it's open, so keyboard
+  // users can't tab out onto the page behind the overlay.
+  useEffect(() => {
+    if (!showAuthModal) return;
+    const modalEl = modalRef.current;
+    if (!modalEl) return;
+
+    const getFocusable = () =>
+      Array.from(
+        modalEl.querySelectorAll(
+          'a[href], button:not([disabled]), textarea, input:not([disabled]), select, [tabindex]:not([tabindex="-1"])'
+        )
+      ).filter((el) => el.offsetParent !== null);
+
+    const onKeyDown = (e) => {
+      if (e.key !== "Tab") return;
+      const focusable = getFocusable();
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+
+    modalEl.addEventListener("keydown", onKeyDown);
+    return () => modalEl.removeEventListener("keydown", onKeyDown);
+  }, [showAuthModal, step]);
 
   if (!showAuthModal) return null;
 
@@ -388,10 +434,11 @@ export function AuthModal() {
       {Array.from({ length: totalSteps }).map((_, i) => (
         <div
           key={i}
-          className={`h-1 rounded-full transition-all duration-500 ${i + 1 <= step
-            ? "bg-[#5C1E1E] w-6"
-            : "bg-[#E8DFC9] w-3"
-            }`}
+          className={`h-1 rounded-full transition-all duration-500 ${
+            i + 1 <= step
+              ? "bg-[#5C1E1E] w-6"
+              : "bg-[#E8DFC9] w-3"
+          }`}
         />
       ))}
     </div>
@@ -407,6 +454,7 @@ export function AuthModal() {
       }}
     >
       <div
+        ref={modalRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

@@ -1,16 +1,20 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import axios from "axios";
 import { Search, X, TrendingUp, Loader2, Bookmark } from "lucide-react";
 import { toast } from "sonner";
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = BACKEND_URL ? `${BACKEND_URL}/api` : null;
+import { httpClient } from "./httpClient";
 
 const RECENT_KEY = "lb_recent_searches";
 const RECENT_LIMIT = 5;
 const SUGGESTION_LIMIT = 6;
 const DEBOUNCE_MS = 300;
 const TRENDING = ["Hoodie", "Sneakers", "Lipstick", "Handbag", "Jeans", "Watch"];
+
+// In-memory suggestion cache: avoids refetching when the user retypes a
+// query they've already searched in this session (e.g. type -> delete ->
+// retype). Session-scoped only, with a short TTL so results don't go
+// noticeably stale, and an LRU-ish cap so it can't grow unbounded.
+const CACHE_LIMIT = 50;
+const CACHE_TTL_MS = 60_000;
 
 function getRecent() {
   try {
@@ -59,6 +63,28 @@ export const SearchBar = ({ value: externalValue, onChange: externalOnChange, on
   const debounceRef = useRef(null);
   const abortRef = useRef(null);
   const requestSeq = useRef(0);
+  const cacheRef = useRef(new Map());
+  const chipRefs = useRef([]);
+
+  const getCached = useCallback((key) => {
+    const entry = cacheRef.current.get(key);
+    if (!entry) return null;
+    if (Date.now() - entry.ts > CACHE_TTL_MS) {
+      cacheRef.current.delete(key);
+      return null;
+    }
+    return entry.items;
+  }, []);
+
+  const setCached = useCallback((key, items) => {
+    const cache = cacheRef.current;
+    cache.delete(key); // re-insert to refresh recency order
+    cache.set(key, { items, ts: Date.now() });
+    if (cache.size > CACHE_LIMIT) {
+      const oldestKey = cache.keys().next().value;
+      cache.delete(oldestKey);
+    }
+  }, []);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -69,13 +95,13 @@ export const SearchBar = ({ value: externalValue, onChange: externalOnChange, on
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
 
-  // Debounced suggestion fetch, with cancellation + stale-response guard
+  // Debounced suggestion fetch, with cancellation, cache, and stale-response guard
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     const trimmed = value ? value.trim() : "";
 
-    if (trimmed.length < 1 || !API) {
+    if (trimmed.length < 1 || !httpClient.isConfigured()) {
       // Invalidate any in-flight request so its response can't repopulate
       // the dropdown after the query has already been cleared/changed.
       requestSeq.current++;
@@ -84,6 +110,20 @@ export const SearchBar = ({ value: externalValue, onChange: externalOnChange, on
         abortRef.current = null;
       }
       setSuggestions([]);
+      setLoading(false);
+      setActiveIndex(-1);
+      return;
+    }
+
+    const cacheKey = trimmed.toLowerCase();
+    const cached = getCached(cacheKey);
+    if (cached) {
+      requestSeq.current++; // invalidate any older in-flight request
+      if (abortRef.current) {
+        abortRef.current.abort();
+        abortRef.current = null;
+      }
+      setSuggestions(cached);
       setLoading(false);
       setActiveIndex(-1);
       return;
@@ -98,20 +138,19 @@ export const SearchBar = ({ value: externalValue, onChange: externalOnChange, on
 
       setLoading(true);
       try {
-        const res = await axios.get(`${API}/search`, {
+        const data = await httpClient.get("/search", {
           params: { q: trimmed, limit: SUGGESTION_LIMIT },
           signal: controller.signal,
         });
         // Ignore stale responses if a newer request has since started
         if (seq === requestSeq.current) {
-          const items = res.data?.items || (Array.isArray(res.data) ? res.data : []);
+          const items = data?.items || (Array.isArray(data) ? data : []);
           setSuggestions(items);
           setActiveIndex(-1);
+          setCached(cacheKey, items);
         }
       } catch (err) {
-        if (axios.isCancel?.(err) || err.name === "CanceledError" || err.name === "AbortError") {
-          return;
-        }
+        if (httpClient.isCancelError(err)) return;
         if (seq === requestSeq.current) {
           setSuggestions([]);
         }
@@ -121,7 +160,7 @@ export const SearchBar = ({ value: externalValue, onChange: externalOnChange, on
     }, DEBOUNCE_MS);
 
     return () => clearTimeout(debounceRef.current);
-  }, [value]);
+  }, [value, getCached, setCached]);
 
   // Cleanup in-flight request on unmount
   useEffect(() => {
@@ -158,14 +197,14 @@ export const SearchBar = ({ value: externalValue, onChange: externalOnChange, on
       e.stopPropagation();
       if (!value || savingSearch) return;
 
-      if (!API) {
+      if (!httpClient.isConfigured()) {
         toast.error("Saved searches aren't available right now");
         return;
       }
 
       setSavingSearch(true);
       try {
-        await axios.post(`${API}/marketplace/saved-searches`, {
+        await httpClient.post("/marketplace/saved-searches", {
           user_id: getStoredUserId(),
           query: value,
           filters: {},
@@ -183,6 +222,40 @@ export const SearchBar = ({ value: externalValue, onChange: externalOnChange, on
   const trimmedValue = value ? value.trim() : "";
   const showSuggestions = trimmedValue.length > 0 && suggestions.length > 0;
   const showNoResults = trimmedValue.length > 0 && suggestions.length === 0 && !loading;
+  const showChips = trimmedValue.length === 0;
+
+  // Flat, ordered list of chip labels (recent first, then trending) so
+  // keyboard nav indices line up with DOM order regardless of section.
+  const chipList = useMemo(() => [...recent, ...TRENDING], [recent]);
+
+  useEffect(() => {
+    chipRefs.current = chipRefs.current.slice(0, chipList.length);
+  }, [chipList.length]);
+
+  const focusChip = (idx) => {
+    const el = chipRefs.current[idx];
+    el?.focus();
+  };
+
+  const handleChipKeyDown = (e, idx) => {
+    if (chipList.length === 0) return;
+    if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+      e.preventDefault();
+      focusChip((idx + 1) % chipList.length);
+    } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+      e.preventDefault();
+      focusChip((idx - 1 + chipList.length) % chipList.length);
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      focusChip(0);
+    } else if (e.key === "End") {
+      e.preventDefault();
+      focusChip(chipList.length - 1);
+    } else if (e.key === "Escape") {
+      setOpen(false);
+      inputRef.current?.focus();
+    }
+  };
 
   const handleKeyDown = (e) => {
     if (e.key === "Escape") {
@@ -190,10 +263,18 @@ export const SearchBar = ({ value: externalValue, onChange: externalOnChange, on
       setActiveIndex(-1);
       return;
     }
+
+    if (open && showChips && chipList.length > 0 && e.key === "ArrowDown") {
+      e.preventDefault();
+      focusChip(0);
+      return;
+    }
+
     if (!open || !showSuggestions) {
       if (e.key === "Enter") submit(value);
       return;
     }
+
     if (e.key === "ArrowDown") {
       e.preventDefault();
       setActiveIndex((i) => (i + 1) % suggestions.length);
@@ -339,23 +420,42 @@ export const SearchBar = ({ value: externalValue, onChange: externalOnChange, on
             </div>
           )}
 
-          {trimmedValue.length === 0 && (
+          {showChips && (
             <div className="p-2">
               {recent.length > 0 && (
                 <div>
-                  <div className="text-[10px] font-black uppercase tracking-wider text-[#8B7355] px-3 py-1.5">
-                    Recent searches
+                  <div className="flex items-center justify-between px-3 py-1.5">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-[#8B7355]">
+                      Recent searches
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        try {
+                          localStorage.removeItem(RECENT_KEY);
+                        } catch {
+                          // non-fatal
+                        }
+                        setRecent([]);
+                      }}
+                      className="text-[10px] font-bold text-[#8B7355] hover:text-[#5C1E1E] hover:underline"
+                    >
+                      Clear
+                    </button>
                   </div>
-                  <div className="flex flex-wrap gap-1.5 px-3 pb-2">
-                    {recent.map((r) => (
+                  <div className="flex flex-wrap gap-1.5 px-3 pb-2" role="group" aria-label="Recent searches">
+                    {recent.map((r, i) => (
                       <button
                         key={r}
+                        ref={(el) => (chipRefs.current[i] = el)}
                         data-testid={`recent-${r}`}
                         onClick={() => {
                           onChange(r);
                           submit(r);
                         }}
-                        className="px-2.5 py-1 bg-[#FAF5EC] border border-[#E8DFC9] rounded-full text-[11px] font-bold text-[#2D2118] hover:border-[#5C1E1E]"
+                        onKeyDown={(e) => handleChipKeyDown(e, i)}
+                        tabIndex={-1}
+                        className="px-2.5 py-1 bg-[#FAF5EC] border border-[#E8DFC9] rounded-full text-[11px] font-bold text-[#2D2118] hover:border-[#5C1E1E] focus:outline-none focus:ring-2 focus:ring-[#5C1E1E]"
                         type="button"
                       >
                         {r}
@@ -368,21 +468,27 @@ export const SearchBar = ({ value: externalValue, onChange: externalOnChange, on
                 <div className="text-[10px] font-black uppercase tracking-wider text-[#8B7355] px-3 py-1.5 flex items-center gap-1">
                   <TrendingUp className="w-3 h-3" /> Trending searches
                 </div>
-                <div className="flex flex-wrap gap-1.5 px-3 pb-3">
-                  {TRENDING.map((r) => (
-                    <button
-                      key={r}
-                      data-testid={`trending-${r}`}
-                      onClick={() => {
-                        onChange(r);
-                        submit(r);
-                      }}
-                      className="px-2.5 py-1 bg-gradient-to-r from-[#F5EBDC] to-[#FAF5EC] border border-[#5C1E1E]/20 rounded-full text-[11px] font-bold text-[#5C1E1E] hover:border-[#5C1E1E]"
-                      type="button"
-                    >
-                      {r}
-                    </button>
-                  ))}
+                <div className="flex flex-wrap gap-1.5 px-3 pb-3" role="group" aria-label="Trending searches">
+                  {TRENDING.map((r, i) => {
+                    const chipIdx = recent.length + i;
+                    return (
+                      <button
+                        key={r}
+                        ref={(el) => (chipRefs.current[chipIdx] = el)}
+                        data-testid={`trending-${r}`}
+                        onClick={() => {
+                          onChange(r);
+                          submit(r);
+                        }}
+                        onKeyDown={(e) => handleChipKeyDown(e, chipIdx)}
+                        tabIndex={-1}
+                        className="px-2.5 py-1 bg-gradient-to-r from-[#F5EBDC] to-[#FAF5EC] border border-[#5C1E1E]/20 rounded-full text-[11px] font-bold text-[#5C1E1E] hover:border-[#5C1E1E] focus:outline-none focus:ring-2 focus:ring-[#5C1E1E]"
+                        type="button"
+                      >
+                        {r}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </div>

@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { ImageUploader } from "./ImageUploader";
 import { AdminChatDesk } from "./AdminChatDesk";
 import { ReviewModerationPage } from "../pages/ReviewModerationPage";
+import { CategoriesPage } from "../pages/CategoriesPage";
 import { AdminQueueDashboard } from "./AdminQueueDashboard";
 import { AdminAuditConsole } from "./AdminAuditConsole";
 import {
@@ -60,6 +61,7 @@ export const AdminPanel = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [orders, setOrders] = useState([]);
   const [products, setProducts] = useState([]);
+  const [dynamicCategories, setDynamicCategories] = useState([]);
   const [newProduct, setNewProduct] = useState(emptyProduct);
   const [editingProduct, setEditingProduct] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -114,12 +116,22 @@ export const AdminPanel = () => {
     description: "Special Discount Coupon"
   });
 
+  const loadCategories = async () => {
+    try {
+      const res = await axios.get(`${API}/admin/categories`);
+      setDynamicCategories(res.data || []);
+    } catch {
+      // ignore
+    }
+  };
+
   const loadData = async () => {
     setLoading(true);
     try {
       const [oRes, pRes] = await Promise.all([
         axios.get(`${API}/orders`),
-        axios.get(`${API}/products`)
+        axios.get(`${API}/products`),
+        loadCategories()
       ]);
       setOrders(oRes.data || []);
       setProducts(pRes.data || []);
@@ -450,6 +462,7 @@ export const AdminPanel = () => {
             { id: "orders", label: `Orders (${orders.length})`, icon: Truck },
             { id: "products", label: `Products (${products.length})`, icon: Package },
             { id: "vouchers", label: `Vouchers (${vouchers.length})`, icon: Tag },
+            { id: "categories", label: `Categories (${dynamicCategories.length})`, icon: Layers },
             { id: "support", label: "Live Support Chat", icon: Headset },
             { id: "queues", label: "BullMQ Dashboard", icon: Cpu },
             { id: "reviews", label: "Reviews Moderation", icon: Star },
@@ -1073,10 +1086,25 @@ export const AdminPanel = () => {
                   onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })}
                   className="w-full mt-1 bg-[#FAF5EC] border border-[#E8DFC9] rounded-xl p-3 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#5C1E1E]"
                 >
-                  <option value="clothes">Clothes</option>
-                  <option value="shoes">Shoes & Sneakers</option>
-                  <option value="makeup">Makeup & Cosmetics</option>
-                  <option value="accessories">Bags & Accessories</option>
+                  {dynamicCategories.length > 0 ? (
+                    dynamicCategories.map((c) => (
+                      <option key={c.id || c.slug} value={c.slug || c.name.toLowerCase()}>
+                        {c.name}
+                      </option>
+                    ))
+                  ) : (
+                    <>
+                      <option value="sarees">Sarees</option>
+                      <option value="lehengas">Lehengas</option>
+                      <option value="kurtas">Kurtas</option>
+                      <option value="jewelry">Jewelry</option>
+                      <option value="cosmetics">Cosmetics</option>
+                      <option value="clothes">Clothes</option>
+                      <option value="shoes">Shoes & Sneakers</option>
+                      <option value="makeup">Makeup & Cosmetics</option>
+                      <option value="accessories">Bags & Accessories</option>
+                    </>
+                  )}
                 </select>
               </div>
 
@@ -1488,6 +1516,13 @@ export const AdminPanel = () => {
         </div>
       )}
 
+      {/* CATEGORIES & SUBCATEGORIES TAB */}
+      {activeTab === "categories" && (
+        <div className="space-y-4">
+          <CategoriesPage onCategoryChange={(cats) => setDynamicCategories(cats)} />
+        </div>
+      )}
+
       {/* ENTERPRISE SECURITY & AUDIT TAB */}
       {activeTab === "enterprise" && (
         <div className="space-y-4">
@@ -1572,10 +1607,25 @@ export const AdminPanel = () => {
                     onChange={(e) => setEditingProduct({ ...editingProduct, category: e.target.value })}
                     className="w-full mt-1 bg-[#FAF5EC] border border-[#E8DFC9] rounded-xl p-2.5 text-xs font-semibold"
                   >
-                    <option value="clothes">Clothes</option>
-                    <option value="shoes">Shoes</option>
-                    <option value="makeup">Makeup</option>
-                    <option value="accessories">Accessories</option>
+                    {dynamicCategories.length > 0 ? (
+                      dynamicCategories.map((c) => (
+                        <option key={c.id || c.slug} value={c.slug || c.name.toLowerCase()}>
+                          {c.name}
+                        </option>
+                      ))
+                    ) : (
+                      <>
+                        <option value="sarees">Sarees</option>
+                        <option value="lehengas">Lehengas</option>
+                        <option value="kurtas">Kurtas</option>
+                        <option value="jewelry">Jewelry</option>
+                        <option value="cosmetics">Cosmetics</option>
+                        <option value="clothes">Clothes</option>
+                        <option value="shoes">Shoes</option>
+                        <option value="makeup">Makeup</option>
+                        <option value="accessories">Accessories</option>
+                      </>
+                    )}
                   </select>
                 </div>
 

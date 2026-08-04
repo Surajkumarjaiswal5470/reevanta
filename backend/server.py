@@ -43,6 +43,7 @@ from routers.health_metrics import router as health_metrics_router
 from routers.audit import router as audit_router
 from routers.webhooks import router as webhooks_router
 from routers.reviews import router as reviews_router
+from routers.admin.categories import public_router as categories_public_router
 from routers.feature_flags import router as feature_flags_router
 from core.logger import JSONLogMiddleware
 from core.monitoring import init_sentry
@@ -134,6 +135,7 @@ api_router.include_router(audit_router)
 api_router.include_router(webhooks_router)
 api_router.include_router(feature_flags_router)
 api_router.include_router(reviews_router)
+api_router.include_router(categories_public_router)
 
 app.include_router(api_router)
 app.include_router(chat_ws_router)

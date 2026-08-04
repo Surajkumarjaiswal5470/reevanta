@@ -378,28 +378,27 @@ export function AddProductPage({ dynamicCategories = [], loadData, setActiveTab 
                 onChange={(e) => updateField("category", e.target.value)}
                 className="w-full mt-1 bg-[#FAF5EC] border border-[#E8DFC9] rounded-xl p-2.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#5C1E1E] transition"
               >
-                {dynamicCategories.length > 0 ? (
-                  dynamicCategories.map((c) => (
-                    <option key={c.id || c.slug} value={c.slug || c.name.toLowerCase()}>
-                      {c.name}
-                    </option>
-                  ))
-                ) : (
-                  <>
-                    <option value="sarees">Sarees</option>
-                    <option value="lehengas">Lehengas</option>
-                    <option value="kurtas">Kurtas</option>
-                    <option value="clothes">Clothes</option>
-                    <option value="jewelry">Jewelry</option>
-                    <option value="cosmetics">Cosmetics</option>
-                    <option value="makeup">Makeup & Cosmetics</option>
-                    <option value="shampoo">Shampoo</option>
-                    <option value="skincare">Skin Care</option>
-                    <option value="perfume">Perfume & Fragrances</option>
-                    <option value="shoes">Shoes & Sneakers</option>
-                    <option value="bags">Bags & Accessories</option>
-                  </>
-                )}
+                <optgroup label="Cosmetics & Beauty">
+                  <option value="cosmetics">Cosmetics & Makeup</option>
+                  <option value="lipstick">Lipsticks & Lip Care</option>
+                  <option value="serum">Face Serums & Glow Oils</option>
+                  <option value="eyeshadow">Eyeshadows & Palettes</option>
+                  <option value="compact">Compacts & Powders</option>
+                  <option value="fixer">Fixing Sprays & Toners</option>
+                  <option value="skincare">Skin Care & Cleansers</option>
+                  <option value="sunscreen">Sunscreen & UV Shield</option>
+                  <option value="haircare">Hair Care & Shampoos</option>
+                  <option value="perfume">Perfumes & Fragrances</option>
+                </optgroup>
+                <optgroup label="Fashion & Luxury">
+                  <option value="jewelry">Royal Jewelry & Kundan</option>
+                  <option value="sarees">Sarees & Ethnic Wear</option>
+                  <option value="lehengas">Lehengas & Cholis</option>
+                  <option value="kurtas">Kurtas & Suits</option>
+                  <option value="clothes">Western Clothes & Apparel</option>
+                  <option value="shoes">Footwear & Heels</option>
+                  <option value="bags">Bags & Luxury Clutches</option>
+                </optgroup>
               </select>
 
               {/* Category group badge */}
@@ -410,6 +409,51 @@ export function AddProductPage({ dynamicCategories = [], loadData, setActiveTab 
                   </span>
                 </div>
               )}
+            </div>
+
+            {/* Quick Subcategory Tag Selector */}
+            <div className="md:col-span-2 bg-[#FAF5EC] border border-[#E8DFC9] rounded-xl p-3 space-y-1.5">
+              <label className="text-[11px] font-bold text-[#8B7355] flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-amber-600" /> Quick Subcategory Preset (Auto-sets category & tags)
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  { label: "💄 Lipsticks", tag: "lipstick", cat: "cosmetics" },
+                  { label: "💧 Face Serums", tag: "serum", cat: "skincare" },
+                  { label: "✨ Eyeshadows", tag: "eyeshadow", cat: "cosmetics" },
+                  { label: "🌸 Compact Powders", tag: "compact", cat: "cosmetics" },
+                  { label: "🌹 Setting Sprays", tag: "fixer", cat: "cosmetics" },
+                  { label: "🧴 Hair Care", tag: "shampoo", cat: "haircare" },
+                  { label: "🌸 Perfumes", tag: "perfume", cat: "fragrance" },
+                  { label: "💎 Royal Jewelry", tag: "jewelry", cat: "jewelry" },
+                  { label: "👗 Ethnic Sarees", tag: "sarees", cat: "sarees" },
+                  { label: "👟 Footwear", tag: "shoes", cat: "shoes" },
+                  { label: "👜 Luxury Bags", tag: "bags", cat: "bags" },
+                  { label: "☀️ Sunscreen", tag: "sunscreen", cat: "skincare" }
+                ].map((preset) => {
+                  const isTagged = (form.tags || []).includes(preset.tag);
+                  return (
+                    <button
+                      key={preset.tag}
+                      type="button"
+                      onClick={() => {
+                        updateField("category", preset.cat);
+                        if (!isTagged) {
+                          updateField("tags", [...(form.tags || []), preset.tag]);
+                        }
+                        toast.success(`Set category to "${preset.cat}" & tagged with "${preset.tag}"!`);
+                      }}
+                      className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border transition active:scale-95 ${
+                        isTagged
+                          ? "bg-[#5C1E1E] text-white border-[#5C1E1E] shadow-sm"
+                          : "bg-white text-[#2D2118] border-[#E8DFC9] hover:border-[#5C1E1E]"
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <div>

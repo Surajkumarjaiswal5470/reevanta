@@ -30,7 +30,13 @@ const CATEGORY_GROUP_MAP = {
   "makeup-cosmetics": "cosmetics",
   foundation: "cosmetics",
   lipstick: "cosmetics",
+  "lip-care": "cosmetics",
   eyeshadow: "cosmetics",
+  "eye-makeup": "cosmetics",
+  compact: "cosmetics",
+  "face-powders": "cosmetics",
+  fixer: "cosmetics",
+  "setting-mists": "cosmetics",
 
   // Hair Care
   shampoo: "haircare",

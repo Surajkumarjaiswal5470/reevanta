@@ -16,7 +16,7 @@ from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Response, HTTPException, Depends, Request
 from core.database import db
 from core.security import (
-    hash_password, verify_password, set_auth_cookies, format_phone, get_current_user
+    hash_password, verify_password, set_auth_cookies, format_phone, get_current_user, create_access_token
 )
 from models.auth import (
     UserRegister, UserLogin, AdminSecretLoginRequest, SendOTPRequest,
@@ -68,15 +68,28 @@ async def admin_secret_login(inp: AdminSecretLoginRequest, response: Response):
     if not admin_user:
         admin_user = await db.users.find_one({"email": ADMIN_EMAIL})
 
-    admin_id = str(admin_user["_id"]) if admin_user else "admin_spk_id"
-    admin_email = admin_user.get("email", "spk@reevanta.com") if admin_user else "spk@reevanta.com"
+    if not admin_user:
+        doc = {
+            "email": ADMIN_EMAIL,
+            "name": "spk",
+            "role": "admin",
+            "created_at": datetime.now(timezone.utc)
+        }
+        res = await db.users.insert_one(doc)
+        admin_id = str(res.inserted_id)
+        admin_email = ADMIN_EMAIL
+    else:
+        admin_id = str(admin_user["_id"])
+        admin_email = admin_user.get("email", ADMIN_EMAIL)
 
+    access_token = create_access_token(admin_id, admin_email)
     set_auth_cookies(response, admin_id, admin_email)
     return {
         "id": admin_id,
         "name": "spk",
         "email": admin_email,
         "role": "admin",
+        "token": access_token,
         "message": "Admin authenticated successfully with Secret Key!"
     }
 

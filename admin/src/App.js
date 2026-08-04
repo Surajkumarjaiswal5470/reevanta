@@ -9,8 +9,21 @@ const API = `${BACKEND_URL}/api`;
 
 axios.defaults.withCredentials = true;
 
+// Pre-attach stored authorization header if available
+const savedAdminToken = typeof localStorage !== "undefined" ? localStorage.getItem("reevanta_admin_token") : null;
+if (savedAdminToken) {
+  axios.defaults.headers.common["Authorization"] = `Bearer ${savedAdminToken}`;
+}
+
 export default function App() {
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const savedUser = localStorage.getItem("reevanta_admin_user");
+      return savedUser ? JSON.parse(savedUser) : null;
+    } catch {
+      return null;
+    }
+  });
   const [authLoading, setAuthLoading] = useState(true);
   const [adminName, setAdminName] = useState("spk");
   const [secretKey, setSecretKey] = useState("");
@@ -19,18 +32,54 @@ export default function App() {
   const [authError, setAuthError] = useState("");
 
   useEffect(() => {
+    const token = localStorage.getItem("reevanta_admin_token");
+    if (token) {
+      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    }
+
     axios
       .get(`${API}/auth/me`)
       .then((res) => {
         if (res.data && res.data.role === "admin") {
           setCurrentUser(res.data);
+          localStorage.setItem("reevanta_admin_user", JSON.stringify(res.data));
         } else {
-          setCurrentUser(null);
+          // Check cached session
+          const cached = localStorage.getItem("reevanta_admin_user");
+          if (cached) {
+            try {
+              const parsed = JSON.parse(cached);
+              if (parsed && parsed.role === "admin") {
+                setCurrentUser(parsed);
+              } else {
+                setCurrentUser(null);
+              }
+            } catch {
+              setCurrentUser(null);
+            }
+          } else {
+            setCurrentUser(null);
+          }
         }
         setAuthLoading(false);
       })
       .catch(() => {
-        setCurrentUser(null);
+        // Fallback to local stored session if endpoint check fails temporarily
+        const cached = localStorage.getItem("reevanta_admin_user");
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            if (parsed && parsed.role === "admin") {
+              setCurrentUser(parsed);
+            } else {
+              setCurrentUser(null);
+            }
+          } catch {
+            setCurrentUser(null);
+          }
+        } else {
+          setCurrentUser(null);
+        }
         setAuthLoading(false);
       });
   }, []);
@@ -48,6 +97,12 @@ export default function App() {
         name: adminName.trim(),
         secretKey: secretKey.trim()
       });
+
+      if (res.data.token) {
+        localStorage.setItem("reevanta_admin_token", res.data.token);
+        axios.defaults.headers.common["Authorization"] = `Bearer ${res.data.token}`;
+      }
+      localStorage.setItem("reevanta_admin_user", JSON.stringify(res.data));
       setCurrentUser(res.data);
       toast.success(`Welcome spk! Admin workspace unlocked successfully.`);
     } catch (err) {
@@ -65,6 +120,9 @@ export default function App() {
     } catch {
       // ignore
     } finally {
+      localStorage.removeItem("reevanta_admin_token");
+      localStorage.removeItem("reevanta_admin_user");
+      delete axios.defaults.headers.common["Authorization"];
       setCurrentUser(null);
       toast.info("Logged out from Admin Portal");
     }

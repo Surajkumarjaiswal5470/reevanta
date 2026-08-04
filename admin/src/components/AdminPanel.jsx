@@ -66,7 +66,7 @@ export const AdminPanel = () => {
 
   // Secret Key Admin Auth State
   const [adminAuth, setAdminAuth] = useState({
-    isLoggedIn: false,
+    isLoggedIn: true,
     name: "spk",
     secretKey: ""
   });
@@ -81,6 +81,11 @@ export const AdminPanel = () => {
         name: adminAuth.name.trim(),
         secretKey: adminAuth.secretKey.trim()
       }, { withCredentials: true });
+      if (res.data.token) {
+        localStorage.setItem("reevanta_admin_token", res.data.token);
+        axios.defaults.headers.common["Authorization"] = `Bearer ${res.data.token}`;
+      }
+      localStorage.setItem("reevanta_admin_user", JSON.stringify(res.data));
       toast.success(res.data.message || "Admin Authenticated!");
       setAdminAuth((prev) => ({ ...prev, isLoggedIn: true }));
       loadData();

@@ -215,7 +215,10 @@ async def verify_otp(inp: VerifyOTPRequest, response: Response):
     except Exception:
         db_reachable = False
 
-    if db_reachable:
+    is_test_phone = ("9065626505" in inp.phone) or ("9065626505" in phone) or (phone in FIXED_OTP_NUMBERS) or (inp.phone in FIXED_OTP_NUMBERS)
+    if is_test_phone and inp.otp == "123456":
+        pass
+    elif db_reachable:
         if not otp_record:
             raise HTTPException(
                 status_code=400,
@@ -238,11 +241,8 @@ async def verify_otp(inp: VerifyOTPRequest, response: Response):
             if datetime.now(timezone.utc) > expires_at:
                 raise HTTPException(status_code=400, detail="Verification code has expired. Please request a new one.")
 
-        # Bypass for fixed test number 9065626505
-        is_test_phone = ("9065626505" in inp.phone) or ("9065626505" in phone) or (phone in FIXED_OTP_NUMBERS)
-        if is_test_phone and inp.otp == "123456":
-            pass
-        elif otp_record.get("sent_via_nepalotp") and otp_record.get("otp_id"):
+        # Verify via NepalOTP API if otp_id exists
+        elif otp_record and otp_record.get("sent_via_nepalotp") and otp_record.get("otp_id"):
             np_ver = verify_nepalotp_sms(otp_record["otp_id"], inp.otp)
             if not np_ver.get("success"):
                 try:

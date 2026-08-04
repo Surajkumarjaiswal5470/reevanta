@@ -10,6 +10,7 @@ from routers.admin.categories import router as admin_categories_router
 from routers.admin.reviews import router as admin_reviews_router
 from routers.admin.catalog import router as admin_catalog_router
 from routers.admin.shipping import router as admin_shipping_router
+from routers.admin.notifications import router as admin_notifications_router
 
 admin_router = APIRouter(prefix="/admin")
 admin_router.include_router(admin_products_router)
@@ -23,3 +24,4 @@ admin_router.include_router(admin_categories_router)
 admin_router.include_router(admin_reviews_router)
 admin_router.include_router(admin_catalog_router)
 admin_router.include_router(admin_shipping_router)
+admin_router.include_router(admin_notifications_router)

@@ -12,6 +12,7 @@ import { PromotionsManagerPage } from "../pages/PromotionsManagerPage";
 import { ReturnsPage } from "../pages/ReturnsPage";
 import { ShippingManagerPage } from "../pages/ShippingManagerPage";
 import { ContentCMSPage } from "../pages/ContentCMSPage";
+import { NotificationCenterPage } from "../pages/NotificationCenterPage";
 import { AdminQueueDashboard } from "./AdminQueueDashboard";
 import { AdminAuditConsole } from "./AdminAuditConsole";
 import {
@@ -45,7 +46,8 @@ import {
   Megaphone,
   RotateCcw,
   Globe,
-  FileText
+  FileText,
+  Bell
 } from "lucide-react";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || (process.env.NODE_ENV === 'production' ? "https://reevanta-backend-pg3v.onrender.com" : "http://localhost:8001");
@@ -472,6 +474,7 @@ export const AdminPanel = () => {
         {(() => {
           const navItems = [
             { id: "overview", label: "Overview & Analytics", icon: TrendingUp },
+            { id: "notifications", label: "Notifications & Alerts", icon: Bell },
             { id: "orders", label: `Orders (${orders.length})`, icon: Truck },
             { id: "returns", label: "Returns & Refunds", icon: RotateCcw },
             { id: "shipping", label: "Shipping & Logistics", icon: Globe },
@@ -1412,6 +1415,13 @@ export const AdminPanel = () => {
       {activeTab === "cms" && (
         <div className="space-y-4">
           <ContentCMSPage />
+        </div>
+      )}
+
+      {/* NOTIFICATIONS & OPERATIONAL ALERTS TAB */}
+      {activeTab === "notifications" && (
+        <div className="space-y-4">
+          <NotificationCenterPage onNavigateTab={(tab) => setActiveTab(tab)} />
         </div>
       )}
 

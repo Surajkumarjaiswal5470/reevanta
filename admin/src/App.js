@@ -86,7 +86,7 @@ export default function App() {
                 RIVAANTA
               </h1>
               <p className="text-[10px] text-[#B8956A] tracking-wider font-bold uppercase">
-                Admin Operations Portal · Port 3001
+                Admin Operations Portal
               </p>
             </div>
           </div>
@@ -124,7 +124,7 @@ export default function App() {
               </div>
               <h2 className="text-2xl font-black text-[#2D2118]">Admin Secret Key Portal</h2>
               <p className="text-xs text-[#8B7355]">
-                Enter Admin Name (<strong className="text-[#5C1E1E]">spk</strong>) and Secret Key (<strong className="text-[#5C1E1E]">PHOENIX</strong>) to unlock Port 3001 workspace.
+                Enter Admin Name (<strong className="text-[#5C1E1E]">spk</strong>) and Secret Key (<strong className="text-[#5C1E1E]">PHOENIX</strong>) to unlock your admin control center.
               </p>
             </div>
 

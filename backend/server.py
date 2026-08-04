@@ -145,6 +145,8 @@ cors_origins = [
     "http://127.0.0.1:8001",
     "http://localhost:3001",
     "https://reevanta.onrender.com",
+    "https://reevanta-admin.onrender.com",
+    "https://reevanta-backend-pg3v.onrender.com",
     "https://therivaanta.com",
     "https://www.therivaanta.com",
 ]
@@ -165,20 +167,21 @@ app.add_middleware(
 @app.middleware("http")
 async def cors_header_fallback_middleware(request: Request, call_next):
     origin = request.headers.get("origin")
+    req_headers = request.headers.get("access-control-request-headers", "Content-Type, Authorization, X-Requested-With, Accept, X-Reevanta-Signature, X-Reevanta-Event")
     if request.method == "OPTIONS":
         response = Response(status_code=204)
         if origin:
             response.headers["Access-Control-Allow-Origin"] = origin
             response.headers["Access-Control-Allow-Credentials"] = "true"
             response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, PATCH, OPTIONS"
-            response.headers["Access-Control-Allow-Headers"] = "*"
+            response.headers["Access-Control-Allow-Headers"] = req_headers
         return response
 
     response = await call_next(request)
     if origin:
         response.headers["Access-Control-Allow-Origin"] = origin
         response.headers["Access-Control-Allow-Credentials"] = "true"
-        response.headers["Access-Control-Allow-Headers"] = "*"
+        response.headers["Access-Control-Allow-Headers"] = req_headers
         response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, PATCH, OPTIONS"
     return response
 

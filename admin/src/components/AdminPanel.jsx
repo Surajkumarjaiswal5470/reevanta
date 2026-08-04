@@ -7,6 +7,7 @@ import { ReviewModerationPage } from "../pages/ReviewModerationPage";
 import { CategoriesPage } from "../pages/CategoriesPage";
 import { CustomersPage } from "../pages/CustomersPage";
 import { CatalogManagerPage } from "../pages/CatalogManagerPage";
+import { CouponManagerPage } from "../pages/CouponManagerPage";
 import { AdminQueueDashboard } from "./AdminQueueDashboard";
 import { AdminAuditConsole } from "./AdminAuditConsole";
 import {
@@ -1441,63 +1442,8 @@ export const AdminPanel = () => {
 
             {/* Vouchers Table */}
             <div className="lg:col-span-2 bg-white rounded-3xl p-6 border border-[#E8DFC9] shadow-sm space-y-4">
-              <div className="flex justify-between items-center border-b border-[#E8DFC9] pb-3">
-                <h3 className="font-black text-lg text-[#2D2118]">Active Store Vouchers ({vouchers.length})</h3>
-                <span className="text-xs text-gray-500 font-bold">Auto-Apply & Cart Coupons</span>
-              </div>
-
-              {vouchers.length === 0 ? (
-                <div className="text-center py-12 text-xs text-[#8B7355]">No active vouchers found.</div>
-              ) : (
-                <div className="space-y-3">
-                  {vouchers.map((v) => (
-                    <div
-                      key={v.id}
-                      className="p-4 rounded-2xl border border-[#E8DFC9] bg-[#FAF5EC]/50 flex items-center justify-between gap-4"
-                    >
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-black text-sm text-[#5C1E1E] bg-white border border-[#E8DFC9] px-2.5 py-0.5 rounded-lg tracking-wider">
-                            {v.code}
-                          </span>
-                          {v.autoApply && (
-                            <span className="bg-amber-500 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase">
-                              AUTO-APPLY
-                            </span>
-                          )}
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${v.isActive ? "bg-emerald-100 text-emerald-800" : "bg-gray-200 text-gray-600"}`}>
-                            {v.isActive ? "ACTIVE" : "DISABLED"}
-                          </span>
-                        </div>
-                        <div className="text-xs font-bold text-[#2D2118]">
-                          {v.discountType === "fixed" ? `Flat ₹${v.discountValue} Off` : `${v.discountValue}% Off`}
-                          {v.minOrderValue > 0 && <span className="text-gray-500 font-normal"> · Min Order ₹{v.minOrderValue}</span>}
-                        </div>
-                        {v.description && <p className="text-[11px] text-gray-500">{v.description}</p>}
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleToggleVoucher(v.id, v.isActive)}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
-                            v.isActive ? "bg-amber-100 text-amber-900 hover:bg-amber-200" : "bg-emerald-100 text-emerald-900 hover:bg-emerald-200"
-                          }`}
-                        >
-                          {v.isActive ? "Disable" : "Enable"}
-                        </button>
-                        <button
-                          onClick={() => handleDeleteVoucher(v.id)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-xl transition"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+        <div className="space-y-4">
+          <CouponManagerPage />
         </div>
       )}
 

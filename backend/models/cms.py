@@ -1,6 +1,6 @@
 """
-CMS & Promotions Pydantic Models
-Covers Hero Slider Carousels, Announcement Bar Tickers, Grid Banners, Deals Countdown Timers, Seasonal Campaigns, and Modal Popups.
+CMS, Dynamic Pages & Content Pydantic Models
+Covers Hero Slider, Announcement Bar, Static Pages (About, Contact, Privacy, Terms, Returns, Shipping), Blog Posts, FAQs, Careers, and Editorial Lookbooks.
 """
 
 from pydantic import BaseModel, Field
@@ -59,9 +59,58 @@ class SeasonalCampaignSchema(BaseModel):
     isActive: bool = True
 
 
-class HomepageCMSUpdate(BaseModel):
-    hero_slides: Optional[List[HeroSlideSchema]] = None
-    announcement_bar: Optional[AnnouncementBarSchema] = None
-    countdown_timer: Optional[CountdownTimerSchema] = None
-    promo_popup: Optional[PromoPopupSchema] = None
-    seasonal_campaigns: Optional[List[SeasonalCampaignSchema]] = None
+class PageSEOSchema(BaseModel):
+    metaTitle: Optional[str] = ""
+    metaDescription: Optional[str] = ""
+    keywords: Optional[str] = ""
+
+
+class CMSPageSchema(BaseModel):
+    slug: str = Field(..., examples=["about-us", "privacy-policy"])
+    title: str = Field(..., min_length=2, max_length=150)
+    content: str = Field(...)
+    seo: Optional[PageSEOSchema] = None
+    is_published: bool = True
+
+
+class BlogPostSchema(BaseModel):
+    id: Optional[str] = None
+    title: str = Field(..., min_length=2, max_length=200)
+    slug: str = Field(...)
+    author: str = Field("Reevanta Heritage Editorial")
+    category: str = Field("Bridal Fashion", examples=["Bridal Fashion", "Heritage Craft", "Care Guide"])
+    featuredImage: str = Field(...)
+    summary: Optional[str] = ""
+    content: str = Field(...)
+    tags: List[str] = Field(default_factory=list)
+    isPublished: bool = True
+
+
+class FAQItemSchema(BaseModel):
+    id: Optional[str] = None
+    category: str = Field("Orders & Shipping", examples=["Orders & Shipping", "Returns & Refunds", "Custom Tailoring"])
+    question: str = Field(...)
+    answer: str = Field(...)
+    sort_order: int = Field(1, ge=1)
+
+
+class CareerJobSchema(BaseModel):
+    id: Optional[str] = None
+    title: str = Field(..., examples=["Senior Silk Designer & Textile Artisan"])
+    department: str = Field("Design & Atelier")
+    location: str = Field("Kathmandu Studio / Remote")
+    type: str = Field("Full-Time")
+    description: str = Field(...)
+    requirements: Optional[str] = ""
+    applyLink: Optional[str] = "mailto:careers@therivaanta.com"
+    is_active: bool = True
+
+
+class LookbookItemSchema(BaseModel):
+    id: Optional[str] = None
+    title: str = Field(..., examples=["Royal Kanjivaram Bridal Editorial 2026"])
+    season: str = Field("Festive 2026")
+    bannerUrl: str = Field(...)
+    galleryImages: List[str] = Field(default_factory=list)
+    taggedProductIds: List[str] = Field(default_factory=list)
+    description: Optional[str] = ""

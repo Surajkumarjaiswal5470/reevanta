@@ -11,6 +11,7 @@ import { CouponManagerPage } from "../pages/CouponManagerPage";
 import { PromotionsManagerPage } from "../pages/PromotionsManagerPage";
 import { ReturnsPage } from "../pages/ReturnsPage";
 import { ShippingManagerPage } from "../pages/ShippingManagerPage";
+import { ContentCMSPage } from "../pages/ContentCMSPage";
 import { AdminQueueDashboard } from "./AdminQueueDashboard";
 import { AdminAuditConsole } from "./AdminAuditConsole";
 import {
@@ -43,7 +44,8 @@ import {
   Sparkles,
   Megaphone,
   RotateCcw,
-  Globe
+  Globe,
+  FileText
 } from "lucide-react";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || (process.env.NODE_ENV === 'production' ? "https://reevanta-backend-pg3v.onrender.com" : "http://localhost:8001");
@@ -477,6 +479,7 @@ export const AdminPanel = () => {
             { id: "catalog", label: "Catalog & Brands Suite", icon: Sparkles },
             { id: "vouchers", label: `Vouchers (${vouchers.length})`, icon: Tag },
             { id: "promotions", label: "Promotions & Banners", icon: Megaphone },
+            { id: "cms", label: "Pages & Content CMS", icon: FileText },
             { id: "categories", label: `Categories (${dynamicCategories.length})`, icon: Layers },
             { id: "customers", label: "Customers & Accounts", icon: Users },
             { id: "support", label: "Live Support Chat", icon: Headset },
@@ -1402,6 +1405,13 @@ export const AdminPanel = () => {
       {activeTab === "shipping" && (
         <div className="space-y-4">
           <ShippingManagerPage />
+        </div>
+      )}
+
+      {/* PAGES & CONTENT CMS SUITE TAB */}
+      {activeTab === "cms" && (
+        <div className="space-y-4">
+          <ContentCMSPage />
         </div>
       )}
 

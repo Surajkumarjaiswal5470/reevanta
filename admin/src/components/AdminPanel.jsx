@@ -6,6 +6,7 @@ import { AdminChatDesk } from "./AdminChatDesk";
 import { ReviewModerationPage } from "../pages/ReviewModerationPage";
 import { CategoriesPage } from "../pages/CategoriesPage";
 import { CustomersPage } from "../pages/CustomersPage";
+import { CatalogManagerPage } from "../pages/CatalogManagerPage";
 import { AdminQueueDashboard } from "./AdminQueueDashboard";
 import { AdminAuditConsole } from "./AdminAuditConsole";
 import {
@@ -34,7 +35,8 @@ import {
   Lock,
   Menu,
   Star,
-  Users
+  Users,
+  Sparkles
 } from "lucide-react";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || (process.env.NODE_ENV === 'production' ? "https://reevanta-backend-pg3v.onrender.com" : "http://localhost:8001");
@@ -463,6 +465,7 @@ export const AdminPanel = () => {
             { id: "overview", label: "Overview & Analytics", icon: TrendingUp },
             { id: "orders", label: `Orders (${orders.length})`, icon: Truck },
             { id: "products", label: `Products (${products.length})`, icon: Package },
+            { id: "catalog", label: "Catalog & Brands Suite", icon: Sparkles },
             { id: "vouchers", label: `Vouchers (${vouchers.length})`, icon: Tag },
             { id: "categories", label: `Categories (${dynamicCategories.length})`, icon: Layers },
             { id: "customers", label: "Customers & Accounts", icon: Users },
@@ -1530,6 +1533,13 @@ export const AdminPanel = () => {
       {activeTab === "customers" && (
         <div className="space-y-4">
           <CustomersPage />
+        </div>
+      )}
+
+      {/* CATALOG & BRANDS SUITE TAB */}
+      {activeTab === "catalog" && (
+        <div className="space-y-4">
+          <CatalogManagerPage />
         </div>
       )}
 

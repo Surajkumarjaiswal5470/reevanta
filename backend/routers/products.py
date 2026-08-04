@@ -13,17 +13,63 @@ router = APIRouter(prefix="/products", tags=["Products"])
 @router.get("")
 async def get_products(
     category: Optional[str] = None,
+    brand: Optional[str] = None,
+    collection: Optional[str] = None,
+    gender: Optional[str] = None,
+    material: Optional[str] = None,
+    fit: Optional[str] = None,
+    is_featured: Optional[bool] = None,
+    is_trending: Optional[bool] = None,
+    is_bestseller: Optional[bool] = None,
+    is_new_arrival: Optional[bool] = None,
+    status: Optional[str] = None,
+    sku: Optional[str] = None,
     q: Optional[str] = None,
     page: Optional[int] = None,
     limit: int = 100,
     sort_by: Optional[str] = None
 ):
-    cache_key = f"api_products:{category}:{q}:{page}:{limit}:{sort_by}"
+    cache_key = f"api_products:{category}:{brand}:{collection}:{gender}:{material}:{is_featured}:{is_trending}:{is_bestseller}:{is_new_arrival}:{status}:{q}:{page}:{limit}:{sort_by}"
     cached = await cache_get(cache_key)
     if cached is not None:
         return cached
 
     all_items = await search_products(query=q, category=category, limit=1000)
+
+    # Additional catalog attribute filtering
+    filtered = []
+    for item in all_items:
+        if brand and (item.get("brand") or "").lower() != brand.lower():
+            continue
+        if collection and (item.get("collection") or "").lower() != collection.lower():
+            continue
+        if status and (item.get("status") or "published").lower() != status.lower():
+            continue
+        if sku and (item.get("sku") or "").lower() != sku.lower():
+            continue
+
+        # Attribute filters
+        attrs = item.get("attributes") or {}
+        if gender and (attrs.get("gender") or item.get("gender") or "").lower() != gender.lower():
+            continue
+        if material and (attrs.get("material") or item.get("fabric") or "").lower() != material.lower():
+            continue
+        if fit and (attrs.get("fit") or item.get("fit") or "").lower() != fit.lower():
+            continue
+
+        # Badging flag filters
+        if is_featured is not None and bool(item.get("isFeatured")) != is_featured:
+            continue
+        if is_trending is not None and bool(item.get("isTrending")) != is_trending:
+            continue
+        if is_bestseller is not None and bool(item.get("isBestSeller")) != is_bestseller:
+            continue
+        if is_new_arrival is not None and bool(item.get("isNewArrival")) != is_new_arrival:
+            continue
+
+        filtered.append(item)
+
+    all_items = filtered
 
     if sort_by == "price_low":
         all_items = sorted(all_items, key=lambda x: x.get("price", 0))

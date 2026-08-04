@@ -1,4 +1,4 @@
-import React, { useRef, useMemo } from "react";
+import React, { useRef, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import { COSMETICS_SUB_CATEGORIES } from "../mock";
 
@@ -8,6 +8,11 @@ export const CosmeticsSubCategorySlider = React.memo(function CosmeticsSubCatego
   products = []
 }) {
   const scrollRef = useRef(null);
+  const [failedImages, setFailedImages] = useState({});
+
+  const handleImageError = (id) => {
+    setFailedImages((prev) => ({ ...prev, [id]: true }));
+  };
 
   const scroll = (dir) => {
     if (!scrollRef.current) return;
@@ -85,6 +90,8 @@ export const CosmeticsSubCategorySlider = React.memo(function CosmeticsSubCatego
           {COSMETICS_SUB_CATEGORIES.map((sub) => {
             const isSelected = activeSubCategory === sub.tag;
             const count = subCategoryCounts[sub.id] ?? 0;
+            const isImgFailed = failedImages[sub.id];
+
             return (
               <button
                 key={sub.id}
@@ -95,14 +102,22 @@ export const CosmeticsSubCategorySlider = React.memo(function CosmeticsSubCatego
                     : "bg-white text-[#2D2118] border-[#E8DFC9] hover:border-[#5C1E1E] hover:shadow-sm"
                 }`}
               >
-                {/* Thumbnail image circle */}
-                <div className="relative w-11 h-11 sm:w-12 sm:h-12 rounded-xl overflow-hidden shrink-0 border border-[#E8DFC9] bg-[#FAF5EC]">
-                  <img
-                    src={sub.image}
-                    alt={sub.name}
-                    className="w-full h-full object-cover group-hover/card:scale-110 transition-transform duration-300"
-                    loading="lazy"
-                  />
+                {/* Thumbnail container */}
+                <div className="relative w-11 h-11 sm:w-12 sm:h-12 rounded-xl overflow-hidden shrink-0 border border-[#E8DFC9] bg-[#FAF5EC] flex items-center justify-center">
+                  {!isImgFailed ? (
+                    <img
+                      src={sub.image}
+                      alt={sub.name}
+                      decoding="async"
+                      loading="eager"
+                      onError={() => handleImageError(sub.id)}
+                      className="w-full h-full object-cover group-hover/card:scale-110 transition-transform duration-300"
+                    />
+                  ) : (
+                    <div className={`w-full h-full bg-gradient-to-br ${sub.gradient || 'from-[#5C1E1E] to-[#2D2118]'} flex items-center justify-center text-white text-lg font-bold shadow-inner`}>
+                      {sub.icon}
+                    </div>
+                  )}
                   <span className="absolute top-0.5 right-0.5 text-[10px]">
                     {sub.icon}
                   </span>

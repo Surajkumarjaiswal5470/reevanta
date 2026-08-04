@@ -10,6 +10,7 @@ import { CatalogManagerPage } from "../pages/CatalogManagerPage";
 import { CouponManagerPage } from "../pages/CouponManagerPage";
 import { PromotionsManagerPage } from "../pages/PromotionsManagerPage";
 import { ReturnsPage } from "../pages/ReturnsPage";
+import { ShippingManagerPage } from "../pages/ShippingManagerPage";
 import { AdminQueueDashboard } from "./AdminQueueDashboard";
 import { AdminAuditConsole } from "./AdminAuditConsole";
 import {
@@ -41,7 +42,8 @@ import {
   Users,
   Sparkles,
   Megaphone,
-  RotateCcw
+  RotateCcw,
+  Globe
 } from "lucide-react";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || (process.env.NODE_ENV === 'production' ? "https://reevanta-backend-pg3v.onrender.com" : "http://localhost:8001");
@@ -470,6 +472,7 @@ export const AdminPanel = () => {
             { id: "overview", label: "Overview & Analytics", icon: TrendingUp },
             { id: "orders", label: `Orders (${orders.length})`, icon: Truck },
             { id: "returns", label: "Returns & Refunds", icon: RotateCcw },
+            { id: "shipping", label: "Shipping & Logistics", icon: Globe },
             { id: "products", label: `Products (${products.length})`, icon: Package },
             { id: "catalog", label: "Catalog & Brands Suite", icon: Sparkles },
             { id: "vouchers", label: `Vouchers (${vouchers.length})`, icon: Tag },
@@ -1499,6 +1502,13 @@ export const AdminPanel = () => {
       {activeTab === "returns" && (
         <div className="space-y-4">
           <ReturnsPage />
+        </div>
+      )}
+
+      {/* SHIPPING & LOGISTICS SUITE TAB */}
+      {activeTab === "shipping" && (
+        <div className="space-y-4">
+          <ShippingManagerPage />
         </div>
       )}
 

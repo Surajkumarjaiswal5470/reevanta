@@ -34,6 +34,8 @@ from routers.personalization import router as personalization_router
 from routers.support import router as support_router
 from routers.admin import admin_router
 from routers.admin.cms import router as admin_cms_router
+from routers.admin.catalog import public_router as public_brands_router
+from routers.admin.shipping import public_router as public_shipping_router
 from routers.upload import router as upload_router
 from routers.search import router as search_router
 from routers.chat_ws import router as chat_ws_router
@@ -138,6 +140,7 @@ api_router.include_router(feature_flags_router)
 api_router.include_router(reviews_router)
 api_router.include_router(categories_public_router)
 api_router.include_router(public_brands_router)
+api_router.include_router(public_shipping_router)
 
 app.include_router(api_router)
 app.include_router(chat_ws_router)

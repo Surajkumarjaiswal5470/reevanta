@@ -124,28 +124,9 @@ async def search_products(query: Optional[str] = None, category: Optional[str] =
             mongo_query["$or"] = [{"name": regex}, {"brand": regex}, {"description": regex}, {"tags": regex}, {"category": regex}]
         
         products = await db.products.find(mongo_query).to_list(limit)
-        if products:
-            return [serialize_doc(p) for p in products]
+        return [serialize_doc(p) for p in products]
     except Exception as err:
         logger.warning("MongoDB product search failed: %s", err)
-
-    # Final fallback: serve static seed catalog data so homepage always shows products
-    try:
-        from seeds.catalog_data import SEED_PRODUCTS
-        results = SEED_PRODUCTS
-        if category and category != "all":
-            results = [p for p in results if p.get("category") == category]
-        if query and len(query.strip()) > 0:
-            q = query.strip().lower()
-            results = [p for p in results if q in p.get("name", "").lower() or q in p.get("brand", "").lower() or q in p.get("description", "").lower() or any(q in t.lower() for t in p.get("tags", []))]
-        # Add an 'id' field based on index for frontend compatibility
-        for i, p in enumerate(results):
-            if "id" not in p:
-                p["id"] = f"seed_{i}"
-        logger.info("Serving %d products from static seed catalog.", len(results[:limit]))
-        return results[:limit]
-    except Exception as seed_err:
-        logger.warning("Static seed fallback also failed: %s", seed_err)
         return []
 
 async def search_suggestions(query: str, limit: int = 6) -> List[Dict[str, Any]]:

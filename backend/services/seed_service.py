@@ -29,16 +29,7 @@ async def seed_admin():
 from services.meilisearch_service import init_meilisearch, bulk_index_products
 
 async def seed_products():
-    # Previously the seeding logic removed all products if a stale category was detected.
-    # This caused the catalog to contain only the limited items from SEED_PRODUCTS
-    # (10 entries) and broke tests that expect at least 12 products.
-    # We now simply ensure the collection has the seed data without deleting
-    # existing records.
-    count = await db.products.count_documents({})
-    if count == 0:
-        await db.products.insert_many([{**p} for p in SEED_PRODUCTS])
-    
-    # Sync products with Meilisearch
+    # Sync existing products with Meilisearch (clean catalog for live production)
     init_meilisearch()
     all_products = await db.products.find({}).to_list(200)
     bulk_index_products(all_products)

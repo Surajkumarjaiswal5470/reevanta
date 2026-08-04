@@ -42,6 +42,7 @@ from routers.marketplace import router as marketplace_router
 from routers.health_metrics import router as health_metrics_router
 from routers.audit import router as audit_router
 from routers.webhooks import router as webhooks_router
+from routers.reviews import router as reviews_router
 from routers.feature_flags import router as feature_flags_router
 from core.logger import JSONLogMiddleware
 from core.monitoring import init_sentry
@@ -78,6 +79,12 @@ async def lifespan(app: FastAPI):
             await db.addresses.create_index("user_id")
             await db.carts.create_index("user_id", unique=True)
             await db.vouchers.create_index("code", unique=True)
+            await db.reviews.create_index([("product_id", 1), ("status", 1), ("created_at", -1)])
+            await db.reviews.create_index([("user_id", 1), ("product_id", 1)])
+            await db.reviews.create_index([("status", 1), ("created_at", -1)])
+            await db.reviews.create_index([("report_count", -1)])
+            await db.review_audit_log.create_index([("timestamp", -1)])
+            await db.review_bans.create_index("user_id", unique=True)
             await db.restock_subscriptions.create_index(
                 [("product_id", 1), ("email", 1)]
             )
@@ -126,6 +133,7 @@ api_router.include_router(marketplace_router)
 api_router.include_router(audit_router)
 api_router.include_router(webhooks_router)
 api_router.include_router(feature_flags_router)
+api_router.include_router(reviews_router)
 
 app.include_router(api_router)
 app.include_router(chat_ws_router)

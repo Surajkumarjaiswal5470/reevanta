@@ -3,6 +3,7 @@ import axios from "axios";
 import { toast } from "sonner";
 import { ImageUploader } from "./ImageUploader";
 import { AdminChatDesk } from "./AdminChatDesk";
+import { ReviewModerationPage } from "../pages/ReviewModerationPage";
 import { AdminQueueDashboard } from "./AdminQueueDashboard";
 import { AdminAuditConsole } from "./AdminAuditConsole";
 import {
@@ -29,7 +30,8 @@ import {
   Headset,
   Cpu,
   Lock,
-  Menu
+  Menu,
+  Star
 } from "lucide-react";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || (process.env.NODE_ENV === 'production' ? "https://reevanta-backend-pg3v.onrender.com" : "http://localhost:8001");
@@ -445,6 +447,7 @@ export const AdminPanel = () => {
             { id: "vouchers", label: `Vouchers (${vouchers.length})`, icon: Tag },
             { id: "support", label: "Live Support Chat", icon: Headset },
             { id: "queues", label: "BullMQ Dashboard", icon: Cpu },
+            { id: "reviews", label: "Reviews Moderation", icon: Star },
             { id: "enterprise", label: "Enterprise Security", icon: Lock },
             { id: "add", label: "Add Product", icon: PlusCircle }
           ];
@@ -1470,6 +1473,13 @@ export const AdminPanel = () => {
       {activeTab === "queues" && (
         <div className="space-y-4">
           <AdminQueueDashboard />
+        </div>
+      )}
+
+      {/* REVIEWS MODERATION TAB */}
+      {activeTab === "reviews" && (
+        <div className="space-y-4">
+          <ReviewModerationPage />
         </div>
       )}
 

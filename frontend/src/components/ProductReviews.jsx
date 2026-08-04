@@ -1,157 +1,163 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
-  Star, ThumbsUp, ShieldCheck, Camera, Filter, ArrowUpDown, Plus,
-  X, Check, Sparkles, AlertCircle, MessageCircle, ChevronLeft, ChevronRight, User
+  Star, ThumbsUp, ThumbsDown, ShieldCheck, Camera, Video, Filter, ArrowUpDown, Plus,
+  X, Check, Sparkles, AlertCircle, MessageCircle, ChevronLeft, ChevronRight, User,
+  Search, Flag, Heart, Zap, Play, Eye
 } from "lucide-react";
 import { apiFetch } from "../services/api";
 import { useAuth } from "../context/AuthContext";
-import { ImageUploader } from "./ImageUploader";
+import { WriteReviewModal } from "./WriteReviewModal";
+import { ReviewReportModal } from "./ReviewReportModal";
 import { toast } from "sonner";
 
+/**
+ * ProductReviews – Enterprise-grade product reviews section.
+ *
+ * Features:
+ *   - Rating overview hub with distribution chart & multi-criteria metrics
+ *   - Full filter bar: star rating, verified, photos, videos, text search, sort
+ *   - Review cards with: anonymous, verified badge, photos, videos, reactions, reports
+ *   - Photo & video lightbox
+ *   - Server-side pagination
+ *   - Write Review & Report Review modals
+ *   - Admin/Seller reply display
+ */
 export function ProductReviews({ productId, productName }) {
   const { currentUser, setShowAuthModal } = useAuth();
 
-  // Review List State
+  // Review data state
   const [reviewsData, setReviewsData] = useState({
     reviews: [],
     total: 0,
     total_unfiltered: 0,
-    avg_rating: 4.8,
-    recommend_percent: 94,
+    page: 1,
+    pages: 1,
+    has_more: false,
+    avg_rating: 0,
+    recommend_percent: 0,
     breakdown: { "5": 0, "4": 0, "3": 0, "2": 0, "1": 0 },
-    feature_ratings: { avg_fit: 3.0, avg_quality: 4.8, avg_value: 4.7 }
+    media_count: 0,
+    feature_ratings: { avg_fit: 3.0, avg_quality: 4.8, avg_value: 4.7 },
   });
   const [loading, setLoading] = useState(true);
 
-  // Filter & Sort State
-  const [sortBy, setSortBy] = useState("recent"); // recent | highest | lowest | helpful
-  const [ratingFilter, setRatingFilter] = useState(null); // null or 1..5
+  // Filter & Sort
+  const [sortBy, setSortBy] = useState("recent");
+  const [ratingFilter, setRatingFilter] = useState(null);
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [photosOnly, setPhotosOnly] = useState(false);
+  const [videosOnly, setVideosOnly] = useState(false);
+  const [searchText, setSearchText] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [page, setPage] = useState(1);
+  const LIMIT = 10;
 
-  // Write Review Modal State
+  // Modals
   const [showWriteModal, setShowWriteModal] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [formRating, setFormRating] = useState(5);
-  const [formFit, setFormFit] = useState(3); // 1=Runs Small, 3=True to Size, 5=Runs Large
-  const [formQuality, setFormQuality] = useState(5);
-  const [formValue, setFormValue] = useState(5);
-  const [formTitle, setFormTitle] = useState("");
-  const [formComment, setFormComment] = useState("");
-  const [formPhotoInput, setFormPhotoInput] = useState("");
-  const [formPhotos, setFormPhotos] = useState([]);
-  const [formName, setFormName] = useState(currentUser?.name || "");
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportTarget, setReportTarget] = useState(null);
 
-  // Photo Lightbox State
-  const [lightboxImg, setLightboxImg] = useState(null);
+  // Lightbox
+  const [lightboxMedia, setLightboxMedia] = useState(null); // { type: "image"|"video", url }
 
-  // Upvoted reviews tracking
+  // Votes tracking
   const [votedReviews, setVotedReviews] = useState({});
 
-  // Update pre-filled name when currentUser resolves
-  useEffect(() => {
-    if (currentUser?.name && !formName) {
-      setFormName(currentUser.name);
-    }
-  }, [currentUser]);
-
-  // Fetch reviews with current filters & sorting
+  // Fetch reviews with current filters & pagination
   const fetchReviews = useCallback(async () => {
     if (!productId) return;
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (sortBy) params.append("sort_by", sortBy);
+      params.append("sort_by", sortBy);
+      params.append("page", page);
+      params.append("limit", LIMIT);
       if (ratingFilter) params.append("rating_filter", ratingFilter);
       if (verifiedOnly) params.append("verified_only", "true");
-      if (photosOnly) params.append("photos_only", "true");
+      if (photosOnly) params.append("with_photos", "true");
+      if (videosOnly) params.append("with_videos", "true");
+      if (searchText) params.append("search", searchText);
 
-      const data = await apiFetch(`/products/${productId}/reviews?${params.toString()}`);
+      const data = await apiFetch(`/reviews/product/${productId}?${params.toString()}`);
       setReviewsData(data);
     } catch (err) {
       console.warn("Failed to load reviews:", err);
+      // Fallback to old endpoint
+      try {
+        const params = new URLSearchParams();
+        if (sortBy) params.append("sort_by", sortBy);
+        if (ratingFilter) params.append("rating_filter", ratingFilter);
+        if (verifiedOnly) params.append("verified_only", "true");
+        if (photosOnly) params.append("photos_only", "true");
+        const fallback = await apiFetch(`/products/${productId}/reviews?${params.toString()}`);
+        setReviewsData(prev => ({ ...prev, ...fallback }));
+      } catch {
+        // silent
+      }
     } finally {
       setLoading(false);
     }
-  }, [productId, sortBy, ratingFilter, verifiedOnly, photosOnly]);
+  }, [productId, sortBy, ratingFilter, verifiedOnly, photosOnly, videosOnly, searchText, page]);
 
-  useEffect(() => {
-    fetchReviews();
-  }, [fetchReviews]);
+  useEffect(() => { fetchReviews(); }, [fetchReviews]);
 
-  // Handle helpful vote toggle
-  const handleVoteHelpful = async (reviewId) => {
+  // Reset page on filter change
+  useEffect(() => { setPage(1); }, [sortBy, ratingFilter, verifiedOnly, photosOnly, videosOnly, searchText]);
+
+  // Helpful vote toggle
+  const handleVoteHelpful = async (reviewId, voteType = "helpful") => {
     try {
-      const res = await apiFetch(`/products/reviews/${reviewId}/vote`, { method: "POST" });
+      const res = await apiFetch(`/reviews/${reviewId}/vote`, {
+        method: "POST",
+        body: { vote_type: voteType },
+      });
       setReviewsData((prev) => ({
         ...prev,
         reviews: prev.reviews.map((r) =>
-          r.id === reviewId ? { ...r, helpfulVotes: res.helpfulVotes } : r
-        )
+          r.id === reviewId ? { ...r, helpfulVotes: res.helpfulVotes, notHelpfulVotes: res.notHelpfulVotes } : r
+        ),
       }));
-      setVotedReviews((prev) => ({ ...prev, [reviewId]: res.userVoted }));
-      toast.success(res.userVoted ? "Marked review as helpful!" : "Vote removed");
+      setVotedReviews((prev) => ({ ...prev, [reviewId]: res.userVoted ? voteType : null }));
+      toast.success(res.userVoted ? "Vote recorded!" : "Vote removed");
     } catch {
-      toast.error("Failed to vote on review");
+      // Fallback to old endpoint
+      try {
+        const res = await apiFetch(`/products/reviews/${reviewId}/vote`, { method: "POST" });
+        setReviewsData((prev) => ({
+          ...prev,
+          reviews: prev.reviews.map((r) =>
+            r.id === reviewId ? { ...r, helpfulVotes: res.helpfulVotes } : r
+          ),
+        }));
+        setVotedReviews((prev) => ({ ...prev, [reviewId]: res.userVoted }));
+      } catch {
+        toast.error("Failed to vote");
+      }
     }
   };
 
-  // Add photo URL to form
-  const handleAddPhoto = () => {
-    const url = formPhotoInput.trim();
-    if (!url) return;
-    if (!url.startsWith("http")) {
-      toast.error("Please enter a valid image URL (starting with http:// or https://)");
-      return;
-    }
-    if (formPhotos.length >= 4) {
-      toast.error("Maximum 4 photos allowed per review");
-      return;
-    }
-    setFormPhotos((prev) => [...prev, url]);
-    setFormPhotoInput("");
+  // Submit review
+  const handleSubmitReview = async (reviewData) => {
+    await apiFetch(`/reviews/product/${productId}`, {
+      method: "POST",
+      body: {
+        ...reviewData,
+        userEmail: currentUser?.email || null,
+      },
+    });
+    fetchReviews();
   };
 
-  // Submit Review Form
-  const handleSubmitReview = async (e) => {
+  // Report a review
+  const openReport = (review) => {
+    setReportTarget(review);
+    setShowReportModal(true);
+  };
+
+  // Search debounce
+  const handleSearchSubmit = (e) => {
     e.preventDefault();
-    if (!formComment.trim()) {
-      toast.error("Please write a review comment");
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      await apiFetch(`/products/${productId}/reviews`, {
-        method: "POST",
-        body: {
-          userName: formName.trim() || (currentUser?.name || "Verified Shopper"),
-          userEmail: currentUser?.email || null,
-          rating: formRating,
-          fitRating: formFit,
-          qualityRating: formQuality,
-          valueRating: formValue,
-          title: formTitle.trim() || null,
-          comment: formComment.trim(),
-          photos: formPhotos,
-        }
-      });
-
-      toast.success("Review posted successfully! ✨");
-      setShowWriteModal(false);
-      // Reset form
-      setFormTitle("");
-      setFormComment("");
-      setFormPhotos([]);
-      setFormPhotoInput("");
-      setFormRating(5);
-      // Refresh feed
-      fetchReviews();
-    } catch (err) {
-      toast.error(err.message || "Failed to post review");
-    } finally {
-      setSubmitting(false);
-    }
+    setSearchText(searchInput.trim());
   };
 
   const fitLabel = (val) => {
@@ -168,25 +174,22 @@ export function ProductReviews({ productId, productName }) {
       {/* ─── 1. RATING OVERVIEW HUB ────────────────────────────────────────── */}
       <div className="bg-[#FAF5EC] border border-[#E8DFC9] rounded-3xl p-5 sm:p-8 space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-          
+
           {/* Left Column: Big Average Score Badge */}
           <div className="md:col-span-4 text-center md:text-left border-b md:border-b-0 md:border-r border-[#E8DFC9] pb-6 md:pb-0 md:pr-6 space-y-2">
             <div className="flex items-baseline justify-center md:justify-start gap-2">
               <span className="text-4xl sm:text-5xl font-black text-[#2D2118]">
-                {reviewsData.avg_rating || 4.8}
+                {reviewsData.avg_rating || 0}
               </span>
               <span className="text-sm font-bold text-gray-400">/ 5.0</span>
             </div>
 
-            {/* Stars rendering */}
             <div className="flex items-center justify-center md:justify-start gap-1 text-amber-400">
               {Array.from({ length: 5 }).map((_, i) => (
                 <Star
                   key={i}
                   className={`w-5 h-5 ${
-                    i < Math.round(reviewsData.avg_rating || 5)
-                      ? "fill-amber-400 text-amber-400"
-                      : "text-gray-300"
+                    i < Math.round(reviewsData.avg_rating || 0) ? "fill-amber-400 text-amber-400" : "text-gray-300"
                   }`}
                 />
               ))}
@@ -196,11 +199,17 @@ export function ProductReviews({ productId, productName }) {
               Based on <strong>{totalReviewsCount}</strong> verified customer reviews
             </p>
 
-            {/* Recommendation badge */}
             <div className="inline-flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold px-3 py-1 rounded-full mt-2">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-              <span>{reviewsData.recommend_percent || 94}% of customers recommend this item</span>
+              <span>{reviewsData.recommend_percent || 0}% of customers recommend this item</span>
             </div>
+
+            {reviewsData.media_count > 0 && (
+              <div className="inline-flex items-center gap-1.5 bg-purple-50 border border-purple-200 text-purple-800 text-[11px] font-bold px-3 py-1 rounded-full ml-2">
+                <Camera className="w-3.5 h-3.5 text-purple-600" />
+                <span>{reviewsData.media_count} reviews with media</span>
+              </div>
+            )}
           </div>
 
           {/* Middle Column: 5-Star Histogram Distribution */}
@@ -237,7 +246,7 @@ export function ProductReviews({ productId, productName }) {
             })}
           </div>
 
-          {/* Right Column: Feature Ratings (Fit, Quality, Value) */}
+          {/* Right Column: Feature Ratings */}
           <div className="md:col-span-3 space-y-3 bg-white/70 p-4 rounded-2xl border border-[#E8DFC9]">
             <div className="text-[11px] font-extrabold uppercase tracking-wider text-[#5C1E1E]">
               Fit & Quality Metrics
@@ -256,25 +265,23 @@ export function ProductReviews({ productId, productName }) {
                 />
               </div>
               <div className="flex justify-between text-[9px] text-gray-400 mt-1">
-                <span>Small</span>
-                <span>True Fit</span>
-                <span>Large</span>
+                <span>Small</span><span>True Fit</span><span>Large</span>
               </div>
             </div>
 
-            {/* Quality Meter */}
+            {/* Quality */}
             <div className="pt-1">
               <div className="flex justify-between text-[11px] font-bold text-[#2D2118]">
                 <span>Quality Score</span>
-                <span className="text-amber-700">{reviewsData.feature_ratings?.avg_quality || 4.8} / 5</span>
+                <span className="text-amber-700">{reviewsData.feature_ratings?.avg_quality || 0} / 5</span>
               </div>
             </div>
 
-            {/* Value Meter */}
+            {/* Value */}
             <div>
               <div className="flex justify-between text-[11px] font-bold text-[#2D2118]">
                 <span>Value for Money</span>
-                <span className="text-amber-700">{reviewsData.feature_ratings?.avg_value || 4.7} / 5</span>
+                <span className="text-amber-700">{reviewsData.feature_ratings?.avg_value || 0} / 5</span>
               </div>
             </div>
           </div>
@@ -282,66 +289,109 @@ export function ProductReviews({ productId, productName }) {
       </div>
 
       {/* ─── 2. FILTER & SORT CONTROLS BAR ────────────────────────────────── */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-[#E8DFC9]">
-        
-        {/* Left: Star Filter Pills */}
-        <div className="flex flex-wrap items-center gap-1.5">
+      <div className="space-y-3">
+        {/* Search Bar */}
+        <form onSubmit={handleSearchSubmit} className="flex gap-2">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search reviews..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="w-full bg-white border border-[#E8DFC9] rounded-xl pl-9 pr-4 py-2 text-xs font-semibold text-[#2D2118] focus:outline-none focus:border-[#5C1E1E]"
+            />
+          </div>
           <button
-            onClick={() => setRatingFilter(null)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
-              ratingFilter === null
-                ? "bg-[#5C1E1E] text-white shadow-md shadow-[#5C1E1E]/20"
-                : "bg-[#FAF5EC] text-[#2D2118] border border-[#E8DFC9] hover:bg-gray-100"
-            }`}
+            type="submit"
+            className="bg-[#5C1E1E] text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-[#4A1717] transition"
           >
-            All Ratings ({totalReviewsCount})
+            Search
           </button>
-          {[5, 4, 3, 2, 1].map((stars) => (
+          {searchText && (
             <button
-              key={stars}
-              onClick={() => setRatingFilter(ratingFilter === stars ? null : stars)}
-              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 ${
-                ratingFilter === stars
+              type="button"
+              onClick={() => { setSearchText(""); setSearchInput(""); }}
+              className="bg-gray-100 text-gray-600 px-3 py-2 rounded-xl text-xs font-bold hover:bg-gray-200 transition"
+            >
+              Clear
+            </button>
+          )}
+        </form>
+
+        {/* Filter Pills & Sort */}
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-[#E8DFC9]">
+
+          {/* Left: Star Filter Pills */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            <button
+              onClick={() => setRatingFilter(null)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
+                ratingFilter === null
                   ? "bg-[#5C1E1E] text-white shadow-md shadow-[#5C1E1E]/20"
                   : "bg-[#FAF5EC] text-[#2D2118] border border-[#E8DFC9] hover:bg-gray-100"
               }`}
             >
-              <span>{stars}</span>
-              <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+              All ({totalReviewsCount})
             </button>
-          ))}
-        </div>
+            {[5, 4, 3, 2, 1].map((stars) => (
+              <button
+                key={stars}
+                onClick={() => setRatingFilter(ratingFilter === stars ? null : stars)}
+                className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 ${
+                  ratingFilter === stars
+                    ? "bg-[#5C1E1E] text-white shadow-md shadow-[#5C1E1E]/20"
+                    : "bg-[#FAF5EC] text-[#2D2118] border border-[#E8DFC9] hover:bg-gray-100"
+                }`}
+              >
+                <span>{stars}</span>
+                <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+              </button>
+            ))}
+          </div>
 
-        {/* Right: Feature Toggles & Sort Dropdown + Write Review Trigger */}
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* Verified toggle */}
-          <button
-            onClick={() => setVerifiedOnly(!verifiedOnly)}
-            className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border transition flex items-center gap-1 ${
-              verifiedOnly
-                ? "bg-emerald-100 border-emerald-300 text-emerald-800"
-                : "bg-white border-[#E8DFC9] text-gray-600 hover:border-gray-400"
-            }`}
-          >
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Verified Buyers</span>
-          </button>
+          {/* Right: Toggles & Sort */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Verified toggle */}
+            <button
+              onClick={() => setVerifiedOnly(!verifiedOnly)}
+              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border transition flex items-center gap-1 ${
+                verifiedOnly
+                  ? "bg-emerald-100 border-emerald-300 text-emerald-800"
+                  : "bg-white border-[#E8DFC9] text-gray-600 hover:border-gray-400"
+              }`}
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Verified</span>
+            </button>
 
-          {/* Photos only toggle */}
-          <button
-            onClick={() => setPhotosOnly(!photosOnly)}
-            className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border transition flex items-center gap-1 ${
-              photosOnly
-                ? "bg-amber-100 border-amber-300 text-amber-900"
-                : "bg-white border-[#E8DFC9] text-gray-600 hover:border-gray-400"
-            }`}
-          >
-            <Camera className="w-3.5 h-3.5 text-amber-600" />
-            <span>With Photos</span>
-          </button>
+            {/* Photos toggle */}
+            <button
+              onClick={() => setPhotosOnly(!photosOnly)}
+              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border transition flex items-center gap-1 ${
+                photosOnly
+                  ? "bg-amber-100 border-amber-300 text-amber-900"
+                  : "bg-white border-[#E8DFC9] text-gray-600 hover:border-gray-400"
+              }`}
+            >
+              <Camera className="w-3.5 h-3.5 text-amber-600" />
+              <span>Photos</span>
+            </button>
 
-          {/* Sort Selector */}
-          <div className="relative">
+            {/* Videos toggle */}
+            <button
+              onClick={() => setVideosOnly(!videosOnly)}
+              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border transition flex items-center gap-1 ${
+                videosOnly
+                  ? "bg-purple-100 border-purple-300 text-purple-900"
+                  : "bg-white border-[#E8DFC9] text-gray-600 hover:border-gray-400"
+              }`}
+            >
+              <Video className="w-3.5 h-3.5 text-purple-600" />
+              <span>Videos</span>
+            </button>
+
+            {/* Sort */}
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
@@ -351,17 +401,18 @@ export function ProductReviews({ productId, productName }) {
               <option value="highest">Highest Rating</option>
               <option value="lowest">Lowest Rating</option>
               <option value="helpful">Most Helpful</option>
+              <option value="verified">Verified First</option>
             </select>
-          </div>
 
-          {/* Write a Review Button */}
-          <button
-            onClick={() => setShowWriteModal(true)}
-            className="bg-[#5C1E1E] hover:bg-[#4A1717] text-white px-4 py-1.5 rounded-xl text-xs font-bold shadow-md shadow-[#5C1E1E]/20 transition flex items-center gap-1.5 active:scale-95"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Write a Review</span>
-          </button>
+            {/* Write Review Button */}
+            <button
+              onClick={() => setShowWriteModal(true)}
+              className="bg-[#5C1E1E] hover:bg-[#4A1717] text-white px-4 py-1.5 rounded-xl text-xs font-bold shadow-md shadow-[#5C1E1E]/20 transition flex items-center gap-1.5 active:scale-95"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Write a Review</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -376,13 +427,16 @@ export function ProductReviews({ productId, productName }) {
           <MessageCircle className="w-10 h-10 text-gray-300 mx-auto" />
           <h4 className="font-bold text-[#2D2118]">No reviews match your filters</h4>
           <p className="text-xs text-gray-500 max-w-sm mx-auto">
-            Try resetting your filters or be the first to share your experience with this item!
+            Try resetting your filters or be the first to share your experience!
           </p>
           <button
             onClick={() => {
               setRatingFilter(null);
               setVerifiedOnly(false);
               setPhotosOnly(false);
+              setVideosOnly(false);
+              setSearchText("");
+              setSearchInput("");
             }}
             className="bg-[#2D2118] text-white px-4 py-2 rounded-xl text-xs font-bold"
           >
@@ -393,42 +447,46 @@ export function ProductReviews({ productId, productName }) {
         <div className="space-y-4">
           {reviewsData.reviews.map((rev) => {
             const authorName = rev.userName || "Customer";
-            const initials = authorName
-              .split(" ")
-              .map((n) => n[0])
-              .join("")
-              .toUpperCase()
-              .slice(0, 2);
-            const isUpvoted = votedReviews[rev.id];
+            const isAnonymous = rev.anonymous || authorName === "Anonymous Customer";
+            const initials = isAnonymous
+              ? null
+              : authorName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+            const isUpvoted = votedReviews[rev.id] === "helpful";
+            const isDownvoted = votedReviews[rev.id] === "not_helpful";
+
+            const allPhotos = [...(rev.photos || [])];
+            if (rev.photoUrl && !allPhotos.includes(rev.photoUrl)) allPhotos.push(rev.photoUrl);
+            const allVideos = rev.videos || [];
 
             return (
               <div
                 key={rev.id}
                 className="bg-white rounded-2xl p-5 border border-[#E8DFC9] shadow-sm hover:shadow-md transition space-y-3"
               >
-                {/* Header: User Avatar + Name + Rating + Verified Badge */}
+                {/* Header */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    {/* Initial Avatar */}
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#5C1E1E] to-[#8B3A3A] text-white font-black text-xs flex items-center justify-center shadow-md">
-                      {initials || <User className="w-4 h-4" />}
+                      {isAnonymous ? <User className="w-4 h-4" /> : (initials || <User className="w-4 h-4" />)}
                     </div>
-
                     <div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-extrabold text-sm text-[#2D2118]">{authorName}</span>
                         {rev.verifiedPurchase && (
                           <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1">
                             <ShieldCheck className="w-3 h-3 text-emerald-600" /> Verified Buyer
                           </span>
                         )}
+                        {isAnonymous && (
+                          <span className="bg-gray-100 text-gray-600 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                            Anonymous
+                          </span>
+                        )}
                       </div>
                       <span className="text-[11px] text-gray-400">
                         {rev.created_at
                           ? new Date(rev.created_at).toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric"
+                              month: "short", day: "numeric", year: "numeric",
                             })
                           : "Recently"}
                       </span>
@@ -441,9 +499,7 @@ export function ProductReviews({ productId, productName }) {
                       <Star
                         key={idx}
                         className={`w-3.5 h-3.5 ${
-                          idx < (rev.rating || 5)
-                            ? "fill-amber-400 text-amber-400"
-                            : "text-gray-300"
+                          idx < (rev.rating || 5) ? "fill-amber-400 text-amber-400" : "text-gray-300"
                         }`}
                       />
                     ))}
@@ -455,13 +511,11 @@ export function ProductReviews({ productId, productName }) {
                   <h5 className="font-bold text-sm text-[#2D2118]">{rev.title}</h5>
                 )}
 
-                {/* Body Text */}
-                <p className="text-xs text-[#2D2118] leading-relaxed whitespace-pre-line">
-                  {rev.comment}
-                </p>
+                {/* Body */}
+                <p className="text-xs text-[#2D2118] leading-relaxed whitespace-pre-line">{rev.comment}</p>
 
                 {/* Feature Tags */}
-                {(rev.fitRating || rev.qualityRating) && (
+                {(rev.fitRating || rev.qualityRating || rev.valueRating) && (
                   <div className="flex flex-wrap gap-2 pt-1">
                     {rev.fitRating && (
                       <span className="bg-[#FAF5EC] text-[#8B7355] border border-[#E8DFC9] text-[10px] font-bold px-2.5 py-0.5 rounded-lg">
@@ -473,252 +527,225 @@ export function ProductReviews({ productId, productName }) {
                         Quality: {rev.qualityRating}/5
                       </span>
                     )}
+                    {rev.valueRating && (
+                      <span className="bg-[#FAF5EC] text-[#8B7355] border border-[#E8DFC9] text-[10px] font-bold px-2.5 py-0.5 rounded-lg">
+                        Value: {rev.valueRating}/5
+                      </span>
+                    )}
                   </div>
                 )}
 
-                {/* Customer Photo Gallery Thumbnails */}
-                {((rev.photos && rev.photos.length > 0) || rev.photoUrl) && (
+                {/* Photo Gallery */}
+                {allPhotos.length > 0 && (
                   <div className="flex gap-2 pt-1 overflow-x-auto pb-1">
-                    {(rev.photos || [rev.photoUrl]).map((imgUrl, pIdx) => (
+                    {allPhotos.map((imgUrl, pIdx) => (
                       <button
                         key={pIdx}
-                        onClick={() => setLightboxImg(imgUrl)}
+                        onClick={() => setLightboxMedia({ type: "image", url: imgUrl })}
                         className="w-16 h-16 rounded-xl overflow-hidden border border-[#E8DFC9] hover:scale-105 transition shadow-sm relative group flex-shrink-0"
                       >
-                        <img
-                          src={imgUrl}
-                          alt="Customer attachment"
-                          className="w-full h-full object-cover"
-                        />
+                        <img src={imgUrl} alt="Customer photo" className="w-full h-full object-cover" />
                         <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
-                          <Camera className="w-4 h-4 text-white" />
+                          <Eye className="w-4 h-4 text-white" />
                         </div>
                       </button>
                     ))}
                   </div>
                 )}
 
-                {/* Official Brand Response Box */}
+                {/* Video Gallery */}
+                {allVideos.length > 0 && (
+                  <div className="flex gap-2 pt-1 overflow-x-auto pb-1">
+                    {allVideos.map((vidUrl, vIdx) => (
+                      <button
+                        key={vIdx}
+                        onClick={() => setLightboxMedia({ type: "video", url: vidUrl })}
+                        className="w-24 h-16 rounded-xl overflow-hidden border border-[#E8DFC9] hover:scale-105 transition shadow-sm relative group flex-shrink-0 bg-black/80 flex items-center justify-center"
+                      >
+                        <Play className="w-6 h-6 text-white/80 group-hover:text-white transition" />
+                        <div className="absolute bottom-1 right-1 bg-black/60 text-white text-[8px] font-bold px-1.5 py-0.5 rounded">
+                          <Video className="w-2.5 h-2.5 inline mr-0.5" />Video
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Admin/Seller Response */}
                 {rev.adminResponse && (
                   <div className="mt-3 bg-[#FAF5EC] border-l-4 border-[#5C1E1E] p-3 rounded-r-xl space-y-1">
                     <div className="flex items-center gap-1.5">
                       <Sparkles className="w-3.5 h-3.5 text-[#5C1E1E]" />
                       <span className="text-[11px] font-black text-[#5C1E1E] uppercase tracking-wider">
-                        Response from {rev.adminResponse.respondedBy || "RIVAANTA Luxury"}
+                        {rev.adminResponse.isOfficial ? "Official Response" : "Response"} from {rev.adminResponse.respondedBy || "RIVAANTA Luxury"}
                       </span>
                     </div>
-                    <p className="text-xs text-gray-700 italic">
-                      "{rev.adminResponse.responseText}"
-                    </p>
+                    <p className="text-xs text-gray-700 italic">"{rev.adminResponse.responseText}"</p>
+                    {rev.adminResponse.respondedAt && (
+                      <p className="text-[10px] text-gray-400">
+                        {new Date(rev.adminResponse.respondedAt).toLocaleDateString("en-US", {
+                          month: "short", day: "numeric", year: "numeric",
+                        })}
+                      </p>
+                    )}
                   </div>
                 )}
 
-                {/* Bottom Bar: Helpful Upvote Button */}
-                <div className="flex justify-end pt-2 border-t border-gray-100">
+                {/* Bottom Bar: Votes & Report */}
+                <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                  <div className="flex items-center gap-2">
+                    {/* Helpful */}
+                    <button
+                      onClick={() => handleVoteHelpful(rev.id, "helpful")}
+                      className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition flex items-center gap-1.5 ${
+                        isUpvoted
+                          ? "bg-[#5C1E1E] text-white border-[#5C1E1E]"
+                          : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
+                      }`}
+                    >
+                      <ThumbsUp className={`w-3.5 h-3.5 ${isUpvoted ? "fill-white" : ""}`} />
+                      <span>Helpful ({rev.helpfulVotes || 0})</span>
+                    </button>
+
+                    {/* Not Helpful */}
+                    <button
+                      onClick={() => handleVoteHelpful(rev.id, "not_helpful")}
+                      className={`text-xs font-bold px-2.5 py-1.5 rounded-xl border transition flex items-center gap-1 ${
+                        isDownvoted
+                          ? "bg-gray-700 text-white border-gray-700"
+                          : "bg-gray-50 text-gray-400 border-gray-200 hover:bg-gray-100"
+                      }`}
+                    >
+                      <ThumbsDown className={`w-3 h-3 ${isDownvoted ? "fill-white" : ""}`} />
+                    </button>
+                  </div>
+
+                  {/* Report */}
                   <button
-                    onClick={() => handleVoteHelpful(rev.id)}
-                    className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition flex items-center gap-1.5 ${
-                      isUpvoted
-                        ? "bg-[#5C1E1E] text-white border-[#5C1E1E]"
-                        : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
-                    }`}
+                    onClick={() => openReport(rev)}
+                    className="text-xs font-bold text-gray-400 hover:text-red-500 transition flex items-center gap-1 px-2 py-1"
+                    title="Report this review"
                   >
-                    <ThumbsUp className={`w-3.5 h-3.5 ${isUpvoted ? "fill-white" : ""}`} />
-                    <span>Helpful ({rev.helpfulVotes || 0})</span>
+                    <Flag className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Report</span>
                   </button>
                 </div>
               </div>
             );
           })}
+
+          {/* ─── Pagination ── */}
+          {reviewsData.pages > 1 && (
+            <div className="flex items-center justify-center gap-2 py-4">
+              <button
+                onClick={() => setPage(Math.max(1, page - 1))}
+                disabled={page === 1}
+                className="w-9 h-9 rounded-xl border border-[#E8DFC9] flex items-center justify-center text-[#2D2118] hover:bg-[#FAF5EC] transition disabled:opacity-30"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              {Array.from({ length: Math.min(5, reviewsData.pages) }).map((_, i) => {
+                let pageNum;
+                if (reviewsData.pages <= 5) {
+                  pageNum = i + 1;
+                } else if (page <= 3) {
+                  pageNum = i + 1;
+                } else if (page >= reviewsData.pages - 2) {
+                  pageNum = reviewsData.pages - 4 + i;
+                } else {
+                  pageNum = page - 2 + i;
+                }
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => setPage(pageNum)}
+                    className={`w-9 h-9 rounded-xl text-xs font-bold transition ${
+                      page === pageNum
+                        ? "bg-[#5C1E1E] text-white shadow-md"
+                        : "border border-[#E8DFC9] text-[#2D2118] hover:bg-[#FAF5EC]"
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+
+              <button
+                onClick={() => setPage(Math.min(reviewsData.pages, page + 1))}
+                disabled={page >= reviewsData.pages}
+                className="w-9 h-9 rounded-xl border border-[#E8DFC9] flex items-center justify-center text-[#2D2118] hover:bg-[#FAF5EC] transition disabled:opacity-30"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+
+              <span className="text-[11px] text-gray-500 ml-2">
+                Page {page} of {reviewsData.pages}
+              </span>
+            </div>
+          )}
         </div>
       )}
 
       {/* ─── 4. WRITE REVIEW MODAL ────────────────────────────────────────── */}
-      {showWriteModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setShowWriteModal(false);
-          }}
-        >
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl relative border border-[#E8DFC9] space-y-5 max-h-[90vh] overflow-y-auto">
-            
-            <button
-              onClick={() => setShowWriteModal(false)}
-              className="absolute top-4 right-4 w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 hover:text-black transition"
-            >
-              <X className="w-4 h-4" />
-            </button>
+      <WriteReviewModal
+        isOpen={showWriteModal}
+        onClose={() => setShowWriteModal(false)}
+        productId={productId}
+        productName={productName}
+        currentUser={currentUser}
+        onSubmitReview={handleSubmitReview}
+      />
 
-            {/* Modal Header */}
-            <div className="text-center space-y-1">
-              <div className="w-11 h-11 bg-[#5C1E1E] text-white rounded-2xl mx-auto flex items-center justify-center shadow-lg shadow-[#5C1E1E]/30">
-                <Star className="w-5 h-5 text-amber-300 fill-amber-300" />
-              </div>
-              <h3 className="text-xl font-black text-[#2D2118]">Write a Product Review</h3>
-              <p className="text-xs text-[#8B7355]">
-                Sharing your experience for <strong>{productName || "this product"}</strong>
-              </p>
-            </div>
+      {/* ─── 5. REPORT REVIEW MODAL ────────────────────────────────────────── */}
+      <ReviewReportModal
+        isOpen={showReportModal}
+        onClose={() => { setShowReportModal(false); setReportTarget(null); }}
+        reviewId={reportTarget?.id}
+        reviewUserName={reportTarget?.userName}
+      />
 
-            <form onSubmit={handleSubmitReview} className="space-y-4">
-              
-              {/* Star Rating Toggle */}
-              <div>
-                <label className="text-[11px] font-extrabold text-[#2D2118] uppercase tracking-wider block mb-1.5 text-center">
-                  Overall Rating *
-                </label>
-                <div className="flex justify-center items-center gap-2">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <button
-                      key={star}
-                      type="button"
-                      onClick={() => setFormRating(star)}
-                      className="p-1 hover:scale-125 transition-transform"
-                    >
-                      <Star
-                        className={`w-8 h-8 ${
-                          star <= formRating
-                            ? "fill-amber-400 text-amber-400"
-                            : "text-gray-300"
-                        }`}
-                      />
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Fit Slider Toggle */}
-              <div className="bg-[#FAF5EC] p-3 rounded-2xl border border-[#E8DFC9] space-y-2">
-                <div className="flex justify-between text-xs font-bold text-[#2D2118]">
-                  <span>Sizing / Fit</span>
-                  <span className="text-[#5C1E1E] font-black">{fitLabel(formFit)}</span>
-                </div>
-                <input
-                  type="range"
-                  min="1"
-                  max="5"
-                  step="1"
-                  value={formFit}
-                  onChange={(e) => setFormFit(Number(e.target.value))}
-                  className="w-full accent-[#5C1E1E] cursor-pointer"
-                />
-                <div className="flex justify-between text-[10px] text-gray-400">
-                  <span>Runs Small</span>
-                  <span>True to Size</span>
-                  <span>Runs Large</span>
-                </div>
-              </div>
-
-              {/* Your Name */}
-              <div>
-                <label className="text-[11px] font-extrabold text-[#2D2118] uppercase tracking-wider block mb-1">
-                  Your Name *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Ananya Roy"
-                  value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
-                  className="w-full bg-[#FAF5EC] border border-[#E8DFC9] rounded-2xl px-4 py-2.5 text-xs font-semibold text-[#2D2118] focus:outline-none focus:border-[#5C1E1E]"
-                />
-              </div>
-
-              {/* Review Title */}
-              <div>
-                <label className="text-[11px] font-extrabold text-[#2D2118] uppercase tracking-wider block mb-1">
-                  Review Headline (Optional)
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Gorgeous Saree — Fabric feels super soft!"
-                  value={formTitle}
-                  onChange={(e) => setFormTitle(e.target.value)}
-                  className="w-full bg-[#FAF5EC] border border-[#E8DFC9] rounded-2xl px-4 py-2.5 text-xs font-semibold text-[#2D2118] focus:outline-none focus:border-[#5C1E1E]"
-                />
-              </div>
-
-              {/* Detailed Experience */}
-              <div>
-                <label className="text-[11px] font-extrabold text-[#2D2118] uppercase tracking-wider block mb-1">
-                  Detailed Experience *
-                </label>
-                <textarea
-                  required
-                  rows={3}
-                  placeholder="Describe fit, fabric quality, color accuracy, or delivery experience..."
-                  value={formComment}
-                  onChange={(e) => setFormComment(e.target.value)}
-                  className="w-full bg-[#FAF5EC] border border-[#E8DFC9] rounded-2xl p-3 text-xs font-semibold text-[#2D2118] focus:outline-none focus:border-[#5C1E1E]"
-                />
-              </div>
-
-              {/* Photos Attachment */}
-              <div>
-                <ImageUploader
-                  label="Attach Product Photo (Optional)"
-                  value={formPhotoInput}
-                  onChange={(url) => {
-                    setFormPhotoInput(url);
-                    if (url && !formPhotos.includes(url)) {
-                      setFormPhotos([...formPhotos, url]);
-                    }
-                  }}
-                />
-              </div>
-
-                {/* Thumbnails preview */}
-                {formPhotos.length > 0 && (
-                  <div className="flex gap-2 mt-2">
-                    {formPhotos.map((url, idx) => (
-                      <div key={idx} className="w-14 h-14 rounded-xl relative border border-[#E8DFC9] overflow-hidden group">
-                        <img src={url} alt="Preview" className="w-full h-full object-cover" />
-                        <button
-                          type="button"
-                          onClick={() => setFormPhotos((prev) => prev.filter((_, i) => i !== idx))}
-                          className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-0.5 text-[9px]"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={submitting || !formComment.trim()}
-                className="w-full bg-[#5C1E1E] hover:bg-[#4A1717] text-white py-3.5 rounded-2xl text-xs font-bold shadow-lg shadow-[#5C1E1E]/30 transition active:scale-95"
-              >
-                {submitting ? "Publishing Review..." : "Submit Official Review"}
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ─── 5. PHOTO LIGHTBOX OVERLAY ────────────────────────────────────── */}
-      {lightboxImg && (
+      {/* ─── 6. MEDIA LIGHTBOX OVERLAY ────────────────────────────────────── */}
+      {lightboxMedia && (
         <div
           className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4"
-          onClick={() => setLightboxImg(null)}
+          onClick={() => setLightboxMedia(null)}
         >
           <button
-            onClick={() => setLightboxImg(null)}
-            className="absolute top-4 right-4 text-white hover:text-gray-300 bg-white/20 rounded-full p-2"
+            onClick={() => setLightboxMedia(null)}
+            className="absolute top-4 right-4 text-white hover:text-gray-300 bg-white/20 rounded-full p-2 z-10"
           >
             <X className="w-6 h-6" />
           </button>
-          <img
-            src={lightboxImg}
-            alt="Customer photo"
-            className="max-w-full max-h-[85vh] rounded-2xl shadow-2xl object-contain"
-          />
+
+          {lightboxMedia.type === "image" ? (
+            <img
+              src={lightboxMedia.url}
+              alt="Customer photo"
+              className="max-w-full max-h-[85vh] rounded-2xl shadow-2xl object-contain"
+            />
+          ) : (
+            <div className="max-w-3xl w-full aspect-video rounded-2xl overflow-hidden shadow-2xl bg-black">
+              {lightboxMedia.url.includes("youtube.com") || lightboxMedia.url.includes("youtu.be") ? (
+                <iframe
+                  src={lightboxMedia.url.replace("watch?v=", "embed/")}
+                  title="Review Video"
+                  className="w-full h-full"
+                  allow="autoplay; fullscreen"
+                  allowFullScreen
+                />
+              ) : (
+                <video
+                  src={lightboxMedia.url}
+                  controls
+                  autoPlay
+                  className="w-full h-full object-contain"
+                />
+              )}
+            </div>
+          )}
         </div>
       )}
-
     </div>
   );
 }

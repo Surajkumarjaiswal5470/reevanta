@@ -5,41 +5,49 @@ import urllib.request
 
 logger = logging.getLogger("reevanta.keep_alive")
 
-RENDER_URL = os.getenv("RENDER_URL", "https://reevanta-backend-pg3v.onrender.com")
-HEALTH_ENDPOINT = f"{RENDER_URL.rstrip('/')}/api/health"
-PING_INTERVAL_SECONDS = 720  # Ping every 12 minutes (Render sleeps after 15 mins)
+PING_INTERVAL_SECONDS = 180  # Ping every 3 minutes (Render free tier sleeps after 15 mins)
+
+# Configurable endpoints to keep warm
+TARGET_ENDPOINTS = [
+    os.getenv("BACKEND_PING_URL", "https://reevanta-backend-pg3v.onrender.com/api/health/liveness"),
+    os.getenv("ADMIN_PING_URL", "https://reevanta-admin.onrender.com"),
+    os.getenv("FRONTEND_PING_URL", "https://reevanta.onrender.com"),
+]
+
 
 async def start_render_keep_alive():
     """
     Background 24/7 Heartbeat Service to prevent Render Free Tier from sleeping.
-    Pings the health check endpoint every 12 minutes.
+    Pings backend, admin, and frontend health endpoints every 3 minutes.
     """
-    logger.info(f"[Render Keep-Alive] Initializing 24/7 heartbeat pinger -> {HEALTH_ENDPOINT}")
+    logger.info(f"[Render Keep-Alive] Initializing 24/7 multi-service heartbeat pinger every {PING_INTERVAL_SECONDS}s")
     
-    # Initial delay before first ping
-    await asyncio.sleep(10)
+    # Short initial delay before first ping cycle
+    await asyncio.sleep(5)
 
     while True:
-        try:
-            # Execute HTTP ping request off the main thread
-            loop = asyncio.get_event_loop()
-            req = urllib.request.Request(
-                HEALTH_ENDPOINT,
-                headers={"User-Agent": "Reevanta-KeepAlive-Heartbeat/1.0"}
-            )
-            
-            def ping():
-                with urllib.request.urlopen(req, timeout=10) as response:
-                    return response.getcode()
+        loop = asyncio.get_event_loop()
 
-            status_code = await loop.run_in_executor(None, ping)
-            logger.info(f"[Render Keep-Alive Ping] Heartbeat ping successful (Status: {status_code}) 🟢 Server remains 100% warm!")
+        for endpoint in TARGET_ENDPOINTS:
+            if not endpoint:
+                continue
+            try:
+                req = urllib.request.Request(
+                    endpoint,
+                    headers={"User-Agent": "Reevanta-KeepAlive-Heartbeat/2.0"}
+                )
 
-        except asyncio.CancelledError:
-            logger.info("[Render Keep-Alive] Service stopping.")
-            break
-        except Exception as err:
-            logger.warning(f"[Render Keep-Alive Ping Warning] Heartbeat ping failed: {err}")
+                def ping(url_req):
+                    with urllib.request.urlopen(url_req, timeout=10) as response:
+                        return response.getcode()
 
-        # Wait 12 minutes before next ping
+                status_code = await loop.run_in_executor(None, ping, req)
+                logger.info(f"[Render Keep-Alive] Heartbeat ping -> {endpoint} (Status: {status_code}) 🟢 Active & Warm!")
+            except asyncio.CancelledError:
+                logger.info("[Render Keep-Alive] Service stopping.")
+                return
+            except Exception as err:
+                logger.warning(f"[Render Keep-Alive Warning] Heartbeat ping failed for {endpoint}: {err}")
+
+        # Wait 3 minutes before next keep-alive round
         await asyncio.sleep(PING_INTERVAL_SECONDS)

@@ -82,6 +82,15 @@ export default function App() {
         }
         setAuthLoading(false);
       });
+
+    // ── Client-Side Heartbeat Pinger (Keeps Render Free Tier 100% Awake) ──
+    const pingHeartbeat = () => {
+      axios.get(`${API}/health/liveness`).catch(() => {});
+    };
+    pingHeartbeat();
+    const heartbeatInterval = setInterval(pingHeartbeat, 120000); // Ping every 2 minutes
+
+    return () => clearInterval(heartbeatInterval);
   }, []);
 
   const handleSecretLogin = async (e) => {

@@ -32,18 +32,27 @@ function pushRecent(q) {
   }
 }
 
+function getStoredUserId() {
+  try {
+    return localStorage.getItem("reevanta_user_id") || "guest";
+  } catch {
+    return "guest";
+  }
+}
+
 export const SearchBar = ({ value: externalValue, onChange: externalOnChange, onSubmit: externalOnSubmit, onSelectProduct }) => {
   // Internal state for self-contained mode (when value/onChange not provided)
   const [internalValue, setInternalValue] = useState("");
   const value = externalValue !== undefined ? externalValue : internalValue;
   const onChange = externalOnChange || setInternalValue;
-  const onSubmit = externalOnSubmit || (() => {});
+  const onSubmit = externalOnSubmit || (() => { });
 
   const [suggestions, setSuggestions] = useState([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [recent, setRecent] = useState(() => getRecent());
+  const [savingSearch, setSavingSearch] = useState(false);
 
   const boxRef = useRef(null);
   const inputRef = useRef(null);
@@ -65,15 +74,18 @@ export const SearchBar = ({ value: externalValue, onChange: externalOnChange, on
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     const trimmed = value ? value.trim() : "";
-    if (trimmed.length < 1) {
+
+    if (trimmed.length < 1 || !API) {
+      // Invalidate any in-flight request so its response can't repopulate
+      // the dropdown after the query has already been cleared/changed.
+      requestSeq.current++;
+      if (abortRef.current) {
+        abortRef.current.abort();
+        abortRef.current = null;
+      }
       setSuggestions([]);
       setLoading(false);
       setActiveIndex(-1);
-      return;
-    }
-
-    if (!API) {
-      setSuggestions([]);
       return;
     }
 
@@ -141,6 +153,33 @@ export const SearchBar = ({ value: externalValue, onChange: externalOnChange, on
     [onSelectProduct]
   );
 
+  const handleSaveSearch = useCallback(
+    async (e) => {
+      e.stopPropagation();
+      if (!value || savingSearch) return;
+
+      if (!API) {
+        toast.error("Saved searches aren't available right now");
+        return;
+      }
+
+      setSavingSearch(true);
+      try {
+        await axios.post(`${API}/marketplace/saved-searches`, {
+          user_id: getStoredUserId(),
+          query: value,
+          filters: {},
+        });
+        toast.success(`Saved search "${value}"!`, { icon: "🔖" });
+      } catch {
+        toast.error("Failed to save search");
+      } finally {
+        setSavingSearch(false);
+      }
+    },
+    [value, savingSearch]
+  );
+
   const trimmedValue = value ? value.trim() : "";
   const showSuggestions = trimmedValue.length > 0 && suggestions.length > 0;
   const showNoResults = trimmedValue.length > 0 && suggestions.length === 0 && !loading;
@@ -206,27 +245,19 @@ export const SearchBar = ({ value: externalValue, onChange: externalOnChange, on
         <div className="absolute inset-y-0 right-0 flex items-center pr-3 gap-1">
           <button
             type="button"
-            onClick={async (e) => {
-              e.stopPropagation();
-              try {
-                const uId = localStorage.getItem("reevanta_user_id") || "guest";
-                const targetUrl = API || "https://reevanta-backend-pg3v.onrender.com/api";
-                await axios.post(`${targetUrl}/marketplace/saved-searches`, {
-                  user_id: uId,
-                  query: value,
-                  filters: {}
-                });
-                toast.success(`Saved search "${value}"!`, { icon: "🔖" });
-              } catch (err) {
-                toast.error("Failed to save search");
-              }
-            }}
+            onClick={handleSaveSearch}
+            disabled={savingSearch}
             title="Save This Search"
-            className="text-[#8B7355] hover:text-[#5C1E1E] transition p-1"
+            aria-label="Save this search"
+            className="text-[#8B7355] hover:text-[#5C1E1E] transition p-1 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Bookmark className="w-3.5 h-3.5" />
+            {savingSearch ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Bookmark className="w-3.5 h-3.5" />
+            )}
           </button>
-          
+
           <button
             data-testid="search-clear-btn"
             onClick={() => {
@@ -257,11 +288,11 @@ export const SearchBar = ({ value: externalValue, onChange: externalOnChange, on
               <div className="space-y-1">
                 {suggestions.map((s, idx) => (
                   <button
-                    key={s.id}
+                    key={s.id ?? `${s.name}-${idx}`}
                     id={`suggest-option-${idx}`}
                     role="option"
                     aria-selected={activeIndex === idx}
-                    data-testid={`suggest-${s.id}`}
+                    data-testid={`suggest-${s.id ?? idx}`}
                     onMouseEnter={() => setActiveIndex(idx)}
                     onClick={() => selectSuggestion(s)}
                     className={`w-full text-left flex items-center gap-3 p-2 rounded-xl transition ${activeIndex === idx ? "bg-[#FAF5EC]" : "hover:bg-[#FAF5EC]"

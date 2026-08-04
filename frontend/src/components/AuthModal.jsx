@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useRef, useEffect, useCallback, useMemo, useId } from "react";
 import {
   X, Sparkles, Phone, Mail, User, ArrowRight, ShieldCheck,
   CheckCircle2, Loader2, Clock, RefreshCw
@@ -7,10 +7,12 @@ import { apiFetch } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "sonner";
 
+const OTP_LENGTH = 6;
+const IS_DEV = typeof process !== "undefined" && process.env?.NODE_ENV !== "production";
+
 // ─── Individual OTP Digit Input ──────────────────────────────────────────────
 function OtpDigitBoxes({ value, onChange, onComplete, disabled }) {
   const inputRefs = useRef([]);
-  const OTP_LENGTH = 6;
 
   useEffect(() => {
     // Auto-focus first empty box when component mounts
@@ -18,6 +20,7 @@ function OtpDigitBoxes({ value, onChange, onComplete, disabled }) {
     if (firstEmpty < OTP_LENGTH && inputRefs.current[firstEmpty]) {
       inputRefs.current[firstEmpty].focus();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleKeyDown = (idx, e) => {
@@ -26,14 +29,12 @@ function OtpDigitBoxes({ value, onChange, onComplete, disabled }) {
     if (e.key === "Backspace") {
       e.preventDefault();
       const digits = value.split("");
-      if (digits[idx]) {
+      if (digits[idx] && digits[idx].trim()) {
         digits[idx] = "";
-        const newVal = digits.join("");
-        onChange(newVal.replace(/\s/g, ""));
+        onChange(digits.join("").replace(/\s+$/, ""));
       } else if (idx > 0) {
         digits[idx - 1] = "";
-        const newVal = digits.join("");
-        onChange(newVal.replace(/\s/g, ""));
+        onChange(digits.join("").replace(/\s+$/, ""));
         inputRefs.current[idx - 1]?.focus();
       }
     } else if (e.key === "ArrowLeft" && idx > 0) {
@@ -50,10 +51,10 @@ function OtpDigitBoxes({ value, onChange, onComplete, disabled }) {
 
     const digits = value.padEnd(OTP_LENGTH, " ").split("");
     digits[idx] = char;
-    const newVal = digits.join("").trim();
+    const newVal = digits.join("").replace(/\s+$/, "");
     onChange(newVal);
 
-    if (newVal.length === OTP_LENGTH) {
+    if (newVal.length === OTP_LENGTH && !newVal.includes(" ")) {
       onComplete?.(newVal);
     } else if (idx < OTP_LENGTH - 1) {
       inputRefs.current[idx + 1]?.focus();
@@ -76,15 +77,18 @@ function OtpDigitBoxes({ value, onChange, onComplete, disabled }) {
   return (
     <div className="flex gap-2 justify-center" onPaste={handlePaste}>
       {Array.from({ length: OTP_LENGTH }).map((_, idx) => {
-        const digit = value[idx] || "";
+        // A padding placeholder is a literal space — never treat it as a filled digit.
+        const rawChar = value[idx];
+        const digit = rawChar && rawChar.trim() ? rawChar : "";
         const isFilled = !!digit;
-        const isActive = idx === value.length;
+        const isActive = !disabled && idx === value.replace(/\s+$/, "").length;
         return (
           <input
             key={idx}
             ref={(el) => (inputRefs.current[idx] = el)}
             type="text"
             inputMode="numeric"
+            autoComplete={idx === 0 ? "one-time-code" : "off"}
             maxLength={1}
             disabled={disabled}
             value={digit}
@@ -102,7 +106,7 @@ function OtpDigitBoxes({ value, onChange, onComplete, disabled }) {
               }
             `}
             style={{ caretColor: "transparent" }}
-            aria-label={`Digit ${idx + 1}`}
+            aria-label={`Digit ${idx + 1} of ${OTP_LENGTH}`}
           />
         );
       })}
@@ -156,20 +160,42 @@ export function AuthModal() {
   const phoneInputRef = useRef(null);
   const nameInputRef = useRef(null);
   const countdown = useCountdown(60);
+  const isMountedRef = useRef(true);
+  const titleId = useId();
+  const descId = useId();
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   // Auto-focus phone input on modal open
   useEffect(() => {
     if (showAuthModal && step === 1) {
-      setTimeout(() => phoneInputRef.current?.focus(), 150);
+      const t = setTimeout(() => phoneInputRef.current?.focus(), 150);
+      return () => clearTimeout(t);
     }
   }, [showAuthModal, step]);
 
   // Auto-focus name input on step 3
   useEffect(() => {
     if (step === 3) {
-      setTimeout(() => nameInputRef.current?.focus(), 150);
+      const t = setTimeout(() => nameInputRef.current?.focus(), 150);
+      return () => clearTimeout(t);
     }
   }, [step]);
+
+  // Lock body scroll while the modal is open
+  useEffect(() => {
+    if (!showAuthModal) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [showAuthModal]);
 
   const fullPhone = useMemo(
     () => `${countryCode}${authPhone.trim()}`,
@@ -193,15 +219,32 @@ export function AuthModal() {
     setAttempts(0);
   }, []);
 
+  const closeModal = useCallback(() => {
+    setShowAuthModal(false);
+    resetAll();
+  }, [setShowAuthModal, resetAll]);
+
+  // Close on Escape
+  useEffect(() => {
+    if (!showAuthModal) return;
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") closeModal();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [showAuthModal, closeModal]);
+
   if (!showAuthModal) return null;
 
   // ─── Step 1: Send OTP (Pure Backend) ────────────────────────────────────
   const handleSendOtp = async (e) => {
     e?.preventDefault?.();
-    if (!authPhone || authPhone.trim().length < 10) {
+    const digitsOnly = authPhone.trim();
+    if (!digitsOnly || digitsOnly.length !== 10) {
       toast.error("Please enter a valid 10-digit mobile number");
       return;
     }
+    if (sendingOtp) return;
     setSendingOtp(true);
     setOtpError("");
 
@@ -211,54 +254,62 @@ export function AuthModal() {
         body: { phone: fullPhone },
       });
 
-      setIsExistingUser(res.is_existing_user);
+      if (!isMountedRef.current) return;
+
+      setIsExistingUser(!!res.is_existing_user);
+      setAuthOtp("");
       setStep(2);
       countdown.restart();
 
-      // In dev mode (no Twilio), show the OTP code for easy testing
-      if (res.otp) {
+      // Dev-only convenience: never surface the raw OTP outside of development.
+      if (IS_DEV && res.otp) {
         toast.success(`Verification code: ${res.otp}`, { icon: "📲", duration: 10000 });
       } else {
         toast.success("Verification code sent!", { icon: "📲" });
       }
     } catch (err) {
-      toast.error(err.message || "Failed to send OTP");
+      if (!isMountedRef.current) return;
+      toast.error(err.message || "Failed to send OTP. Please try again.");
     } finally {
-      setSendingOtp(false);
+      if (isMountedRef.current) setSendingOtp(false);
     }
   };
 
-  // ─── Step 2: Verify OTP (Pure Backend) ─────────────────────────────────
+  // ─── Step 2: Verify OTP ─────────────────────────────────────────────────
+  // Existing users: verify + log in immediately (single backend call).
+  // New users: only validate the code is complete here — the *actual*
+  // backend verification happens once, in handleCompleteProfile, together
+  // with the profile data. Calling verify-otp twice against a single-use
+  // code would fail the second time.
   const handleVerifyOtp = async (otpCode) => {
     const code = otpCode || authOtp;
-    if (!code || code.length < 4) {
-      setOtpError("Please enter the full 6-digit code");
+    if (!code || code.length !== OTP_LENGTH) {
+      setOtpError(`Please enter the full ${OTP_LENGTH}-digit code`);
       return;
     }
-    setVerifying(true);
     setOtpError("");
 
-    try {
-      const body = {
-        phone: fullPhone,
-        otp: code,
-        name: authName.trim(),
-        email: authEmail.trim(),
-      };
+    if (!isExistingUser) {
+      // Nothing to verify against the backend yet — just move to profile step.
+      setStep(3);
+      return;
+    }
 
+    if (verifying) return;
+    setVerifying(true);
+    try {
       const user = await apiFetch("/auth/verify-otp", {
         method: "POST",
-        body,
+        body: {
+          phone: fullPhone,
+          otp: code,
+          name: authName.trim(),
+          email: authEmail.trim().toLowerCase(),
+        },
       });
 
-      // If new user, show profile step
-      if (!isExistingUser && step === 2) {
-        setStep(3);
-        setVerifying(false);
-        return;
-      }
+      if (!isMountedRef.current) return;
 
-      // Complete login
       setCurrentUser(user);
       setShowAuthModal(false);
       resetAll();
@@ -267,6 +318,7 @@ export function AuthModal() {
         duration: 3000,
       });
     } catch (err) {
+      if (!isMountedRef.current) return;
       setAttempts((a) => a + 1);
       setOtpError(
         attempts >= 2
@@ -274,34 +326,38 @@ export function AuthModal() {
           : err.message || "Invalid or expired OTP"
       );
     } finally {
-      setVerifying(false);
+      if (isMountedRef.current) setVerifying(false);
     }
   };
 
-  // ─── Step 3: Complete Profile (new users, Pure Backend) ────────────────
+  // ─── Step 3: Complete Profile (new users — single verify-otp call) ─────
   const handleCompleteProfile = async (e) => {
     e.preventDefault();
-    if (!authName.trim()) {
+    const trimmedName = authName.trim();
+    const trimmedEmail = authEmail.trim().toLowerCase();
+
+    if (!trimmedName) {
       toast.error("Please enter your full name");
       return;
     }
-    if (!authEmail.trim() || !authEmail.includes("@")) {
+    if (!trimmedEmail || !trimmedEmail.includes("@")) {
       toast.error("Please enter a valid email");
       return;
     }
+    if (loading) return;
     setLoading(true);
     try {
-      const body = {
-        phone: fullPhone,
-        otp: authOtp,
-        name: authName.trim(),
-        email: authEmail.trim(),
-      };
-
       const user = await apiFetch("/auth/verify-otp", {
         method: "POST",
-        body,
+        body: {
+          phone: fullPhone,
+          otp: authOtp,
+          name: trimmedName,
+          email: trimmedEmail,
+        },
       });
+
+      if (!isMountedRef.current) return;
 
       setCurrentUser(user);
       setShowAuthModal(false);
@@ -311,10 +367,18 @@ export function AuthModal() {
         duration: 3000,
       });
     } catch (err) {
-      toast.error(err.message || "Registration failed");
+      if (!isMountedRef.current) return;
+      toast.error(err.message || "Registration failed. Please check your code and try again.");
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) setLoading(false);
     }
+  };
+
+  const handleResend = (e) => {
+    setAuthOtp("");
+    setOtpError("");
+    setAttempts(0);
+    handleSendOtp(e);
   };
 
   // ─── Step Indicator ────────────────────────────────────────────────────
@@ -324,11 +388,10 @@ export function AuthModal() {
       {Array.from({ length: totalSteps }).map((_, i) => (
         <div
           key={i}
-          className={`h-1 rounded-full transition-all duration-500 ${
-            i + 1 <= step
-              ? "bg-[#5C1E1E] w-6"
-              : "bg-[#E8DFC9] w-3"
-          }`}
+          className={`h-1 rounded-full transition-all duration-500 ${i + 1 <= step
+            ? "bg-[#5C1E1E] w-6"
+            : "bg-[#E8DFC9] w-3"
+            }`}
         />
       ))}
     </div>
@@ -340,13 +403,14 @@ export function AuthModal() {
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
       style={{ backgroundColor: "rgba(0,0,0,0.65)", backdropFilter: "blur(8px)" }}
       onClick={(e) => {
-        if (e.target === e.currentTarget) {
-          setShowAuthModal(false);
-          resetAll();
-        }
+        if (e.target === e.currentTarget) closeModal();
       }}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={descId}
         className="bg-white rounded-t-3xl sm:rounded-3xl max-w-md w-full shadow-2xl relative border border-[#E8DFC9] max-h-[92vh] overflow-y-auto"
         style={{
           animation: "authSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1)",
@@ -386,10 +450,8 @@ export function AuthModal() {
         <div className="p-5 sm:p-8 space-y-5">
           {/* Close Button */}
           <button
-            onClick={() => {
-              setShowAuthModal(false);
-              resetAll();
-            }}
+            type="button"
+            onClick={closeModal}
             className="absolute top-4 right-4 w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 hover:text-black transition-all hover:bg-gray-200 hover:scale-110 active:scale-95"
             aria-label="Close"
           >
@@ -410,14 +472,14 @@ export function AuthModal() {
                 <Sparkles className="w-5 h-5 text-amber-300" />
               )}
             </div>
-            <h2 className="text-xl sm:text-2xl font-black text-[#2D2118]">
+            <h2 id={titleId} className="text-xl sm:text-2xl font-black text-[#2D2118]">
               {step === 1 && "Secure Phone Login"}
               {step === 2 && (isExistingUser ? "Verify Your Identity" : "Enter Verification Code")}
               {step === 3 && "Complete Your Profile"}
             </h2>
-            <p className="text-xs text-[#8B7355]">
+            <p id={descId} className="text-xs text-[#8B7355]">
               {step === 1 && "Enterprise-grade passwordless authentication"}
-              {step === 2 && `Enter the 6-digit code sent to ${countryCode} ${maskedPhone}`}
+              {step === 2 && `Enter the ${OTP_LENGTH}-digit code sent to ${countryCode} ${maskedPhone}`}
               {step === 3 && "One last step — tell us about yourself"}
             </p>
           </div>
@@ -426,13 +488,14 @@ export function AuthModal() {
           {step === 1 && (
             <form onSubmit={handleSendOtp} className="space-y-4">
               <div>
-                <label className="text-[11px] font-extrabold text-[#2D2118] uppercase tracking-wider block mb-1.5">
+                <label htmlFor="auth-phone" className="text-[11px] font-extrabold text-[#2D2118] uppercase tracking-wider block mb-1.5">
                   Country & Mobile Number
                 </label>
                 <div className="flex gap-2">
                   <select
                     value={countryCode}
                     onChange={(e) => setCountryCode(e.target.value)}
+                    aria-label="Country code"
                     className="bg-[#FAF5EC] border border-[#E8DFC9] rounded-2xl px-2.5 text-xs font-extrabold text-[#2D2118] focus:outline-none focus:border-[#5C1E1E] transition-colors"
                   >
                     <option value="+977">🇳🇵 +977</option>
@@ -441,15 +504,16 @@ export function AuthModal() {
                   <div className="relative flex-1">
                     <Phone className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                     <input
+                      id="auth-phone"
                       ref={phoneInputRef}
                       type="tel"
                       required
                       maxLength={10}
                       placeholder="98XXXXXXXX"
                       value={authPhone}
-                      onChange={(e) => setAuthPhone(e.target.value.replace(/\D/g, ""))}
+                      onChange={(e) => setAuthPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
                       className="w-full bg-[#FAF5EC] border border-[#E8DFC9] rounded-2xl pl-9 pr-4 py-3 text-sm font-black text-[#2D2118] focus:outline-none focus:border-[#5C1E1E] transition-colors"
-                      autoComplete="tel"
+                      autoComplete="tel-national"
                     />
                     {authPhone.length === 10 && (
                       <CheckCircle2
@@ -535,7 +599,7 @@ export function AuthModal() {
               {/* OTP Digit Boxes */}
               <div>
                 <label className="text-[11px] font-extrabold text-[#2D2118] uppercase tracking-wider block mb-3 text-center">
-                  Enter 6-Digit Verification Code
+                  Enter {OTP_LENGTH}-Digit Verification Code
                 </label>
                 <div style={otpError ? { animation: "authShake 0.4s ease-in-out" } : {}}>
                   <OtpDigitBoxes
@@ -545,7 +609,8 @@ export function AuthModal() {
                       setOtpError("");
                     }}
                     onComplete={(code) => {
-                      // Auto-submit on 6 digit completion for existing users
+                      // Auto-submit on completion for existing users only;
+                      // new users still need to fill in their profile.
                       if (isExistingUser) {
                         handleVerifyOtp(code);
                       }
@@ -554,20 +619,21 @@ export function AuthModal() {
                   />
                 </div>
                 {otpError && (
-                  <p className="text-xs text-red-500 text-center mt-2 font-semibold">
+                  <p role="alert" className="text-xs text-red-500 text-center mt-2 font-semibold">
                     {otpError}
                   </p>
                 )}
               </div>
 
-              {/* Verify Button (for new users or if auto-submit didn't trigger) */}
+              {/* Verify Button */}
               <button
+                type="button"
                 onClick={() => handleVerifyOtp()}
-                disabled={verifying || authOtp.length < 6}
+                disabled={verifying || authOtp.replace(/\s/g, "").length < OTP_LENGTH}
                 className={`
                   w-full py-3.5 rounded-2xl text-xs font-bold shadow-lg transition-all
                   flex items-center justify-center gap-2 active:scale-[0.98]
-                  ${authOtp.length >= 6
+                  ${authOtp.replace(/\s/g, "").length >= OTP_LENGTH
                     ? "bg-[#5C1E1E] hover:bg-[#4A1717] text-white shadow-[#5C1E1E]/30"
                     : "bg-gray-200 text-gray-400 cursor-not-allowed shadow-none"
                   }
@@ -579,7 +645,7 @@ export function AuthModal() {
                     <span>Verifying identity...</span>
                   </>
                 ) : (
-                  <span>{isExistingUser ? "Verify & Login" : "Verify & Continue"}</span>
+                  <span>{isExistingUser ? "Verify & Login" : "Continue"}</span>
                 )}
               </button>
 
@@ -588,10 +654,7 @@ export function AuthModal() {
                 {countdown.canResend ? (
                   <button
                     type="button"
-                    onClick={(e) => {
-                      handleSendOtp(e);
-                      setAttempts(0);
-                    }}
+                    onClick={handleResend}
                     disabled={sendingOtp}
                     className="text-xs text-[#5C1E1E] hover:text-[#8B3A3A] font-bold flex items-center gap-1.5 mx-auto transition-colors"
                   >
@@ -618,12 +681,13 @@ export function AuthModal() {
               </div>
 
               <div>
-                <label className="text-[11px] font-bold text-gray-700 block mb-1">
+                <label htmlFor="auth-name" className="text-[11px] font-bold text-gray-700 block mb-1">
                   Full Name <span className="text-red-400">*</span>
                 </label>
                 <div className="relative">
                   <User className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
+                    id="auth-name"
                     ref={nameInputRef}
                     type="text"
                     required
@@ -637,12 +701,13 @@ export function AuthModal() {
               </div>
 
               <div>
-                <label className="text-[11px] font-bold text-gray-700 block mb-1">
+                <label htmlFor="auth-email" className="text-[11px] font-bold text-gray-700 block mb-1">
                   Email Address <span className="text-red-400">*</span>
                 </label>
                 <div className="relative">
                   <Mail className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
+                    id="auth-email"
                     type="email"
                     required
                     placeholder="e.g. priya@example.com"
